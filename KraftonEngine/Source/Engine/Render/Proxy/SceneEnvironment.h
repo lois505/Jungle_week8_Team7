@@ -45,6 +45,8 @@ public:
 	uint32 GetNumPointLights() const { return static_cast<uint32>(PointLights.size()); }
 	const FPointLightParams& GetPointLight(uint32 Index) const { return PointLights[Index].Params; }
 	FPointLightParams& GetPointLight(uint32 Index) { return PointLights[Index].Params; }
+	const FPointLightParams* FindPointLight(const UPointLightComponent* Owner) const;
+	FPointLightParams* FindPointLight(const UPointLightComponent* Owner);
 
 	// --- Spot Lights ---
 	void AddSpotLight(const USpotLightComponent* Owner, const FSpotLightParams& Params);
@@ -52,6 +54,8 @@ public:
 	uint32 GetNumSpotLights() const { return static_cast<uint32>(SpotLights.size()); }
 	const FSpotLightParams& GetSpotLight(uint32 Index) const { return SpotLights[Index].Params; }
 	FSpotLightParams& GetSpotLight(uint32 Index) { return SpotLights[Index].Params; }
+	const FSpotLightParams* FindSpotLight(const USpotLightComponent* Owner) const;
+	FSpotLightParams* FindSpotLight(const USpotLightComponent* Owner);
 
 private:
 	// --- Entry 구조체 (Owner는 lookup key 전용, 역참조 없음) ---

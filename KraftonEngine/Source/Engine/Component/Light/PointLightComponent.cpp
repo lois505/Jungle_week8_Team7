@@ -1,4 +1,4 @@
-#include "PointLightComponent.h"
+﻿#include "PointLightComponent.h"
 #include "Engine/Serialization/Archive.h"
 #include "GameFramework/AActor.h"
 #include "GameFramework/World.h"
@@ -7,7 +7,7 @@
 namespace
 {
 	void AddWireCircle(FScene& Scene, const FVector& Center, const FVector& AxisA, const FVector& AxisB, float Radius,
-	                   int32 Segments, const FColor& Color)
+		int32 Segments, const FColor& Color)
 	{
 		if (Radius <= 0.0f || Segments < 3)
 		{
@@ -35,11 +35,11 @@ void UPointLightComponent::ContributeSelectedVisuals(FScene& Scene) const
 	constexpr int32 Segments = 24;
 
 	AddWireCircle(Scene, Center, FVector(1.0f, 0.0f, 0.0f), FVector(0.0f, 1.0f, 0.0f), AttenuationRadius, Segments,
-	              FColor::Yellow());
+		FColor::Yellow());
 	AddWireCircle(Scene, Center, FVector(1.0f, 0.0f, 0.0f), FVector(0.0f, 0.0f, 1.0f), AttenuationRadius, Segments,
-	              FColor::Yellow());
+		FColor::Yellow());
 	AddWireCircle(Scene, Center, FVector(0.0f, 1.0f, 0.0f), FVector(0.0f, 0.0f, 1.0f), AttenuationRadius, Segments,
-	              FColor::Yellow());
+		FColor::Yellow());
 }
 
 void UPointLightComponent::PushToScene()
@@ -64,13 +64,25 @@ void UPointLightComponent::PushToScene()
 	Params.ShadowData.Settings.ShadowSharpen = ShadowSharpen;
 	//	bOverrideCameraWithLight는 나중에 고려
 
+
+	FVector FRU[6][3] = {
+	{ FVector(1,  0,  0), FVector(0,  1,  0), FVector(0,  0,  1) }, // +X
+	{ FVector(-1,  0,  0), FVector(0, -1,  0), FVector(0,  0,  1) }, // -X
+	{ FVector(0,  1,  0), FVector(-1,  0,  0), FVector(0,  0,  1) }, // +Y
+	{ FVector(0, -1,  0), FVector(1,  0,  0), FVector(0,  0,  1) }, // -Y
+	{ FVector(0,  0,  1), FVector(1,  0,  0), FVector(0,  1,  0) }, // +Z
+	{ FVector(0,  0, -1), FVector(1,  0,  0), FVector(0, -1,  0) }, // -Z
+	};
+
 	for (int32 i = 0; i < 6; i++)
 	{
 		Params.ShadowData.View[i].DepthMap = {};
-
 		//	TODO : View, Proj, ViewProj 넣기
+		Params.ShadowData.View[i].LightView = FMatrix::MakeViewMatrix(FRU[i][0], FRU[i][1], FRU[i][2], GetWorldLocation());
+		Params.ShadowData.View[i].LightProj = FMatrix::MakeProjectionMatrix(FMath::Pi * 0.5f, 0.1f, AttenuationRadius, 1.f);
+		Params.ShadowData.View[i].LightViewProj = Params.ShadowData.View[i].LightView * Params.ShadowData.View[i].LightProj;
 	}
-	
+
 	//	Default view in UI : 0
 	Params.ShadowData.PreviewViewIndex = 0;
 
@@ -95,6 +107,6 @@ void UPointLightComponent::Serialize(FArchive& Ar)
 void UPointLightComponent::GetEditableProperties(TArray<FPropertyDescriptor>& OutProps)
 {
 	ULightComponent::GetEditableProperties(OutProps);
-	OutProps.push_back({"AttenuationRadius", EPropertyType::Float, &AttenuationRadius, 0.05f, 1000.f, 0.01f});
-	OutProps.push_back({"LightFalloffExponent", EPropertyType::Float, &LightFalloffExponent, 0.05f, 10.f, 0.01f});
+	OutProps.push_back({ "AttenuationRadius", EPropertyType::Float, &AttenuationRadius, 0.05f, 1000.f, 0.01f });
+	OutProps.push_back({ "LightFalloffExponent", EPropertyType::Float, &LightFalloffExponent, 0.05f, 10.f, 0.01f });
 }

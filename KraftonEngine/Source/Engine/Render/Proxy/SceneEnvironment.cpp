@@ -97,6 +97,30 @@ void FSceneEnvironment::RemovePointLight(const UPointLightComponent* Owner)
 		PointLights.end());
 }
 
+const FPointLightParams* FSceneEnvironment::FindPointLight(const UPointLightComponent* Owner) const
+{
+	for (const FPointLightEntry& Entry : PointLights)
+	{
+		if (Entry.Owner == Owner)
+		{
+			return &Entry.Params;
+		}
+	}
+	return nullptr;
+}
+
+FPointLightParams* FSceneEnvironment::FindPointLight(const UPointLightComponent* Owner)
+{
+	for (FPointLightEntry& Entry : PointLights)
+	{
+		if (Entry.Owner == Owner)
+		{
+			return &Entry.Params;
+		}
+	}
+	return nullptr;
+}
+
 // ============================================================
 // Spot Lights
 // ============================================================
@@ -119,4 +143,28 @@ void FSceneEnvironment::RemoveSpotLight(const USpotLightComponent* Owner)
 		std::remove_if(SpotLights.begin(), SpotLights.end(),
 			[Owner](const FSpotLightEntry& E) { return E.Owner == Owner; }),
 		SpotLights.end());
+}
+
+const FSpotLightParams* FSceneEnvironment::FindSpotLight(const USpotLightComponent* Owner) const
+{
+	for (const FSpotLightEntry& Entry : SpotLights)
+	{
+		if (Entry.Owner == Owner)
+		{
+			return &Entry.Params;
+		}
+	}
+	return nullptr;
+}
+
+FSpotLightParams* FSceneEnvironment::FindSpotLight(const USpotLightComponent* Owner)
+{
+	for (FSpotLightEntry& Entry : SpotLights)
+	{
+		if (Entry.Owner == Owner)
+		{
+			return &Entry.Params;
+		}
+	}
+	return nullptr;
 }

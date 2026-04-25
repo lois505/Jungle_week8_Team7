@@ -1,30 +1,37 @@
-﻿#pragma once
+#pragma once
+
+#include "Core/CoreTypes.h"
+#include "Math/Matrix.h"
+
+struct ID3D11DepthStencilView;
+struct ID3D11RenderTargetView;
+struct ID3D11ShaderResourceView;
+struct ID3D11Texture2D;
 
 struct FLightShadowSettings
 {
 	bool bCastShadows = false;
-	float ShadowResolutionScale;
-	float ShadowBias;
-	float ShadowSlopeBias;
-	float ShadowSharpen;
+	float ShadowResolutionScale = 1.0f;
+	float ShadowBias = 0.0f;
+	float ShadowSlopeBias = 0.0f;
+	float ShadowSharpen = 1.0f;
 };
 
 struct FShadowMapResource
 {
-	ID3D11Texture2D * Texture = nullptr;
-	//	RTV, DSV 중 뭘 쓸지 고민해보아야 함 -> 아마 RTV 쓸 듯?
-	ID3D11RenderTargetView * RTV = nullptr;
-	ID3D11DepthStencilView * DSV = nullptr;
-	ID3D11ShaderResourceView * SRV = nullptr;
-	
-	uint32 Width;
-	uint32 Height;
+	ID3D11Texture2D* Texture = nullptr;
+	ID3D11RenderTargetView* RTV = nullptr;
+	ID3D11DepthStencilView* DSV = nullptr;
+	ID3D11ShaderResourceView* SRV = nullptr;
+
+	uint32 Width = 0;
+	uint32 Height = 0;
 };
 
 struct FShadowViewData
 {
 	FShadowMapResource DepthMap;
-	
+
 	FMatrix LightView = FMatrix::Identity;
 	FMatrix LightProj = FMatrix::Identity;
 	FMatrix LightViewProj = FMatrix::Identity;
@@ -53,4 +60,3 @@ struct FSpotShadowData : FShadowCommonData
 {
 	FShadowViewData View;
 };
-

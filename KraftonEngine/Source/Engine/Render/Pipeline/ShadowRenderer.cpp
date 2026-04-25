@@ -53,7 +53,7 @@ void FShadowRenderer::Release()
 }
 
 void FShadowRenderer::RenderShadows(FD3DDevice& Device, FSystemResources& Resources, FScene& Scene,
-                                    const FFrameContext& MainFrame)
+	const FFrameContext& MainFrame)
 {
 	if (MainFrame.RenderOptions.ViewMode == EViewMode::Unlit)
 	{
@@ -101,7 +101,7 @@ void FShadowRenderer::RenderDirectionalShadow(FD3DDevice& Device, FSystemResourc
 }
 
 
-void FShadowRenderer::RenderPointShadow(FD3DDevice& Device, FSystemResources & Resources, FPointLightParams& Light, FScene& Scene)
+void FShadowRenderer::RenderPointShadow(FD3DDevice& Device, FSystemResources& Resources, FPointLightParams& Light, FScene& Scene)
 {
 	if (!Light.ShadowData.Settings.bCastShadows)
 	{
@@ -121,7 +121,7 @@ void FShadowRenderer::RenderPointShadow(FD3DDevice& Device, FSystemResources & R
 	}
 }
 
-void FShadowRenderer::RenderSpotShadow(FD3DDevice& Device, FSystemResources & Resources, FSpotLightParams& Light, FScene& Scene)
+void FShadowRenderer::RenderSpotShadow(FD3DDevice& Device, FSystemResources& Resources, FSpotLightParams& Light, FScene& Scene)
 {
 	if (!Light.ShadowData.Settings.bCastShadows)
 	{
@@ -141,48 +141,48 @@ void FShadowRenderer::RenderSpotShadow(FD3DDevice& Device, FSystemResources & Re
 void FShadowRenderer::RenderShadowView(FD3DDevice& Device, FSystemResources& Resources, FShadowViewData& View, FScene& Scene, FShader* Shader)
 {
 	//	Preparing for Rendering
-    ID3D11DeviceContext* DeviceContext = Device.GetDeviceContext();
+	ID3D11DeviceContext* DeviceContext = Device.GetDeviceContext();
 
-    FShadowPassContext PassContext = {};
-    PassContext.View = View.LightView;
-    PassContext.Proj = View.LightProj;
-    PassContext.ViewProj = View.LightViewProj;
-    PassContext.RTV = View.DepthMap.RTV;
+	FShadowPassContext PassContext = {};
+	PassContext.View = View.LightView;
+	PassContext.Proj = View.LightProj;
+	PassContext.ViewProj = View.LightViewProj;
+	PassContext.RTV = View.DepthMap.RTV;
 
-    PassContext.Viewport.TopLeftX = 0.0f;
-    PassContext.Viewport.TopLeftY = 0.0f;
-    PassContext.Viewport.Width = static_cast<float>(View.DepthMap.Width);
-    PassContext.Viewport.Height = static_cast<float>(View.DepthMap.Height);
-    PassContext.Viewport.MinDepth = 0.0f;
-    PassContext.Viewport.MaxDepth = 1.0f;
+	PassContext.Viewport.TopLeftX = 0.0f;
+	PassContext.Viewport.TopLeftY = 0.0f;
+	PassContext.Viewport.Width = static_cast<float>(View.DepthMap.Width);
+	PassContext.Viewport.Height = static_cast<float>(View.DepthMap.Height);
+	PassContext.Viewport.MinDepth = 0.0f;
+	PassContext.Viewport.MaxDepth = 1.0f;
 
-    DeviceContext->RSSetViewports(1, &PassContext.Viewport);
+	DeviceContext->RSSetViewports(1, &PassContext.Viewport);
 
-    if (ShadowOptions.ShadowFilterMode == EShadowFilterMode::VSM)
-    {
-        ID3D11RenderTargetView* RTV = View.DepthMap.RTV;
-        DeviceContext->OMSetRenderTargets(1, &RTV, nullptr);
+	if (ShadowOptions.ShadowFilterMode == EShadowFilterMode::VSM)
+	{
+		ID3D11RenderTargetView* RTV = View.DepthMap.RTV;
+		DeviceContext->OMSetRenderTargets(1, &RTV, nullptr);
 
-        const float ClearColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
-        DeviceContext->ClearRenderTargetView(RTV, ClearColor);
+		const float ClearColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
+		DeviceContext->ClearRenderTargetView(RTV, ClearColor);
 
-        Resources.SetDepthStencilState(Device, EDepthStencilState::NoDepth);
-    }
-    else
-    {
-        DeviceContext->OMSetRenderTargets(0, nullptr, View.DepthMap.DSV);
-        DeviceContext->ClearDepthStencilView(View.DepthMap.DSV, D3D11_CLEAR_DEPTH, 0.0f, 0);
+		Resources.SetDepthStencilState(Device, EDepthStencilState::NoDepth);
+	}
+	else
+	{
+		DeviceContext->OMSetRenderTargets(0, nullptr, View.DepthMap.DSV);
+		DeviceContext->ClearDepthStencilView(View.DepthMap.DSV, D3D11_CLEAR_DEPTH, 0.0f, 0);
 
-        Resources.SetDepthStencilState(Device, EDepthStencilState::DepthGreaterEqual);
-    }
+		Resources.SetDepthStencilState(Device, EDepthStencilState::DepthGreaterEqual);
+	}
 
-    Resources.SetBlendState(Device, EBlendState::Opaque);
-    Resources.SetRasterizerState(Device, ERasterizerState::SolidBackCull);
+	Resources.SetBlendState(Device, EBlendState::Opaque);
+	Resources.SetRasterizerState(Device, ERasterizerState::SolidBackCull);
 
-    Builder.BeginBuild(Scene.GetProxyCount());
-    Builder.BuildCommands(Scene);
+	Builder.BeginBuild(Scene.GetProxyCount());
+	Builder.BuildCommands(Scene);
 
-    BindShadowFrameConstants(Device, Resources, PassContext);
+	BindShadowFrameConstants(Device, Resources, PassContext);
 
 	if (Shader)
 	{
@@ -200,21 +200,21 @@ void FShadowRenderer::RenderShadowView(FD3DDevice& Device, FSystemResources& Res
 void FShadowRenderer::BindShadowFrameConstants(FD3DDevice& Device, FSystemResources& Resources,
 	const FShadowPassContext& Context)
 {
-	ID3D11DeviceContext * DeviceContext = Device.GetDeviceContext();
-	
+	ID3D11DeviceContext* DeviceContext = Device.GetDeviceContext();
+
 	FFrameConstants FrameData = {};
 	FrameData.View = Context.View;
 	FrameData.Projection = Context.Proj;
 	FrameData.InvProj = Context.Proj.GetInverse();
 	FrameData.InvViewProj = Context.ViewProj.GetInverse();
 	FrameData.bIsWireframe = 0.0f;
-	FrameData.WireframeColor = FVector(1.0f,1.0f,1.0f);
+	FrameData.WireframeColor = FVector(1.0f, 1.0f, 1.0f);
 	FrameData.Time = 0.0f;
 	FrameData.CameraWorldPos = FVector(0.0f, 0.0f, 0.0f);
-	
+
 	Resources.FrameBuffer.Update(DeviceContext, &FrameData, sizeof(FFrameConstants));
-	
-	ID3D11Buffer * b0 = Resources.FrameBuffer.GetBuffer();
+
+	ID3D11Buffer* b0 = Resources.FrameBuffer.GetBuffer();
 	DeviceContext->VSSetConstantBuffers(ECBSlot::Frame, 1, &b0);
 	DeviceContext->PSSetConstantBuffers(ECBSlot::Frame, 1, &b0);
 	DeviceContext->CSSetConstantBuffers(ECBSlot::Frame, 1, &b0);

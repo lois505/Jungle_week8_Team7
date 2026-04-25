@@ -222,7 +222,7 @@ void FRenderCollector::CollectVisibleProxies(const TArray<FPrimitiveSceneProxy*>
 
 	for (FPrimitiveSceneProxy* Proxy : Proxies)
 	{
-		UpdateProxyLOD(Proxy, Frame.LODContext);
+		//UpdateProxyLOD(Proxy, Frame.LODContext);
 		LOD_STATS_RECORD(Proxy->GetCurrentLOD());
 
 		if (Proxy->HasProxyFlag(EPrimitiveProxyFlags::PerViewportUpdate))
