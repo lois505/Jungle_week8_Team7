@@ -80,9 +80,7 @@ void UDirectionalLightComponent::PushToScene()
 	//	bOverrideCameraWithLight는 나중에 고려
 	
 	Params.ShadowData.View.DepthMap = {};
-	
-	//	TODO : View, Proj, ViewProj 넣기
-	
+	Params.ShadowData.View.LightView = GetViewMatrix();
 
 	World->GetScene().GetEnvironment().AddGlobalDirectionalLight(this, Params);
 }

@@ -24,6 +24,7 @@ namespace ECBSlot
 	constexpr uint32 PerShader0 = 2; // b2: 셰이더별 여분 슬롯 #0
 	constexpr uint32 PerShader1 = 3; // b3: 셰이더별 여분 슬롯 #1 (PerShader2 예약)
 	constexpr uint32 Lighting = 4;   // b4: LightingBuffer (Ambient + Directional + 메타)
+	constexpr uint32 Shadow = 5;
 }
 
 // HLSL 라이팅 SRV 슬롯 — 프레임에 1회 바인딩 (Forward Shading)
@@ -154,6 +155,7 @@ struct FFXAAConstants
 	float EdgeThresholdMin;
 	float _pad[2];
 };
+
 
 // ============================================================
 // 타입별 CB 바인딩 디스크립터 — GPU CB에 업로드할 데이터를 인라인 보관

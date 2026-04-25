@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Core/Singleton.h"
 #include "Render/Resource/Shader.h"
@@ -81,6 +81,8 @@ namespace EShaderPath
 	inline constexpr const char* OverlayFont = "Shaders/UI/OverlayFont.hlsl";
 	inline constexpr const char* SubUV = "Shaders/UI/SubUV.hlsl";
 	inline constexpr const char* Billboard = "Shaders/UI/Billboard.hlsl";
+
+	inline constexpr const char* PSM = "Shaders/ShadowDepthPSM.hlsl";
 }
 
 namespace EUberLitDefines

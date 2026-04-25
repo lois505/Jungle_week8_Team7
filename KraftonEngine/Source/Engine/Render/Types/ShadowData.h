@@ -39,8 +39,8 @@ struct FShadowCommonData
 struct FDirectionalShadowData : FShadowCommonData
 {
 	FShadowViewData View;
-	
-	//	TODO : CSM 관련은 이 곳에 작성하는게 맞지 않을까요?
+
+	FMatrix PSMMatrix = FMatrix::Identity;
 };
 
 struct FPointShadowData : FShadowCommonData

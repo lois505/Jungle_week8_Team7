@@ -240,6 +240,9 @@
     <FxCompile Include="Shaders\UI\SubUV.hlsl">
       <Filter>Shaders\UI</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\ShadowDepthPSM.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Editor\EditorEngine.cpp">
@@ -687,6 +690,9 @@
       <Filter>ThirdParty\ImGui</Filter>
     </ClCompile>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Source\Engine\Render\Pipeline\ShadowDrawCommandBuilder.cpp" />
+    <ClCompile Include="Source\Engine\Render\Pipeline\ShadowRenderer.cpp" />
+    <ClCompile Include="Source\Engine\Render\Resource\ShadowResourceManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Editor\EditorEngine.h">
@@ -1259,6 +1265,11 @@
     <ClInclude Include="ThirdParty\SimpleJSON\json.hpp">
       <Filter>ThirdParty\SimpleJSON</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Engine\Render\Pipeline\ShadowDrawCommandBuilder.h" />
+    <ClInclude Include="Source\Engine\Render\Pipeline\ShadowRenderer.h" />
+    <ClInclude Include="Source\Engine\Render\Pipeline\ShadowPassContext.h" />
+    <ClInclude Include="Source\Engine\Render\Resource\ShadowResourceManager.h" />
+    <ClInclude Include="Source\Engine\Render\Types\ShadowData.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="KraftonEngine.rc" />

@@ -4,6 +4,7 @@
 #include "ShadowPassContext.h"
 #include "Render/Proxy/FScene.h"
 #include "Render/Resource/RenderResources.h"
+#include "Render/Resource/ShaderManager.h"
 
 namespace
 {
@@ -63,7 +64,7 @@ void FShadowRenderer::RenderShadows(FD3DDevice& Device, FSystemResources& Resour
 
 	if (Scene.GetEnvironment().HasGlobalDirectionalLight())
 	{
-		RenderDirectionalShadow(Device, Resources, Env.GetGlobalDirectionalLightParams(), Scene);
+		RenderDirectionalShadow(Device, Resources, Env.GetGlobalDirectionalLightParams(), Scene, MainFrame);
 	}
 
 	for (uint32 i = 0; i < Env.GetNumPointLights(); i++)
@@ -80,7 +81,7 @@ void FShadowRenderer::RenderShadows(FD3DDevice& Device, FSystemResources& Resour
 	RestoreMainViewport(Device, MainFrame);
 }
 
-void FShadowRenderer::RenderDirectionalShadow(FD3DDevice& Device, FSystemResources& Resources, FGlobalDirectionalLightParams& Light, FScene& Scene)
+void FShadowRenderer::RenderDirectionalShadow(FD3DDevice& Device, FSystemResources& Resources, FGlobalDirectionalLightParams& Light, FScene& Scene, const FFrameContext& MainFrame)
 {
 	if (!Light.ShadowData.Settings.bCastShadows)
 	{
@@ -92,7 +93,11 @@ void FShadowRenderer::RenderDirectionalShadow(FD3DDevice& Device, FSystemResourc
 		return;
 	}
 
-	RenderShadowView(Device, Resources, Light.ShadowData.View, Scene);
+	FMatrix PSM = (MainFrame.View * MainFrame.Proj) * Light.ShadowData.View.LightView;
+	Light.ShadowData.View.LightViewProj = PSM;
+
+	FShader* Shader = FShaderManager::Get().GetOrCreate(EShaderPath::PSM);
+	RenderShadowView(Device, Resources, Light.ShadowData.View, Scene, Shader);
 }
 
 
@@ -110,7 +115,9 @@ void FShadowRenderer::RenderPointShadow(FD3DDevice& Device, FSystemResources & R
 			continue;
 		}
 
-		RenderShadowView(Device, Resources, Light.ShadowData.View[i], Scene);
+		// 임시로 PSM으로 적용했습니다.
+		FShader* Shader = FShaderManager::Get().GetOrCreate(EShaderPath::PSM);
+		RenderShadowView(Device, Resources, Light.ShadowData.View[i], Scene, Shader);
 	}
 }
 
@@ -126,11 +133,12 @@ void FShadowRenderer::RenderSpotShadow(FD3DDevice& Device, FSystemResources & Re
 		return;
 	}
 
-	RenderShadowView(Device, Resources, Light.ShadowData.View, Scene);
+	FShader* Shader = FShaderManager::Get().GetOrCreate(EShaderPath::PSM);
+	RenderShadowView(Device, Resources, Light.ShadowData.View, Scene, Shader);
 }
 
 //	각각의 View Rendering
-void FShadowRenderer::RenderShadowView(FD3DDevice& Device, FSystemResources& Resources, FShadowViewData& View, FScene& Scene)
+void FShadowRenderer::RenderShadowView(FD3DDevice& Device, FSystemResources& Resources, FShadowViewData& View, FScene& Scene, FShader* Shader)
 {
 	//	Preparing for Rendering
     ID3D11DeviceContext* DeviceContext = Device.GetDeviceContext();
@@ -176,8 +184,10 @@ void FShadowRenderer::RenderShadowView(FD3DDevice& Device, FSystemResources& Res
 
     BindShadowFrameConstants(Device, Resources, PassContext);
 
-    // TODO: 팀원 구현
-    //	Depth shadow shader VSM shader bind
+	if (Shader)
+	{
+		Shader->Bind(Device.GetDeviceContext());
+	}
 	
     for (const FShadowDrawCommand& Cmd : Builder.GetCommands())
     {

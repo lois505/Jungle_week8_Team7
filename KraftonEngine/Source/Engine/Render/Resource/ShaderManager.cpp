@@ -42,6 +42,7 @@ void FShaderManager::Initialize(ID3D11Device* InDevice)
 	GetOrCreate(EShaderPath::SubUV);
 	GetOrCreate(EShaderPath::Billboard);
 	GetOrCreate(EShaderPath::HeightFog);
+	GetOrCreate(EShaderPath::PSM);
 
 	// UberLit 기본은 Phong + Cluster Culling으로 컴파일한다.
 	GetOrCreate(EShaderPath::UberLit);
