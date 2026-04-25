@@ -1,27 +1,35 @@
 ﻿#pragma once
 #include "Render/Pipeline/ForwardLightData.h"
-struct LightBaseParams
+#include "Render/Types/ShadowData.h"
+
+
+struct FLightBaseParams
 {
 	float Intensity; //4
 	FVector4 LightColor; //16 
 	bool bVisible; // 4
 };
-struct FGlobalAmbientLightParams : public LightBaseParams
-{
 
+struct FGlobalAmbientLightParams : FLightBaseParams
+{
+	
 };
 
-struct FGlobalDirectionalLightParams : public LightBaseParams
+struct FGlobalDirectionalLightParams : FLightBaseParams
 {
 	FVector Direction;
+	
+	FDirectionalShadowData ShadowData;
 };
 
-struct FPointLightParams : public LightBaseParams
+struct FPointLightParams : FLightBaseParams
 {
 	FVector Position;
 	float AttenuationRadius;
 	float LightFalloffExponent;
 	uint32 LightType;
+	
+	FPointShadowData ShadowData;
 
 	virtual FLightInfo ToLightInfo() const
 	{
@@ -42,11 +50,13 @@ struct FPointLightParams : public LightBaseParams
 	}
 };
 
-struct FSpotLightParams : public FPointLightParams
+struct FSpotLightParams : FPointLightParams
 {
 	FVector Direction;
 	float InnerConeCos;
 	float OuterConeCos;
+	
+	FSpotShadowData ShadowData;
 
 	virtual FLightInfo ToLightInfo() const override
 	{

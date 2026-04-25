@@ -32,22 +32,26 @@ public:
 	const FGlobalAmbientLightParams& GetGlobalAmbientLightParams() const { return AmbientLights[0].Params; }
 
 	// --- Global Directional Light (배열 관리, 렌더링은 [0]만 사용) ---
-	void AddGlobalDirectionalLight(const UDirectionalLightComponent* Owner, const FGlobalDirectionalLightParams& Params);
+	void AddGlobalDirectionalLight(const UDirectionalLightComponent* Owner,
+	                               const FGlobalDirectionalLightParams& Params);
 	void RemoveGlobalDirectionalLight(const UDirectionalLightComponent* Owner);
 	bool HasGlobalDirectionalLight() const { return !DirectionalLights.empty(); }
 	const FGlobalDirectionalLightParams& GetGlobalDirectionalLightParams() const { return DirectionalLights[0].Params; }
+	FGlobalDirectionalLightParams& GetGlobalDirectionalLightParams() { return DirectionalLights[0].Params; }
 
 	// --- Point Lights ---
 	void AddPointLight(const UPointLightComponent* Owner, const FPointLightParams& Params);
 	void RemovePointLight(const UPointLightComponent* Owner);
 	uint32 GetNumPointLights() const { return static_cast<uint32>(PointLights.size()); }
 	const FPointLightParams& GetPointLight(uint32 Index) const { return PointLights[Index].Params; }
+	FPointLightParams& GetPointLight(uint32 Index) { return PointLights[Index].Params; }
 
 	// --- Spot Lights ---
 	void AddSpotLight(const USpotLightComponent* Owner, const FSpotLightParams& Params);
 	void RemoveSpotLight(const USpotLightComponent* Owner);
 	uint32 GetNumSpotLights() const { return static_cast<uint32>(SpotLights.size()); }
 	const FSpotLightParams& GetSpotLight(uint32 Index) const { return SpotLights[Index].Params; }
+	FSpotLightParams& GetSpotLight(uint32 Index) { return SpotLights[Index].Params; }
 
 private:
 	// --- Entry 구조체 (Owner는 lookup key 전용, 역참조 없음) ---
@@ -82,9 +86,9 @@ private:
 	};
 
 	// --- 데이터 ---
-	TArray<FFogEntry>              Fogs;
-	TArray<FAmbientLightEntry>     AmbientLights;
+	TArray<FFogEntry> Fogs;
+	TArray<FAmbientLightEntry> AmbientLights;
 	TArray<FDirectionalLightEntry> DirectionalLights;
-	TArray<FPointLightEntry>       PointLights;
-	TArray<FSpotLightEntry>  SpotLights;
+	TArray<FPointLightEntry> PointLights;
+	TArray<FSpotLightEntry> SpotLights;
 };

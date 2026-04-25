@@ -66,6 +66,17 @@ void USpotLightComponent::PushToScene()
 	Params.Direction = GetForwardVector();
 	Params.InnerConeCos = std::cos(ClampedInnerAngle * FMath::DegToRad);
 	Params.OuterConeCos = std::cos(ClampedOuterAngle * FMath::DegToRad);
+	
+	Params.ShadowData.Settings.bCastShadows = bCastShadows;
+	Params.ShadowData.Settings.ShadowResolutionScale = ShadowResolutionScale;
+	Params.ShadowData.Settings.ShadowBias = ShadowBias;
+	Params.ShadowData.Settings.ShadowSlopeBias = ShadowSlopeBias;
+	Params.ShadowData.Settings.ShadowSharpen = ShadowSharpen;
+	//	bOverrideCameraWithLight는 나중에 고려
+	
+	Params.ShadowData.View.DepthMap = {};
+	
+	//	TODO : View, Proj, ViewProj 넣기
 
 	World->GetScene().GetEnvironment().AddSpotLight(this, Params);
 }

@@ -346,6 +346,8 @@
     <ClCompile Include="Source\Engine\Render\Pipeline\PassRenderStateTable.cpp" />
     <ClCompile Include="Source\Engine\Render\Pipeline\RenderCollector.cpp" />
     <ClCompile Include="Source\Engine\Render\Pipeline\Renderer.cpp" />
+    <ClCompile Include="Source\Engine\Render\Pipeline\ShadowDrawCommandBuilder.cpp" />
+    <ClCompile Include="Source\Engine\Render\Pipeline\ShadowRenderer.cpp" />
     <ClCompile Include="Source\Engine\Render\Proxy\BillboardSceneProxy.cpp" />
     <ClCompile Include="Source\Engine\Render\Proxy\CylindricalBillboardSceneProxy.cpp" />
     <ClCompile Include="Source\Engine\Render\Proxy\DecalSceneProxy.cpp" />
@@ -365,6 +367,7 @@
     <ClCompile Include="Source\Engine\Render\Resource\SamplerStateManager.cpp" />
     <ClCompile Include="Source\Engine\Render\Resource\Shader.cpp" />
     <ClCompile Include="Source\Engine\Render\Resource\ShaderManager.cpp" />
+    <ClCompile Include="Source\Engine\Render\Resource\ShadowResourceManager.cpp" />
     <ClCompile Include="Source\Engine\Resource\ResourceManager.cpp" />
     <ClCompile Include="Source\Engine\Runtime\Engine.cpp" />
     <ClCompile Include="Source\Engine\Runtime\EngineLoop.cpp" />
@@ -523,6 +526,9 @@
     <ClInclude Include="Source\Engine\Render\Pipeline\RenderCollector.h" />
     <ClInclude Include="Source\Engine\Render\Pipeline\RenderConstants.h" />
     <ClInclude Include="Source\Engine\Render\Pipeline\Renderer.h" />
+    <ClInclude Include="Source\Engine\Render\Pipeline\ShadowDrawCommandBuilder.h" />
+    <ClInclude Include="Source\Engine\Render\Pipeline\ShadowRenderer.h" />
+    <ClInclude Include="Source\Engine\Render\Pipeline\ShadowPassContext.h" />
     <ClInclude Include="Source\Engine\Render\Proxy\BillboardSceneProxy.h" />
     <ClInclude Include="Source\Engine\Render\Proxy\CylindricalBillboardSceneProxy.h" />
     <ClInclude Include="Source\Engine\Render\Proxy\DecalSceneProxy.h" />
@@ -544,11 +550,13 @@
     <ClInclude Include="Source\Engine\Render\Resource\Shader.h" />
     <ClInclude Include="Source\Engine\Render\Resource\ShaderInclude.h" />
     <ClInclude Include="Source\Engine\Render\Resource\ShaderManager.h" />
+    <ClInclude Include="Source\Engine\Render\Resource\ShadowResourceManager.h" />
     <ClInclude Include="Source\Engine\Render\Types\FogParams.h" />
     <ClInclude Include="Source\Engine\Render\Types\GlobalLightParams.h" />
     <ClInclude Include="Source\Engine\Render\Types\MaterialTextureSlot.h" />
     <ClInclude Include="Source\Engine\Render\Types\RenderStateTypes.h" />
     <ClInclude Include="Source\Engine\Render\Types\RenderTypes.h" />
+    <ClInclude Include="Source\Engine\Render\Types\ShadowData.h" />
     <ClInclude Include="Source\Engine\Render\Types\VertexTypes.h" />
     <ClInclude Include="Source\Engine\Render\Types\ViewTypes.h" />
     <ClInclude Include="Source\Engine\Resource\ResourceManager.h" />

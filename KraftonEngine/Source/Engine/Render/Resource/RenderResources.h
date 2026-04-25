@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "ShadowResourceManager.h"
 #include "Render/Resource/Buffer.h"
 #include "Render/Pipeline/RenderConstants.h"
 #include "Render/Pipeline/ForwardLightData.h"
@@ -103,6 +104,9 @@ struct FSystemResources
 	FTileCullingResource TileCullingResource;	// t9/t10 — 타일 컬링 결과 버퍼
 	uint32 LastNumLights = 0;					// Dispatch용 총 라이트 수 캐시
 
+	//	--- Shadow ---
+	FShadowResourceManager ShadowResourceManager;
+	
 	// --- Render State Managers ---
 	FRasterizerStateManager RasterizerStateManager;
 	FDepthStencilStateManager DepthStencilStateManager;
@@ -116,6 +120,9 @@ struct FSystemResources
 	void SetDepthStencilState(FD3DDevice& Device, EDepthStencilState InState);
 	void SetBlendState(FD3DDevice& Device, EBlendState InState);
 	void SetRasterizerState(FD3DDevice& Device, ERasterizerState InState);
+	
+	//	Shadow Map Update - Wrapper
+	void UpdateShadowResources(FScene & Scene , const FShadowRuntimeOptions& ShadowOptions);
 
 	// 리사이즈 시 렌더 상태 캐시 무효화
 	void ResetRenderStateCache();

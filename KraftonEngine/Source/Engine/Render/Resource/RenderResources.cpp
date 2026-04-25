@@ -76,6 +76,8 @@ void FSystemResources::Create(ID3D11Device* InDevice)
 	LightingConstantBuffer.Create(InDevice, sizeof(FLightingCBData));
 	ForwardLights.Create(InDevice, 32);
 
+	ShadowResourceManager.Initialize(InDevice);
+	
 	RasterizerStateManager.Create(InDevice);
 	DepthStencilStateManager.Create(InDevice);
 	BlendStateManager.Create(InDevice);
@@ -95,6 +97,8 @@ void FSystemResources::Release()
 	LightingConstantBuffer.Release();
 	ForwardLights.Release();
 	TileCullingResource.Release();
+	
+	ShadowResourceManager.Release();
 }
 
 void FSystemResources::UpdateFrameBuffer(FD3DDevice& Device, const FFrameContext& Frame)
@@ -237,6 +241,11 @@ void FSystemResources::SetBlendState(FD3DDevice& Device, EBlendState InState)
 void FSystemResources::SetRasterizerState(FD3DDevice& Device, ERasterizerState InState)
 {
 	RasterizerStateManager.Set(Device.GetDeviceContext(), InState);
+}
+
+void FSystemResources::UpdateShadowResources(FScene& Scene, const FShadowRuntimeOptions& ShadowOptions)
+{
+	ShadowResourceManager.UpdateShadowResources(Scene.GetEnvironment(), ShadowOptions);
 }
 
 void FSystemResources::ResetRenderStateCache()

@@ -9,8 +9,8 @@ public:
 
 	ULightComponentBase() { SetComponentTickEnabled(false); }
 
-	virtual void PushToScene() {};
-	virtual void DestroyFromScene() {};
+	virtual void PushToScene() {}
+	virtual void DestroyFromScene() {}
 	virtual void OnTransformDirty() override { USceneComponent::OnTransformDirty(); PushToScene(); }
 	virtual void GetEditableProperties(TArray<FPropertyDescriptor>& OutProps) override;
 	virtual void PostEditProperty(const char* PropertyName) override { USceneComponent::PostEditProperty(PropertyName); PushToScene(); }
@@ -22,9 +22,16 @@ public:
 	float GetIntensity() const { return Intensity; }
 	FVector4 GetLightColor() const { return LightColor; }
 	bool IsVisible() const { return bVisible; }
+	
+protected:
+	FMatrix GetViewMatrix() const;
+	virtual FMatrix GetProjMatrix() const;
+	FMatrix GetViewProjMatrix() const;
 
 protected:
-	float Intensity = 1.f;;
+	float Intensity = 1.f;
 	FVector4 LightColor = { 1.0f,1.0f,1.0f,1.0f };
 	bool bVisible = true;
+	
+	bool bCastShadows = false;
 };

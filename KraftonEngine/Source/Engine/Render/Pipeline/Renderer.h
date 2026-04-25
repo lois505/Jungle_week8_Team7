@@ -4,6 +4,7 @@
 	실제 렌더링을 담당하는 Class 입니다. (Rendering 최상위 클래스)
 */
 
+#include "ShadowRenderer.h"
 #include "Render/Types/RenderTypes.h"
 
 #include "Render/Pipeline/FrameContext.h"
@@ -48,6 +49,12 @@ public:
 	void DispatchClusterCullingResources();
 	void BindClusterCullingResources();
 	void UnbindClusterCullingResources();
+	
+	//	Wrapper for Shadow
+	const FShadowRuntimeOptions& GetRuntimeOptions() const { return ShadowRenderer.GetRuntimeOptions(); }
+	
+	void SetShadowFilterMode(EShadowFilterMode ShadowFilterMode) { ShadowRenderer.SetShadowFilterMode(ShadowFilterMode); }
+	void SetDirectionalShadowMode(EDirectionalShadowMode ShadowMode) { ShadowRenderer.SetDirectionalShadowMode(ShadowMode); }
 
 private:
 	// 패스 루프 종료 후 시스템 텍스처 언바인딩 + 캐시 정리
@@ -60,6 +67,9 @@ private:
 	FDrawCommandBuilder Builder;
 	FPassRenderStateTable PassRenderStateTable;
 	FPassEventBuilder PassEventBuilder;
+	
+	//	Shadow
+	FShadowRenderer ShadowRenderer;
 	
 	FTileBasedLightCulling TileBasedCulling;
 	FClusteredLightCuller ClusteredLightCuller;

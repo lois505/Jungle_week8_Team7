@@ -48,6 +48,29 @@ enum class ERenderPass : uint32
 	MAX
 };
 
+//	Shadow Filter Mode
+enum class EShadowFilterMode : uint8
+{
+	None,
+	PCF,
+	VSM,	//	원래는 Map 기록 방식으로도 구분해야 하지만, 구현 단순성 및 발제를 고려하여 FilterMode로 통합 
+};
+
+//	Directional 전용
+enum class EDirectionalShadowMode : uint8
+{
+	Single,
+	CSM,
+};
+
+//	전역 Shadow 옵션
+struct FShadowRuntimeOptions
+{
+	EShadowFilterMode ShadowFilterMode = EShadowFilterMode::None;
+	EDirectionalShadowMode DirectionalShadowMode = EDirectionalShadowMode::Single;
+};
+
+
 inline const char* GetRenderPassName(ERenderPass Pass)
 {
 	static const char* Names[] = {

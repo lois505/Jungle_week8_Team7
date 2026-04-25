@@ -6,7 +6,8 @@
 
 namespace
 {
-	void AddWireCircle(FScene& Scene, const FVector& Center, const FVector& AxisA, const FVector& AxisB, float Radius, int32 Segments, const FColor& Color)
+	void AddWireCircle(FScene& Scene, const FVector& Center, const FVector& AxisA, const FVector& AxisB, float Radius,
+	                   int32 Segments, const FColor& Color)
 	{
 		if (Radius <= 0.0f || Segments < 3)
 		{
@@ -33,9 +34,12 @@ void UPointLightComponent::ContributeSelectedVisuals(FScene& Scene) const
 	const FVector Center = GetWorldLocation();
 	constexpr int32 Segments = 24;
 
-	AddWireCircle(Scene, Center, FVector(1.0f, 0.0f, 0.0f), FVector(0.0f, 1.0f, 0.0f), AttenuationRadius, Segments, FColor::Yellow());
-	AddWireCircle(Scene, Center, FVector(1.0f, 0.0f, 0.0f), FVector(0.0f, 0.0f, 1.0f), AttenuationRadius, Segments, FColor::Yellow());
-	AddWireCircle(Scene, Center, FVector(0.0f, 1.0f, 0.0f), FVector(0.0f, 0.0f, 1.0f), AttenuationRadius, Segments, FColor::Yellow());
+	AddWireCircle(Scene, Center, FVector(1.0f, 0.0f, 0.0f), FVector(0.0f, 1.0f, 0.0f), AttenuationRadius, Segments,
+	              FColor::Yellow());
+	AddWireCircle(Scene, Center, FVector(1.0f, 0.0f, 0.0f), FVector(0.0f, 0.0f, 1.0f), AttenuationRadius, Segments,
+	              FColor::Yellow());
+	AddWireCircle(Scene, Center, FVector(0.0f, 1.0f, 0.0f), FVector(0.0f, 0.0f, 1.0f), AttenuationRadius, Segments,
+	              FColor::Yellow());
 }
 
 void UPointLightComponent::PushToScene()
@@ -52,6 +56,23 @@ void UPointLightComponent::PushToScene()
 	Params.LightFalloffExponent = LightFalloffExponent;
 	Params.LightType = ELightType::Point;
 	Params.Position = GetWorldLocation();
+
+	Params.ShadowData.Settings.bCastShadows = bCastShadows;
+	Params.ShadowData.Settings.ShadowResolutionScale = ShadowResolutionScale;
+	Params.ShadowData.Settings.ShadowBias = ShadowBias;
+	Params.ShadowData.Settings.ShadowSlopeBias = ShadowSlopeBias;
+	Params.ShadowData.Settings.ShadowSharpen = ShadowSharpen;
+	//	bOverrideCameraWithLight는 나중에 고려
+
+	for (int32 i = 0; i < 6; i++)
+	{
+		Params.ShadowData.View[i].DepthMap = {};
+
+		//	TODO : View, Proj, ViewProj 넣기
+	}
+	
+	//	Default view in UI : 0
+	Params.ShadowData.PreviewViewIndex = 0;
 
 	World->GetScene().GetEnvironment().AddPointLight(this, Params);
 }
@@ -74,6 +95,6 @@ void UPointLightComponent::Serialize(FArchive& Ar)
 void UPointLightComponent::GetEditableProperties(TArray<FPropertyDescriptor>& OutProps)
 {
 	ULightComponent::GetEditableProperties(OutProps);
-	OutProps.push_back({ "AttenuationRadius",EPropertyType::Float,&AttenuationRadius,0.05f,1000.f,0.01f });
-	OutProps.push_back({ "LightFalloffExponent",EPropertyType::Float,&LightFalloffExponent,0.05f,10.f,0.01f });
+	OutProps.push_back({"AttenuationRadius", EPropertyType::Float, &AttenuationRadius, 0.05f, 1000.f, 0.01f});
+	OutProps.push_back({"LightFalloffExponent", EPropertyType::Float, &LightFalloffExponent, 0.05f, 10.f, 0.01f});
 }
