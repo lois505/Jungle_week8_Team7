@@ -27,14 +27,37 @@ namespace
 	}
 }
 
-void FShadowResourceManager::Initialize(ID3D11Device* Device)
+void FShadowResourceManager::Initialize(ID3D11Device* Device, ID3D11DeviceContext* Context)
 {
 	CachedDevice = Device;
+	CachedContext = Context;
+	CreateShadowMapAtlas(4096, 4096);
 }
 
 void FShadowResourceManager::Release()
 {
+	if (Atlas.Texture)
+	{
+		Atlas.Texture->Release();
+		Atlas.Texture = nullptr;
+	}
+	if (Atlas.DSV)
+	{
+		Atlas.DSV->Release();
+		Atlas.DSV = nullptr;
+	}
+	if (Atlas.SRV)
+	{
+		Atlas.SRV->Release();
+		Atlas.SRV = nullptr;
+	}
+	Atlas.Width = 0;
+	Atlas.Height = 0;
+	Atlas.CursorX = 0;
+	Atlas.CursorY = 0;
+
 	CachedDevice = nullptr;
+	CachedContext = nullptr;
 }
 
 void FShadowResourceManager::UpdateShadowResources(FSceneEnvironment& Environment, const FShadowRuntimeOptions& ShadowOptions)
@@ -84,46 +107,30 @@ void FShadowResourceManager::EnsureSpotShadow(FSpotShadowData& Shadow, uint32 Ba
 	if (!Shadow.Settings.bCastShadows)
 	{
 		ReleaseShadowMapResource(Shadow.View.DepthMap);
+		Shadow.View.bAtlasAllocated = false;
 		return;
 	}
 
-	const uint32 Resolution = ComputeShadowResolution(Shadow.Settings, BaseResolution);
-
-	if (ShadowOptions.ShadowFilterMode == EShadowFilterMode::VSM)
-	{
-		ResizeVSMShadowMapResource(Shadow.View.DepthMap, Resolution);
-	}
-	else
-	{
-		ResizeDepthShadowMapResource(Shadow.View.DepthMap, Resolution);
-	}
+	ReleaseShadowMapResource(Shadow.View.DepthMap);
 }
 
 
 void FShadowResourceManager::EnsurePointShadow(FPointShadowData& Shadow, uint32 BaseResolution, const FShadowRuntimeOptions& ShadowOptions)
 {
-    if (!Shadow.Settings.bCastShadows)
-    {
-        for (int32 i = 0; i < 6; ++i)
-        {
-            ReleaseShadowMapResource(Shadow.View[i].DepthMap);
-        }
-        return;
-    }
+	if (!Shadow.Settings.bCastShadows)
+	{
+		for (int32 i = 0; i < 6; ++i)
+		{
+			ReleaseShadowMapResource(Shadow.View[i].DepthMap);
+			Shadow.View[i].bAtlasAllocated = false;
+		}
+		return;
+	}
 
-    const uint32 Resolution = ComputeShadowResolution(Shadow.Settings, BaseResolution);
-
-    for (int32 i = 0; i < 6; ++i)
-    {
-        if (ShadowOptions.ShadowFilterMode == EShadowFilterMode::VSM)
-        {
-            ResizeVSMShadowMapResource(Shadow.View[i].DepthMap, Resolution);
-        }
-        else
-        {
-            ResizeDepthShadowMapResource(Shadow.View[i].DepthMap, Resolution);
-        }
-    }
+	for (int32 i = 0; i < 6; ++i)
+	{
+		ReleaseShadowMapResource(Shadow.View[i].DepthMap);
+	}
 }
 
 bool FShadowResourceManager::CreateDepthShadowMapResource(FShadowMapResource& OutMap, uint32 Resolution)
@@ -300,4 +307,144 @@ void FShadowResourceManager::ReleaseShadowMapResource(FShadowMapResource& InMap)
 
 	InMap.Width = 0;
 	InMap.Height = 0;
+}
+
+bool FShadowResourceManager::CreateShadowMapAtlas(int Width, int Height)
+{
+	if (!CachedDevice || Width <= 0 || Height <= 0)
+	{
+		return false;
+	}
+
+	if (Atlas.Texture)
+	{
+		Atlas.Texture->Release();
+		Atlas.Texture = nullptr;
+	}
+	if (Atlas.DSV)
+	{
+		Atlas.DSV->Release();
+		Atlas.DSV = nullptr;
+	}
+	if (Atlas.SRV)
+	{
+		Atlas.SRV->Release();
+		Atlas.SRV = nullptr;
+	}
+	Atlas.Width = 0;
+	Atlas.Height = 0;
+	Atlas.CursorX = 0;
+	Atlas.CursorY = 0;
+
+	HRESULT hr = S_OK;
+
+	D3D11_TEXTURE2D_DESC TexDesc = {};
+	TexDesc.Width = Width;
+	TexDesc.Height = Height;
+	TexDesc.MipLevels = 1;
+	TexDesc.ArraySize = 1;
+	TexDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
+	TexDesc.SampleDesc.Count = 1;
+	TexDesc.SampleDesc.Quality = 0;
+	TexDesc.Usage = D3D11_USAGE_DEFAULT;
+	TexDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
+	TexDesc.CPUAccessFlags = 0;
+	TexDesc.MiscFlags = 0;
+
+	hr = CachedDevice->CreateTexture2D(&TexDesc, nullptr, &Atlas.Texture);
+	if (FAILED(hr) || !Atlas.Texture)
+	{
+		return false;
+	}
+
+	D3D11_DEPTH_STENCIL_VIEW_DESC DSVDesc = {};
+	DSVDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	DSVDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+	DSVDesc.Texture2D.MipSlice = 0;
+
+	hr = CachedDevice->CreateDepthStencilView(Atlas.Texture, &DSVDesc, &Atlas.DSV);
+	if (FAILED(hr) || !Atlas.DSV)
+	{
+		if (Atlas.Texture)
+		{
+			Atlas.Texture->Release();
+			Atlas.Texture = nullptr;
+		}
+		return false;
+	}
+
+	D3D11_SHADER_RESOURCE_VIEW_DESC SRVDesc = {};
+	SRVDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+	SRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	SRVDesc.Texture2D.MostDetailedMip = 0;
+	SRVDesc.Texture2D.MipLevels = 1;
+
+	hr = CachedDevice->CreateShaderResourceView(Atlas.Texture, &SRVDesc, &Atlas.SRV);
+	if (FAILED(hr) || !Atlas.SRV)
+	{
+		if (Atlas.DSV)
+		{
+			Atlas.DSV->Release();
+			Atlas.DSV = nullptr;
+		}
+		if (Atlas.Texture)
+		{
+			Atlas.Texture->Release();
+			Atlas.Texture = nullptr;
+		}
+		return false;
+	}
+
+	Atlas.Width = Width;
+	Atlas.Height = Height;
+	Atlas.CursorX = 0;
+	Atlas.CursorY = 0;
+	return true;
+}
+
+FAtlasResourceInfo FShadowResourceManager::AllocateFromAtlas()
+{
+	FAtlasResourceInfo Info;
+
+	if (!Atlas.Texture || Atlas.Width == 0 || Atlas.Height == 0)
+	{
+		return Info;
+	}
+
+	if (Atlas.CursorX + AtlasAllocSizeX > Atlas.Width)
+	{
+		Atlas.CursorX = 0;
+		Atlas.CursorY += AtlasAllocSizeY;
+		Level++;
+	}
+
+	if (Atlas.CursorY + AtlasAllocSizeY > Atlas.Height)
+	{
+		return Info;
+	}
+
+	Info.OffsetX = Atlas.CursorX;
+	Info.OffsetY = Atlas.CursorY;
+	Info.Width = AtlasAllocSizeX;
+	Info.Height = AtlasAllocSizeY;
+	Info.Index = (Atlas.CursorY / AtlasAllocSizeY) * (Atlas.Width / AtlasAllocSizeX) + (Atlas.CursorX / AtlasAllocSizeX);
+	Info.bAllocated = true;
+
+	Atlas.CursorX += AtlasAllocSizeX;
+
+	return Info;
+}
+
+bool FShadowResourceManager::ClearAtlas()
+{
+	if (!CachedContext || !Atlas.DSV)
+	{
+		return false;
+	}
+
+	CachedContext->ClearDepthStencilView(Atlas.DSV, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 0.0f, 0);
+	Atlas.CursorX = 0;
+	Atlas.CursorY = 0;
+	Level = 0;
+	return true;
 }

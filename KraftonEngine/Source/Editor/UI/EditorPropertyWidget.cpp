@@ -19,6 +19,7 @@
 #include "Mesh/StaticMesh.h"
 #include "Platform/Paths.h"
 #include "Render/Proxy/SceneEnvironment.h"
+#include "Render/Resource/ShadowResourceManager.h"
 #include "Render/Types/GlobalLightParams.h"
 
 #include <Windows.h>
@@ -620,8 +621,7 @@ void FEditorPropertyWidget::RenderPointLightShadowPreview(UPointLightComponent* 
 		ImGui::EndCombo();
 	}
 
-	const FShadowMapResource& DepthMap = Params->ShadowData.View[FaceIndex].DepthMap;
-	RenderShadowMapPreviewImage(Params->ShadowData.Settings, DepthMap);
+	RenderShadowMapPreviewImage(Params->ShadowData.Settings, Params->ShadowData.View[FaceIndex]);
 }
 
 void FEditorPropertyWidget::RenderSpotLightShadowPreview(USpotLightComponent* SpotLight)
@@ -639,10 +639,10 @@ void FEditorPropertyWidget::RenderSpotLightShadowPreview(USpotLightComponent* Sp
 
 	ImGui::Separator();
 	ImGui::Text("Spot Light Shadow Map");
-	RenderShadowMapPreviewImage(Params->ShadowData.Settings, Params->ShadowData.View.DepthMap);
+	RenderShadowMapPreviewImage(Params->ShadowData.Settings, Params->ShadowData.View);
 }
 
-void FEditorPropertyWidget::RenderShadowMapPreviewImage(const FLightShadowSettings& Settings, const FShadowMapResource& DepthMap)
+void FEditorPropertyWidget::RenderShadowMapPreviewImage(const FLightShadowSettings& Settings, const FShadowViewData& View)
 {
 	if (!Settings.bCastShadows)
 	{
@@ -650,17 +650,49 @@ void FEditorPropertyWidget::RenderShadowMapPreviewImage(const FLightShadowSettin
 		return;
 	}
 
-	if (!DepthMap.SRV)
+	if (View.bAtlasAllocated)
+	{
+		const FShadowAtlasResource& Atlas = GEngine->GetRenderer().GetShadowAtlas();
+		if (!Atlas.SRV || Atlas.Width == 0 || Atlas.Height == 0)
+		{
+			ImGui::TextDisabled("Shadow atlas is not ready yet.");
+			return;
+		}
+
+		const float U0 = static_cast<float>(View.AtlasOffsetX) / static_cast<float>(Atlas.Width);
+		const float V0 = static_cast<float>(View.AtlasOffsetY) / static_cast<float>(Atlas.Height);
+		const float U1 = static_cast<float>(View.AtlasOffsetX + View.AtlasSizeX) / static_cast<float>(Atlas.Width);
+		const float V1 = static_cast<float>(View.AtlasOffsetY + View.AtlasSizeY) / static_cast<float>(Atlas.Height);
+
+		ImGui::TextDisabled("Atlas tile: %u,%u %ux%u / %ux%u",
+			View.AtlasOffsetX,
+			View.AtlasOffsetY,
+			View.AtlasSizeX,
+			View.AtlasSizeY,
+			Atlas.Width,
+			Atlas.Height);
+
+		const float AvailableWidth = ImGui::GetContentRegionAvail().x;
+		const float PreviewSize = AvailableWidth < 256.0f ? AvailableWidth : 256.0f;
+		ImGui::Image(
+			reinterpret_cast<ImTextureID>(Atlas.SRV),
+			ImVec2(PreviewSize, PreviewSize),
+			ImVec2(U0, V0),
+			ImVec2(U1, V1));
+		return;
+	}
+
+	if (!View.DepthMap.SRV)
 	{
 		ImGui::TextDisabled("Shadow resource is not ready yet.");
 		return;
 	}
 
-	ImGui::TextDisabled("%ux%u depth SRV", DepthMap.Width, DepthMap.Height);
+	ImGui::TextDisabled("%ux%u depth SRV", View.DepthMap.Width, View.DepthMap.Height);
 
 	const float AvailableWidth = ImGui::GetContentRegionAvail().x;
 	const float PreviewSize = AvailableWidth < 256.0f ? AvailableWidth : 256.0f;
-	ImGui::Image(reinterpret_cast<ImTextureID>(DepthMap.SRV), ImVec2(PreviewSize, PreviewSize));
+	ImGui::Image(reinterpret_cast<ImTextureID>(View.DepthMap.SRV), ImVec2(PreviewSize, PreviewSize));
 }
 
 void FEditorPropertyWidget::PropagatePropertyChange(const FString& PropName, const TArray<AActor*>& SelectedActors)

@@ -73,18 +73,18 @@ struct FLightingResource
 struct FTileCullingResource
 {
 	// Buffers
-	ID3D11Buffer* IndicesBuffer  = nullptr;
-	ID3D11Buffer* GridBuffer     = nullptr;
-	ID3D11Buffer* CounterBuffer  = nullptr;
+	ID3D11Buffer* IndicesBuffer = nullptr;
+	ID3D11Buffer* GridBuffer = nullptr;
+	ID3D11Buffer* CounterBuffer = nullptr;
 
 	// UAVs — CS writes (u0, u1, u2)
 	ID3D11UnorderedAccessView* IndicesUAV = nullptr;
-	ID3D11UnorderedAccessView* GridUAV    = nullptr;
+	ID3D11UnorderedAccessView* GridUAV = nullptr;
 	ID3D11UnorderedAccessView* CounterUAV = nullptr;
 
 	// SRVs — PS reads (t9, t10)
-	ID3D11ShaderResourceView*  IndicesSRV = nullptr;
-	ID3D11ShaderResourceView*  GridSRV    = nullptr;
+	ID3D11ShaderResourceView* IndicesSRV = nullptr;
+	ID3D11ShaderResourceView* GridSRV = nullptr;
 
 	uint32 TileCountX = 0;
 	uint32 TileCountY = 0;
@@ -106,23 +106,23 @@ struct FSystemResources
 
 	//	--- Shadow ---
 	FShadowResourceManager ShadowResourceManager;
-	
+
 	// --- Render State Managers ---
 	FRasterizerStateManager RasterizerStateManager;
 	FDepthStencilStateManager DepthStencilStateManager;
 	FBlendStateManager BlendStateManager;
 	FSamplerStateManager SamplerStateManager;		// s0-s2
 
-	void Create(ID3D11Device* InDevice);
+	void Create(ID3D11Device* InDevice, ID3D11DeviceContext* Context);
 	void Release();
 
 	// 렌더 상태 전환
 	void SetDepthStencilState(FD3DDevice& Device, EDepthStencilState InState);
 	void SetBlendState(FD3DDevice& Device, EBlendState InState);
 	void SetRasterizerState(FD3DDevice& Device, ERasterizerState InState);
-	
+
 	//	Shadow Map Update - Wrapper
-	void UpdateShadowResources(FScene & Scene , const FShadowRuntimeOptions& ShadowOptions);
+	void UpdateShadowResources(FScene& Scene, const FShadowRuntimeOptions& ShadowOptions);
 
 	// 리사이즈 시 렌더 상태 캐시 무효화
 	void ResetRenderStateCache();

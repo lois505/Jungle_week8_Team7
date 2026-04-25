@@ -19,7 +19,7 @@ void FRenderer::Create(HWND hWindow)
 	}
 
 	FShaderManager::Get().Initialize(Device.GetDevice());
-	Resources.Create(Device.GetDevice());
+	Resources.Create(Device.GetDevice(), Device.GetDeviceContext());
 
 	TileBasedCulling.Initialize(Device.GetDevice());
 	ClusteredLightCuller.Initialize(Device.GetDevice(), Device.GetDeviceContext());
@@ -76,6 +76,7 @@ void FRenderer::Render(const FFrameContext& Frame, FScene& Scene)
 		const FShadowRuntimeOptions& ShadowOptions = ShadowRenderer.GetRuntimeOptions();
 
 		Resources.UpdateShadowResources(Scene, ShadowOptions);
+		Resources.ShadowResourceManager.ClearAtlas();
 		ShadowRenderer.RenderShadows(Device, Resources, Scene, Frame);
 
 		//	Restore

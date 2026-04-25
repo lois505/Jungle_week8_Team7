@@ -31,6 +31,11 @@ namespace
 	//	View의 준비 상태를 체크
 	bool IsShadowViewReady(const FShadowViewData& View, const FShadowRuntimeOptions& ShadowOptions)
 	{
+		if (View.bAtlasAllocated)
+		{
+			return View.AtlasSizeX > 0 && View.AtlasSizeY > 0;
+		}
+
 		if (ShadowOptions.ShadowFilterMode == EShadowFilterMode::VSM)
 		{
 			return View.DepthMap.Texture && View.DepthMap.RTV && View.DepthMap.SRV
@@ -39,6 +44,21 @@ namespace
 
 		return View.DepthMap.Texture && View.DepthMap.DSV && View.DepthMap.SRV
 			&& View.DepthMap.Width > 0 && View.DepthMap.Height > 0;
+	}
+
+	bool IsShadowAtlasReady(const FShadowAtlasResource& Atlas)
+	{
+		return Atlas.Texture && Atlas.DSV && Atlas.SRV && Atlas.Width > 0 && Atlas.Height > 0;
+	}
+
+	void AssignAtlasRect(FShadowViewData& View, const FAtlasResourceInfo& Info)
+	{
+		View.AtlasOffsetX = Info.OffsetX;
+		View.AtlasOffsetY = Info.OffsetY;
+		View.AtlasSizeX = Info.Width;
+		View.AtlasSizeY = Info.Height;
+		View.AtlasIndex = Info.Index;
+		View.bAtlasAllocated = Info.bAllocated;
 	}
 }
 
@@ -69,11 +89,24 @@ void FShadowRenderer::RenderShadows(FD3DDevice& Device, FSystemResources& Resour
 
 	for (uint32 i = 0; i < Env.GetNumPointLights(); i++)
 	{
+		FPointLightParams& Params = Env.GetPointLight(i);
+		if (Params.ShadowData.Settings.bCastShadows)
+		{
+			for (int32 FaceIndex = 0; FaceIndex < 6; ++FaceIndex)
+			{
+				AssignAtlasRect(Params.ShadowData.View[FaceIndex], Resources.ShadowResourceManager.AllocateFromAtlas());
+			}
+		}
 		RenderPointShadow(Device, Resources, Env.GetPointLight(i), Scene);
 	}
 
 	for (uint32 i = 0; i < Env.GetNumSpotLights(); i++)
 	{
+		FSpotLightParams& Params = Env.GetSpotLight(i);
+		if (Params.ShadowData.Settings.bCastShadows)
+		{
+			AssignAtlasRect(Params.ShadowData.View, Resources.ShadowResourceManager.AllocateFromAtlas());
+		}
 		RenderSpotShadow(Device, Resources, Env.GetSpotLight(i), Scene);
 	}
 
@@ -121,12 +154,6 @@ void FShadowRenderer::RenderSpotShadow(FD3DDevice& Device, FSystemResources& Res
 	{
 		return;
 	}
-
-	if (!IsShadowViewReady(Light.ShadowData.View, ShadowOptions))
-	{
-		return;
-	}
-
 	RenderShadowView(Device, Resources, Light.ShadowData.View, Scene);
 }
 
@@ -140,18 +167,31 @@ void FShadowRenderer::RenderShadowView(FD3DDevice& Device, FSystemResources& Res
 	PassContext.View = View.LightView;
 	PassContext.Proj = View.LightProj;
 	PassContext.ViewProj = View.LightViewProj;
-	PassContext.RTV = View.DepthMap.RTV;
 
-	PassContext.Viewport.TopLeftX = 0.0f;
-	PassContext.Viewport.TopLeftY = 0.0f;
-	PassContext.Viewport.Width = static_cast<float>(View.DepthMap.Width);
-	PassContext.Viewport.Height = static_cast<float>(View.DepthMap.Height);
+	FShadowAtlasResource& Atlas = Resources.ShadowResourceManager.GetAtlas();
+	const bool bUseAtlas = View.bAtlasAllocated && IsShadowAtlasReady(Atlas);
+
+	if (!bUseAtlas && !IsShadowViewReady(View, ShadowOptions))
+	{
+		return;
+	}
+
+	//아틀라스를 쓰냐 마냐에 따라 Viewport가 바뀜
+	PassContext.Viewport.TopLeftX = bUseAtlas ? static_cast<float>(View.AtlasOffsetX) : 0.0f;
+	PassContext.Viewport.TopLeftY = bUseAtlas ? static_cast<float>(View.AtlasOffsetY) : 0.0f;
+	PassContext.Viewport.Width = bUseAtlas ? static_cast<float>(View.AtlasSizeX) : static_cast<float>(View.DepthMap.Width);
+	PassContext.Viewport.Height = bUseAtlas ? static_cast<float>(View.AtlasSizeY) : static_cast<float>(View.DepthMap.Height);
 	PassContext.Viewport.MinDepth = 0.0f;
 	PassContext.Viewport.MaxDepth = 1.0f;
 
 	DeviceContext->RSSetViewports(1, &PassContext.Viewport);
 
-	if (ShadowOptions.ShadowFilterMode == EShadowFilterMode::VSM)
+	if (bUseAtlas)
+	{
+		DeviceContext->OMSetRenderTargets(0, nullptr, Atlas.DSV);
+		Resources.SetDepthStencilState(Device, EDepthStencilState::DepthGreaterEqual);
+	}
+	else if (ShadowOptions.ShadowFilterMode == EShadowFilterMode::VSM)
 	{
 		ID3D11RenderTargetView* RTV = View.DepthMap.RTV;
 		DeviceContext->OMSetRenderTargets(1, &RTV, nullptr);
@@ -165,7 +205,6 @@ void FShadowRenderer::RenderShadowView(FD3DDevice& Device, FSystemResources& Res
 	{
 		DeviceContext->OMSetRenderTargets(0, nullptr, View.DepthMap.DSV);
 		DeviceContext->ClearDepthStencilView(View.DepthMap.DSV, D3D11_CLEAR_DEPTH, 0.0f, 0);
-
 		Resources.SetDepthStencilState(Device, EDepthStencilState::DepthGreaterEqual);
 	}
 
@@ -177,8 +216,6 @@ void FShadowRenderer::RenderShadowView(FD3DDevice& Device, FSystemResources& Res
 
 	BindShadowFrameConstants(Device, Resources, PassContext);
 
-	// TODO: 팀원 구현
-	//	Depth shadow shader VSM shader bind
 	FShaderManager::Get().GetOrCreate(EShaderPath::CommonShadowMap)->Bind(DeviceContext);
 
 	for (const FShadowDrawCommand& Cmd : Builder.GetCommands())

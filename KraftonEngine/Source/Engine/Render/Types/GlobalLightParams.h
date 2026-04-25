@@ -12,13 +12,13 @@ struct FLightBaseParams
 
 struct FGlobalAmbientLightParams : FLightBaseParams
 {
-	
+
 };
 
 struct FGlobalDirectionalLightParams : FLightBaseParams
 {
 	FVector Direction;
-	
+
 	FDirectionalShadowData ShadowData;
 };
 
@@ -28,7 +28,7 @@ struct FPointLightParams : FLightBaseParams
 	float AttenuationRadius;
 	float LightFalloffExponent;
 	uint32 LightType;
-	
+
 	FPointShadowData ShadowData;
 
 	virtual FLightInfo ToLightInfo() const
@@ -55,7 +55,7 @@ struct FSpotLightParams : FPointLightParams
 	FVector Direction;
 	float InnerConeCos;
 	float OuterConeCos;
-	
+
 	FSpotShadowData ShadowData;
 
 	virtual FLightInfo ToLightInfo() const override

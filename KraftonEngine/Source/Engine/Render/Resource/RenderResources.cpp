@@ -70,13 +70,13 @@ void FTileCullingResource::Release()
 	TileCountX = TileCountY = 0;
 }
 
-void FSystemResources::Create(ID3D11Device* InDevice)
+void FSystemResources::Create(ID3D11Device* InDevice, ID3D11DeviceContext* Context)
 {
 	FrameBuffer.Create(InDevice, sizeof(FFrameConstants));
 	LightingConstantBuffer.Create(InDevice, sizeof(FLightingCBData));
 	ForwardLights.Create(InDevice, 32);
 
-	ShadowResourceManager.Initialize(InDevice);
+	ShadowResourceManager.Initialize(InDevice, Context);
 
 	RasterizerStateManager.Create(InDevice);
 	DepthStencilStateManager.Create(InDevice);

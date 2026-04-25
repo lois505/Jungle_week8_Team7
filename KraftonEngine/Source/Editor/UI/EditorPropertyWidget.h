@@ -8,7 +8,7 @@ class AActor;
 class UPointLightComponent;
 class USpotLightComponent;
 struct FLightShadowSettings;
-struct FShadowMapResource;
+struct FShadowViewData;
 
 class FEditorPropertyWidget : public FEditorWidget
 {
@@ -23,7 +23,7 @@ private:
 	void RenderActorProperties(AActor* PrimaryActor, const TArray<AActor*>& SelectedActors);
 	void RenderPointLightShadowPreview(UPointLightComponent* PointLight);
 	void RenderSpotLightShadowPreview(USpotLightComponent* SpotLight);
-	void RenderShadowMapPreviewImage(const FLightShadowSettings& Settings, const FShadowMapResource& DepthMap);
+	void RenderShadowMapPreviewImage(const FLightShadowSettings& Settings, const FShadowViewData& View);
 	bool RenderPropertyWidget(TArray<struct FPropertyDescriptor>& Props, int32& Index);
 
 	void PropagatePropertyChange(const FString& PropName, const TArray<AActor*>& SelectedActors);

@@ -16,16 +16,16 @@ public:
 	void Release();
 
 	void RenderShadows(FD3DDevice& Device, FSystemResources& Resources, FScene& Scene, const FFrameContext& MainFrame);
-	
+
 	/* Getter, Setter */
 	const FShadowRuntimeOptions& GetRuntimeOptions() const { return ShadowOptions; }
-	
+
 	void SetShadowFilterMode(EShadowFilterMode ShadowFilterMode) { ShadowOptions.ShadowFilterMode = ShadowFilterMode; }
 	void SetDirectionalShadowMode(EDirectionalShadowMode ShadowMode) { ShadowOptions.DirectionalShadowMode = ShadowMode; }
 
 private:
 	void RenderDirectionalShadow(FD3DDevice& Device, FSystemResources& Resources, FGlobalDirectionalLightParams& Light,
-	                             FScene& Scene);
+		FScene& Scene);
 	void RenderPointShadow(FD3DDevice& Device, FSystemResources& Resources, FPointLightParams& Light, FScene& Scene);
 	void RenderSpotShadow(FD3DDevice& Device, FSystemResources& Resources, FSpotLightParams& Light, FScene& Scene);
 

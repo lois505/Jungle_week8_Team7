@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Core/CoreTypes.h"
 #include "Math/Matrix.h"
@@ -20,6 +20,7 @@ struct FLightShadowSettings
 struct FShadowMapResource
 {
 	ID3D11Texture2D* Texture = nullptr;
+	//	RTV, DSV 중 뭘 쓸지 고민해보아야 함 -> 아마 RTV 쓸 듯?
 	ID3D11RenderTargetView* RTV = nullptr;
 	ID3D11DepthStencilView* DSV = nullptr;
 	ID3D11ShaderResourceView* SRV = nullptr;
@@ -35,6 +36,13 @@ struct FShadowViewData
 	FMatrix LightView = FMatrix::Identity;
 	FMatrix LightProj = FMatrix::Identity;
 	FMatrix LightViewProj = FMatrix::Identity;
+
+	uint32 AtlasOffsetX = 0;
+	uint32 AtlasOffsetY = 0;
+	uint32 AtlasSizeX = 0;
+	uint32 AtlasSizeY = 0;
+	uint32 AtlasIndex = 0;
+	bool bAtlasAllocated = false;
 };
 
 struct FShadowCommonData
@@ -47,7 +55,7 @@ struct FDirectionalShadowData : FShadowCommonData
 {
 	FShadowViewData View;
 
-	// TODO: Add CSM data here when cascaded shadows are implemented.
+	//	TODO : CSM 관련은 이 곳에 작성하는게 맞지 않을까요?
 };
 
 struct FPointShadowData : FShadowCommonData
@@ -60,3 +68,4 @@ struct FSpotShadowData : FShadowCommonData
 {
 	FShadowViewData View;
 };
+

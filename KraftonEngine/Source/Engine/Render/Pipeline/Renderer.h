@@ -43,6 +43,7 @@ public:
 	FTileCullingResource&     GetTileCullingResource() { return Resources.TileCullingResource; }
 	uint32                    GetNumLights()    const  { return Resources.LastNumLights; }
 	FTileBasedLightCulling&   GetTileBaseCulling()     { return TileBasedCulling; }
+	const FShadowAtlasResource& GetShadowAtlas() const { return Resources.ShadowResourceManager.GetAtlas(); }
 
 	void BindTileCullingResources() { Resources.BindTileCullingBuffers(Device); }
 	void UnbindTileCullingResources() { Resources.UnbindTileCullingBuffers(Device); }
