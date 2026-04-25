@@ -4,9 +4,9 @@
 #include "Vector.h"
 
 #if defined(_MSC_VER)
-	#include <intrin.h>     // MSVC
+#include <intrin.h>     // MSVC
 #else
-	#include <immintrin.h>  // GCC / Clang
+#include <immintrin.h>  // GCC / Clang
 #endif
 
 struct FMatrix {
@@ -91,6 +91,9 @@ struct FMatrix {
 	static FMatrix MakeRotationX(float Angle);
 	static FMatrix MakeRotationY(float Angle);
 	static FMatrix MakeRotationZ(float Angle);
+
+	static FMatrix MakeViewMatrix(FVector Front, FVector Right, FVector Up, FVector Location);
+	static FMatrix MakeProjectionMatrix(float FOV, float NearZ, float FarZ, float AspectRatio, bool Orthogonal = false, float OrthoWidth = 1.f);
 
 	static FMatrix GetCancelRotationMatrix(const FMatrix& InMatrix);
 	void Print() const;

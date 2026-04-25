@@ -17,13 +17,15 @@ struct FShaderKey
 		: Path(InPath)
 		, PathHash(std::hash<FString>{}(InPath))
 		, DefinesHash(0)
-	{}
+	{
+	}
 
 	FShaderKey(const FString& InPath, const D3D_SHADER_MACRO* InDefines)
 		: Path(InPath)
 		, PathHash(std::hash<FString>{}(InPath))
 		, DefinesHash(HashDefines(InDefines))
-	{}
+	{
+	}
 
 	bool operator==(const FShaderKey& Other) const
 	{
@@ -65,6 +67,7 @@ namespace EShaderPath
 {
 	inline constexpr const char* Primitive = "Shaders/Geometry/Primitive.hlsl";
 	inline constexpr const char* UberLit = "Shaders/Geometry/UberLit.hlsl";
+	inline constexpr const char* CommonShadowMap = "Shaders/Shadow/CommonShadowMap.hlsl";
 	inline constexpr const char* Decal = "Shaders/Geometry/Decal.hlsl";
 
 	inline constexpr const char* Editor = "Shaders/Editor/Editor.hlsl";

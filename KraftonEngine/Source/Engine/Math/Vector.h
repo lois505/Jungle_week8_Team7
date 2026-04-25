@@ -2,9 +2,9 @@
 #include <cmath>
 
 #if defined(_MSC_VER)
-	#include <intrin.h>     // MSVC
+#include <intrin.h>     // MSVC
 #else
-	#include <immintrin.h>  // GCC / Clang
+#include <immintrin.h>  // GCC / Clang
 #endif
 
 //	Virtual Table 용량을 줄이기 위해 Vector 인터페이스를 제거하고 FVector와 FVector4가 직접 구현하도록 변경
@@ -39,7 +39,7 @@ struct FVector {
 		Y = InY;
 		Z = InZ;
 	}
-	
+
 	float Length() const;
 	void  Normalize();
 	FVector Normalized() const;
@@ -56,6 +56,7 @@ struct FVector {
 	FVector operator-(float Scalar) const;
 	FVector operator*(float Scalar) const;
 	FVector operator/(float Scalar) const;
+	FVector operator-() const;
 
 	FVector& operator+=(const FVector& Other);
 	FVector& operator-=(const FVector& Other);
@@ -66,14 +67,14 @@ struct FVector {
 };
 
 struct FVector4 {
-	
+
 	union
 	{
 		struct
 		{
 			float X, Y, Z, W;
 		};
-		struct 
+		struct
 		{
 			float R, G, B, A;
 		};

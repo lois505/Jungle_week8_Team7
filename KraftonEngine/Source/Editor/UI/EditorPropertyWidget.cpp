@@ -4,6 +4,8 @@
 
 #include "ImGui/imgui.h"
 #include "Component/GizmoComponent.h"
+#include "Component/Light/PointLightComponent.h"
+#include "Component/Light/SpotLightComponent.h"
 #include "Component/PrimitiveComponent.h"
 #include "Component/StaticMeshComponent.h"
 #include "Component/SceneComponent.h"
@@ -16,6 +18,8 @@
 #include "Mesh/ObjManager.h"
 #include "Mesh/StaticMesh.h"
 #include "Platform/Paths.h"
+#include "Render/Proxy/SceneEnvironment.h"
+#include "Render/Types/GlobalLightParams.h"
 
 #include <Windows.h>
 #include <commdlg.h>
@@ -328,6 +332,19 @@ void FEditorPropertyWidget::RenderActorProperties(AActor* PrimaryActor, const TA
 		PrimaryActor->SetVisible(bVisible);
 	}
 
+	for (UActorComponent* Component : PrimaryActor->GetComponents())
+	{
+		if (Component && Component->IsA<USpotLightComponent>())
+		{
+			RenderSpotLightShadowPreview(static_cast<USpotLightComponent*>(Component));
+			break;
+		}
+		if (Component && Component->IsA<UPointLightComponent>())
+		{
+			RenderPointLightShadowPreview(static_cast<UPointLightComponent*>(Component));
+			break;
+		}
+	}
 }
 
 void FEditorPropertyWidget::RenderComponentTree(AActor* Actor)
@@ -541,6 +558,109 @@ void FEditorPropertyWidget::RenderComponentProperties(AActor* Actor, const TArra
 	{
 		static_cast<USceneComponent*>(SelectedComponent)->MarkTransformDirty();
 	}
+
+	if (SelectedComponent->IsA<USpotLightComponent>())
+	{
+		RenderSpotLightShadowPreview(static_cast<USpotLightComponent*>(SelectedComponent));
+	}
+	else if (SelectedComponent->IsA<UPointLightComponent>())
+	{
+		RenderPointLightShadowPreview(static_cast<UPointLightComponent*>(SelectedComponent));
+	}
+}
+
+void FEditorPropertyWidget::RenderPointLightShadowPreview(UPointLightComponent* PointLight)
+{
+	if (!PointLight || !PointLight->GetOwner() || !PointLight->GetOwner()->GetWorld())
+	{
+		return;
+	}
+
+	const FPointLightParams* Params = PointLight->GetOwner()->GetWorld()->GetScene().GetEnvironment().FindPointLight(PointLight);
+	if (!Params)
+	{
+		return;
+	}
+
+	ImGui::Separator();
+	ImGui::Text("Point Light Shadow Map");
+
+	if (!Params->ShadowData.Settings.bCastShadows)
+	{
+		ImGui::TextDisabled("Cast Shadows is disabled.");
+		return;
+	}
+
+	int FaceIndex = Params->ShadowData.PreviewViewIndex;
+	FaceIndex = FaceIndex < 0 ? 0 : FaceIndex;
+	FaceIndex = FaceIndex > 5 ? 5 : FaceIndex;
+
+	const char* FaceNames[6] = { "+X", "-X", "+Y", "-Y", "+Z", "-Z" };
+	ImGui::Text("Face");
+	ImGui::SameLine(120);
+	ImGui::SetNextItemWidth(-1.0f);
+	if (ImGui::BeginCombo("##PointShadowFace", FaceNames[FaceIndex]))
+	{
+		for (int32 Index = 0; Index < 6; ++Index)
+		{
+			const bool bSelected = (FaceIndex == Index);
+			if (ImGui::Selectable(FaceNames[Index], bSelected))
+			{
+				if (FPointLightParams* MutableParams = PointLight->GetOwner()->GetWorld()->GetScene().GetEnvironment().FindPointLight(PointLight))
+				{
+					MutableParams->ShadowData.PreviewViewIndex = Index;
+				}
+				FaceIndex = Index;
+			}
+			if (bSelected)
+			{
+				ImGui::SetItemDefaultFocus();
+			}
+		}
+		ImGui::EndCombo();
+	}
+
+	const FShadowMapResource& DepthMap = Params->ShadowData.View[FaceIndex].DepthMap;
+	RenderShadowMapPreviewImage(Params->ShadowData.Settings, DepthMap);
+}
+
+void FEditorPropertyWidget::RenderSpotLightShadowPreview(USpotLightComponent* SpotLight)
+{
+	if (!SpotLight || !SpotLight->GetOwner() || !SpotLight->GetOwner()->GetWorld())
+	{
+		return;
+	}
+
+	const FSpotLightParams* Params = SpotLight->GetOwner()->GetWorld()->GetScene().GetEnvironment().FindSpotLight(SpotLight);
+	if (!Params)
+	{
+		return;
+	}
+
+	ImGui::Separator();
+	ImGui::Text("Spot Light Shadow Map");
+	RenderShadowMapPreviewImage(Params->ShadowData.Settings, Params->ShadowData.View.DepthMap);
+}
+
+void FEditorPropertyWidget::RenderShadowMapPreviewImage(const FLightShadowSettings& Settings, const FShadowMapResource& DepthMap)
+{
+	if (!Settings.bCastShadows)
+	{
+		ImGui::TextDisabled("Cast Shadows is disabled.");
+		return;
+	}
+
+	if (!DepthMap.SRV)
+	{
+		ImGui::TextDisabled("Shadow resource is not ready yet.");
+		return;
+	}
+
+	ImGui::TextDisabled("%ux%u depth SRV", DepthMap.Width, DepthMap.Height);
+
+	const float AvailableWidth = ImGui::GetContentRegionAvail().x;
+	const float PreviewSize = AvailableWidth < 256.0f ? AvailableWidth : 256.0f;
+	ImGui::Image(reinterpret_cast<ImTextureID>(DepthMap.SRV), ImVec2(PreviewSize, PreviewSize));
 }
 
 void FEditorPropertyWidget::PropagatePropertyChange(const FString& PropName, const TArray<AActor*>& SelectedActors)

@@ -19,30 +19,30 @@ void FTileCullingResource::Create(ID3D11Device* Dev, uint32 InTileCountX, uint32
 		ID3D11Buffer** OutBuf,
 		ID3D11UnorderedAccessView** OutUAV,
 		ID3D11ShaderResourceView** OutSRV)
-	{
-		D3D11_BUFFER_DESC bd = {};
-		bd.ByteWidth          = ElemCount * Stride;
-		bd.Usage              = D3D11_USAGE_DEFAULT;
-		bd.BindFlags          = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
-		bd.MiscFlags          = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
-		bd.StructureByteStride = Stride;
-		Dev->CreateBuffer(&bd, nullptr, OutBuf);
-
-		D3D11_UNORDERED_ACCESS_VIEW_DESC uavd = {};
-		uavd.Format                  = DXGI_FORMAT_UNKNOWN;
-		uavd.ViewDimension           = D3D11_UAV_DIMENSION_BUFFER;
-		uavd.Buffer.NumElements      = ElemCount;
-		Dev->CreateUnorderedAccessView(*OutBuf, &uavd, OutUAV);
-
-		if (OutSRV)
 		{
-			D3D11_SHADER_RESOURCE_VIEW_DESC srvd = {};
-			srvd.Format              = DXGI_FORMAT_UNKNOWN;
-			srvd.ViewDimension       = D3D11_SRV_DIMENSION_BUFFER;
-			srvd.Buffer.NumElements  = ElemCount;
-			Dev->CreateShaderResourceView(*OutBuf, &srvd, OutSRV);
-		}
-	};
+			D3D11_BUFFER_DESC bd = {};
+			bd.ByteWidth = ElemCount * Stride;
+			bd.Usage = D3D11_USAGE_DEFAULT;
+			bd.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
+			bd.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+			bd.StructureByteStride = Stride;
+			Dev->CreateBuffer(&bd, nullptr, OutBuf);
+
+			D3D11_UNORDERED_ACCESS_VIEW_DESC uavd = {};
+			uavd.Format = DXGI_FORMAT_UNKNOWN;
+			uavd.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+			uavd.Buffer.NumElements = ElemCount;
+			Dev->CreateUnorderedAccessView(*OutBuf, &uavd, OutUAV);
+
+			if (OutSRV)
+			{
+				D3D11_SHADER_RESOURCE_VIEW_DESC srvd = {};
+				srvd.Format = DXGI_FORMAT_UNKNOWN;
+				srvd.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+				srvd.Buffer.NumElements = ElemCount;
+				Dev->CreateShaderResourceView(*OutBuf, &srvd, OutSRV);
+			}
+		};
 
 	// t9 / u0: TileLightIndices — uint per slot per tile
 	MakeStructured(ETileCulling::MaxLightsPerTile * NumTiles, sizeof(uint32),
@@ -59,14 +59,14 @@ void FTileCullingResource::Create(ID3D11Device* Dev, uint32 InTileCountX, uint32
 
 void FTileCullingResource::Release()
 {
-	if (IndicesSRV)  { IndicesSRV->Release();  IndicesSRV  = nullptr; }
-	if (GridSRV)     { GridSRV->Release();     GridSRV     = nullptr; }
-	if (IndicesUAV)  { IndicesUAV->Release();  IndicesUAV  = nullptr; }
-	if (GridUAV)     { GridUAV->Release();     GridUAV     = nullptr; }
-	if (CounterUAV)  { CounterUAV->Release();  CounterUAV  = nullptr; }
-	if (IndicesBuffer)  { IndicesBuffer->Release();  IndicesBuffer  = nullptr; }
-	if (GridBuffer)     { GridBuffer->Release();     GridBuffer     = nullptr; }
-	if (CounterBuffer)  { CounterBuffer->Release();  CounterBuffer  = nullptr; }
+	if (IndicesSRV) { IndicesSRV->Release();  IndicesSRV = nullptr; }
+	if (GridSRV) { GridSRV->Release();     GridSRV = nullptr; }
+	if (IndicesUAV) { IndicesUAV->Release();  IndicesUAV = nullptr; }
+	if (GridUAV) { GridUAV->Release();     GridUAV = nullptr; }
+	if (CounterUAV) { CounterUAV->Release();  CounterUAV = nullptr; }
+	if (IndicesBuffer) { IndicesBuffer->Release();  IndicesBuffer = nullptr; }
+	if (GridBuffer) { GridBuffer->Release();     GridBuffer = nullptr; }
+	if (CounterBuffer) { CounterBuffer->Release();  CounterBuffer = nullptr; }
 	TileCountX = TileCountY = 0;
 }
 
@@ -77,7 +77,7 @@ void FSystemResources::Create(ID3D11Device* InDevice)
 	ForwardLights.Create(InDevice, 32);
 
 	ShadowResourceManager.Initialize(InDevice);
-	
+
 	RasterizerStateManager.Create(InDevice);
 	DepthStencilStateManager.Create(InDevice);
 	BlendStateManager.Create(InDevice);
@@ -97,7 +97,7 @@ void FSystemResources::Release()
 	LightingConstantBuffer.Release();
 	ForwardLights.Release();
 	TileCullingResource.Release();
-	
+
 	ShadowResourceManager.Release();
 }
 
@@ -125,6 +125,8 @@ void FSystemResources::UpdateFrameBuffer(FD3DDevice& Device, const FFrameContext
 	Ctx->PSSetConstantBuffers(ECBSlot::Frame, 1, &b0);
 	Ctx->CSSetConstantBuffers(ECBSlot::Frame, 1, &b0);
 }
+
+//void FSystemResources::UpdateFrameBufferAsLightView(FD3DDevice& Device, const )
 
 void FSystemResources::UpdateLightBuffer(FD3DDevice& Device, const FScene& Scene, const FFrameContext& Frame, const FClusterCullingState* ClusterState)
 {
@@ -154,9 +156,9 @@ void FSystemResources::UpdateLightBuffer(FD3DDevice& Device, const FScene& Scene
 	}
 
 	const uint32 NumPointLights = Env.GetNumPointLights();
-	const uint32 NumSpotLights  = Env.GetNumSpotLights();
+	const uint32 NumSpotLights = Env.GetNumSpotLights();
 	GlobalLightingData.NumActivePointLights = NumPointLights;
-	GlobalLightingData.NumActiveSpotLights  = NumSpotLights;
+	GlobalLightingData.NumActiveSpotLights = NumSpotLights;
 
 	TArray<FLightInfo> Infos;
 	Infos.reserve(NumPointLights + NumSpotLights);
@@ -207,9 +209,9 @@ void FSystemResources::BindTileCullingBuffers(FD3DDevice& Device)
 {
 	ID3D11DeviceContext* Ctx = Device.GetDeviceContext();
 	Ctx->VSSetShaderResources(ELightTexSlot::TileLightIndices, 1, &TileCullingResource.IndicesSRV);
-	Ctx->VSSetShaderResources(ELightTexSlot::TileLightGrid,    1, &TileCullingResource.GridSRV);
+	Ctx->VSSetShaderResources(ELightTexSlot::TileLightGrid, 1, &TileCullingResource.GridSRV);
 	Ctx->PSSetShaderResources(ELightTexSlot::TileLightIndices, 1, &TileCullingResource.IndicesSRV);
-	Ctx->PSSetShaderResources(ELightTexSlot::TileLightGrid,    1, &TileCullingResource.GridSRV);
+	Ctx->PSSetShaderResources(ELightTexSlot::TileLightGrid, 1, &TileCullingResource.GridSRV);
 	Ctx->VSSetShaderResources(ELightTexSlot::AllLights, 1, &ForwardLights.LightBufferSRV);
 	Ctx->PSSetShaderResources(ELightTexSlot::AllLights, 1, &ForwardLights.LightBufferSRV);
 }

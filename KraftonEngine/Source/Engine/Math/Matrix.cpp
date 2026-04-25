@@ -362,6 +362,53 @@ FMatrix FMatrix::MakeRotationZ(float Angle)
 	return ret;
 }
 
+FMatrix FMatrix::MakeViewMatrix(FVector Front, FVector Right, FVector Up, FVector Location)
+{
+	auto F = Front;
+	auto R = Right;
+	auto U = Up;
+	auto E = Location;
+
+	return FMatrix(
+		R.X, U.X, F.X, 0,
+		R.Y, U.Y, F.Y, 0,
+		R.Z, U.Z, F.Z, 0,
+		-E.Dot(R), -E.Dot(U), -E.Dot(F), 1
+	);
+}
+
+FMatrix FMatrix::MakeProjectionMatrix(float FOV, float NearZ, float FarZ, float AspectRatio, bool Orthogonal, float OrthoWidth)
+{
+	float Cot = 1.0f / tanf(FOV * 0.5f);
+	float N = NearZ;
+	float F = FarZ;
+
+	if (!Orthogonal)
+	{
+		// Reversed-Z perspective: near→1, far→0
+		float Denom = N - F;
+		return FMatrix(
+			Cot / AspectRatio, 0, 0, 0,
+			0, Cot, 0, 0,
+			0, 0, N / Denom, 1,
+			0, 0, -(F * N) / Denom, 0
+		);
+	}
+	else
+	{
+		// Reversed-Z orthographic: near→1, far→0
+		float HalfW = OrthoWidth * 0.5f;
+		float HalfH = HalfW / AspectRatio;
+		float Denom = N - F;
+		return FMatrix(
+			1.0f / HalfW, 0, 0, 0,
+			0, 1.0f / HalfH, 0, 0,
+			0, 0, 1.0f / Denom, 0,
+			0, 0, -F / Denom, 1
+		);
+	}
+}
+
 FMatrix FMatrix::GetCancelRotationMatrix(const FMatrix& InMatrix)
 {
 	FMatrix ret = FMatrix::Identity;

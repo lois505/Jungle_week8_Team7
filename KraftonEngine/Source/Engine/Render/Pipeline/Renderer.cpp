@@ -27,7 +27,7 @@ void FRenderer::Create(HWND hWindow)
 	PassRenderStateTable.Initialize();
 
 	Builder.Create(Device.GetDevice(), Device.GetDeviceContext(), &PassRenderStateTable);
-	
+
 	ShadowRenderer.Create(Device.GetDevice(), Device.GetDeviceContext());
 
 	// GPU Profiler 초기화
@@ -39,7 +39,7 @@ void FRenderer::Release()
 	FGPUProfiler::Get().Shutdown();
 
 	ShadowRenderer.Release();
-	
+
 	Builder.Release();
 
 	Resources.Release();
@@ -47,7 +47,7 @@ void FRenderer::Release()
 	ClusteredLightCuller.Release();
 	FShaderManager::Get().Release();
 	FMaterialManager::Get().Release();
-	
+
 	Device.Release();
 }
 
@@ -69,18 +69,19 @@ void FRenderer::Render(const FFrameContext& Frame, FScene& Scene)
 		SCOPE_STAT_CAT("UpdateFrameBuffer", "4_ExecutePass");
 		Resources.UpdateFrameBuffer(Device, Frame);
 	}
-	
+
 	/*	Shadow Pass	*/
 	{
-		const FShadowRuntimeOptions & ShadowOptions = ShadowRenderer.GetRuntimeOptions();
-		
+		SCOPE_STAT_CAT("Shadow Pass", "4_ExecutePass");
+		const FShadowRuntimeOptions& ShadowOptions = ShadowRenderer.GetRuntimeOptions();
+
 		Resources.UpdateShadowResources(Scene, ShadowOptions);
 		ShadowRenderer.RenderShadows(Device, Resources, Scene, Frame);
-		
+
 		//	Restore
 		Resources.UpdateFrameBuffer(Device, Frame);
 	}
-	
+
 	{
 		SCOPE_STAT_CAT("UpdateLightBuffer", "4_ExecutePass");
 

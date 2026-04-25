@@ -22,7 +22,7 @@ public:
 	float GetIntensity() const { return Intensity; }
 	FVector4 GetLightColor() const { return LightColor; }
 	bool IsVisible() const { return bVisible; }
-	
+
 protected:
 	FMatrix GetViewMatrix() const;
 	virtual FMatrix GetProjMatrix() const;
@@ -32,6 +32,6 @@ protected:
 	float Intensity = 1.f;
 	FVector4 LightColor = { 1.0f,1.0f,1.0f,1.0f };
 	bool bVisible = true;
-	
+
 	bool bCastShadows = false;
 };
