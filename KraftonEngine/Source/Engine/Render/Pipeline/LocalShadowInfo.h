@@ -1,14 +1,16 @@
-﻿#pragma once
-#include "Math/Matrix.h"
+#pragma once
 #include "Core/CoreTypes.h"
+#include "Math/Vector.h"
+
 struct FLocalShadowInfo
 {
-	FMatrix LightViewProj[6]; //64
-	FVector4 AtlasRect[6]; //16
-	uint32 CastShadow; //4
-	uint32 ShadowType; //4
-	float Bias; //4
-	float Padding;//4
+	float LightViewProj[6][4][4];
+	FVector4 AtlasRect[6];
+	uint32 CastShadow;
+	uint32 ShadowType;
+	float Bias;
+	float Padding;
 };
 
 static_assert(sizeof(FLocalShadowInfo) % 16 == 0, "FLocalShadowInfo must be 16-byte aligned for StructuredBuffer");
+static_assert(sizeof(FLocalShadowInfo) == 496, "FLocalShadowInfo size mismatch with HLSL");

@@ -1,4 +1,6 @@
 ﻿#include "RenderResources.h"
+
+#include "Core/Log.h"
 #include "Render/Device/D3DDevice.h"
 #include "Materials/MaterialManager.h"
 #include "Render/Pipeline/ForwardLightData.h"
@@ -6,9 +8,15 @@
 #include "Render/Proxy/FScene.h"
 #include "Engine/Runtime/Engine.h"
 #include "Profiling/Timer.h"
+#include <cstring>
 
 namespace
 {
+	void CopyMatrixToShader(float Out[4][4], const FMatrix& Matrix)
+	{
+		std::memcpy(Out, Matrix.Data, sizeof(float) * 16);
+	}
+
 	FVector4 MakeAtlasRect(const FShadowViewData& View, const FShadowAtlasResource& Atlas)
 	{
 		if (!View.bAtlasAllocated || Atlas.Width == 0 || Atlas.Height == 0)
@@ -33,9 +41,10 @@ namespace
 		for (int32 FaceIndex = 0; FaceIndex < 6; ++FaceIndex)
 		{
 			const FShadowViewData& View = Light.ShadowData.View[FaceIndex];
-			Info.LightViewProj[FaceIndex] = View.LightViewProj;
+			CopyMatrixToShader(Info.LightViewProj[FaceIndex], View.LightViewProj);
 			Info.AtlasRect[FaceIndex] = MakeAtlasRect(View, Atlas);
 			Info.CastShadow &= View.bAtlasAllocated ? 1u : 0u;
+			//UE_LOG("%f, %f, %f, %f",Info.AtlasRect[FaceIndex].X,Info.AtlasRect[FaceIndex].Y,Info.AtlasRect[FaceIndex].Z,Info.AtlasRect[FaceIndex].W);
 		}
 
 		return Info;
@@ -47,7 +56,7 @@ namespace
 		Info.CastShadow = (Light.ShadowData.Settings.bCastShadows && Light.ShadowData.View.bAtlasAllocated) ? 1u : 0u;
 		Info.ShadowType = ELightType::Spot;
 		Info.Bias = Light.ShadowData.Settings.ShadowBias;
-		Info.LightViewProj[0] = Light.ShadowData.View.LightViewProj;
+		CopyMatrixToShader(Info.LightViewProj[0], Light.ShadowData.View.LightViewProj);
 		Info.AtlasRect[0] = MakeAtlasRect(Light.ShadowData.View, Atlas);
 		return Info;
 	}
