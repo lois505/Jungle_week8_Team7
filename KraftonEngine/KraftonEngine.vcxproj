@@ -520,7 +520,7 @@
     <ClInclude Include="Source\Engine\Render\Pipeline\ForwardLightData.h" />
     <ClInclude Include="Source\Engine\Render\Pipeline\FrameContext.h" />
     <ClInclude Include="Source\Engine\Render\Pipeline\IRenderPipeline.h" />
-    <ClInclude Include="Source\Engine\Render\Pipeline\LocalShadowData.h" />
+    <ClInclude Include="Source\Engine\Render\Pipeline\LocalShadowInfo.h" />
     <ClInclude Include="Source\Engine\Render\Pipeline\LODContext.h" />
     <ClInclude Include="Source\Engine\Render\Pipeline\PassEventBuilder.h" />
     <ClInclude Include="Source\Engine\Render\Pipeline\PassRenderStateTable.h" />

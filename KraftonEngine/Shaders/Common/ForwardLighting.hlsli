@@ -2,6 +2,95 @@
 #define FORWARD_LIGHTING_HLSLI
 
 #include "Common/ForwardLightData.hlsli"
+#include "Common/SystemSamplers.hlsli"
+#include "Common/SystemResources.hlsli"
+
+float SampleShadowAtlas(float2 uv)
+{
+    return ShadowMapAtlasTexture.SampleLevel(PointClampSampler, uv, 0).r;
+}
+
+float2 ProjectToShadowUV(float4 lightClip)
+{
+    float3 ndc = lightClip.xyz / max(lightClip.w, 0.0001f);
+    return float2(ndc.x * 0.5f + 0.5f, -ndc.y * 0.5f + 0.5f);
+}
+
+bool IsValidShadowRect(float4 rect)
+{
+    return rect.z > 0.0f && rect.w > 0.0f;
+}
+
+float CalcShadowFromView(FLocalShadowInfo shadow, uint viewIndex, float3 worldPos)
+{
+    float4 rect = shadow.AtlasRect[viewIndex];
+    if (!IsValidShadowRect(rect))
+    {
+        return 1.0f;
+    }
+
+    float4 lightClip = mul(float4(worldPos, 1.0f), shadow.LightViewProj[viewIndex]);
+    if (lightClip.w <= 0.0f)
+    {
+        return 1.0f;
+    }
+
+    float3 ndc = lightClip.xyz / lightClip.w;
+    if (ndc.x < -1.0f || ndc.x > 1.0f || ndc.y < -1.0f || ndc.y > 1.0f || ndc.z < 0.0f || ndc.z > 1.0f)
+    {
+        return 1.0f;
+    }
+
+    float2 localUV = float2(ndc.x * 0.5f + 0.5f, -ndc.y * 0.5f + 0.5f);
+    uint atlasWidth;
+    uint atlasHeight;
+    ShadowMapAtlasTexture.GetDimensions(atlasWidth, atlasHeight);
+    float2 tileSize = max(rect.zw * float2(atlasWidth, atlasHeight), float2(1.0f, 1.0f));
+    float2 halfTexelInTile = 0.5f / tileSize;
+    localUV = clamp(localUV, halfTexelInTile, 1.0f - halfTexelInTile);
+
+    float2 atlasUV = rect.xy + localUV * rect.zw;
+    float storedDepth = SampleShadowAtlas(atlasUV);
+
+    // This renderer uses reversed depth for shadow maps: clear 0, DepthGreaterEqual.
+    return (ndc.z + shadow.Bias >= storedDepth) ? 1.0f : 0.0f;
+}
+
+uint SelectPointShadowFace(float3 lightToPixel)
+{
+    float3 a = abs(lightToPixel);
+    if (a.x >= a.y && a.x >= a.z)
+    {
+        return lightToPixel.x >= 0.0f ? 0 : 1;
+    }
+    if (a.y >= a.x && a.y >= a.z)
+    {
+        return lightToPixel.y >= 0.0f ? 2 : 3;
+    }
+    return lightToPixel.z >= 0.0f ? 4 : 5;
+}
+
+float CalcLocalShadow(uint lightIndex, FLightInfo light, float3 worldPos)
+{
+    FLocalShadowInfo shadow = LocalLights[lightIndex];
+    if (shadow.CastShadow == 0)
+    {
+        return 1.0f;
+    }
+
+    if (shadow.ShadowType == LIGHT_TYPE_SPOT)
+    {
+        return CalcShadowFromView(shadow, 0, worldPos);
+    }
+
+    if (shadow.ShadowType == LIGHT_TYPE_POINT)
+    {
+        uint faceIndex = SelectPointShadowFace(worldPos - light.Position);
+        return CalcShadowFromView(shadow, faceIndex, worldPos);
+    }
+
+    return 1.0f;
+}
 
 float CalcAttenuation(float dist, float radius, float falloff)
 {
@@ -102,7 +191,9 @@ void AccumulatePointSpotDiffuse(float3 worldPos, float3 N, float4 screenPos, ino
         uint2 gridData = TileLightGrid[tileIdx];
         for (uint t = 0; t < gridData.y; ++t)
         {
-            result += CalcLightDiffuse(AllLights[TileLightIndices[gridData.x + t]], worldPos, N);
+            uint lightIndex = TileLightIndices[gridData.x + t];
+            FLightInfo light = AllLights[lightIndex];
+            result += CalcLightDiffuse(light, worldPos, N) * CalcLocalShadow(lightIndex, light, worldPos);
         }
     }
     else if (LightCullingMode == LIGHT_CULLING_CLUSTER)
@@ -111,14 +202,17 @@ void AccumulatePointSpotDiffuse(float3 worldPos, float3 N, float4 screenPos, ino
         uint2 gridData = g_ClusterLightGrid[clusterIdx];
         for (uint t = 0; t < gridData.y; ++t)
         {
-            result += CalcLightDiffuse(AllLights[g_ClusterLightIndices[gridData.x + t]], worldPos, N);
+            uint lightIndex = g_ClusterLightIndices[gridData.x + t];
+            FLightInfo light = AllLights[lightIndex];
+            result += CalcLightDiffuse(light, worldPos, N) * CalcLocalShadow(lightIndex, light, worldPos);
         }
     }
     else
     {
         for (uint i = 0; i < NumActivePointLights + NumActiveSpotLights; ++i)
         {
-            result += CalcLightDiffuse(AllLights[i], worldPos, N);
+            FLightInfo light = AllLights[i];
+            result += CalcLightDiffuse(light, worldPos, N) * CalcLocalShadow(i, light, worldPos);
         }
     }
 }
@@ -132,7 +226,9 @@ void AccumulatePointSpotSpecular(float3 worldPos, float3 N, float3 V, float shin
         uint2 gridData = TileLightGrid[tileIdx];
         for (uint t = 0; t < gridData.y; ++t)
         {
-            result += CalcLightSpecular(AllLights[TileLightIndices[gridData.x + t]], worldPos, N, V, shininess);
+            uint lightIndex = TileLightIndices[gridData.x + t];
+            FLightInfo light = AllLights[lightIndex];
+            result += CalcLightSpecular(light, worldPos, N, V, shininess) * CalcLocalShadow(lightIndex, light, worldPos);
         }
     }
     else if (LightCullingMode == LIGHT_CULLING_CLUSTER)
@@ -141,14 +237,17 @@ void AccumulatePointSpotSpecular(float3 worldPos, float3 N, float3 V, float shin
         uint2 gridData = g_ClusterLightGrid[clusterIdx];
         for (uint t = 0; t < gridData.y; ++t)
         {
-            result += CalcLightSpecular(AllLights[g_ClusterLightIndices[gridData.x + t]], worldPos, N, V, shininess);
+            uint lightIndex = g_ClusterLightIndices[gridData.x + t];
+            FLightInfo light = AllLights[lightIndex];
+            result += CalcLightSpecular(light, worldPos, N, V, shininess) * CalcLocalShadow(lightIndex, light, worldPos);
         }
     }
     else
     {
         for (uint i = 0; i < NumActivePointLights + NumActiveSpotLights; ++i)
         {
-            result += CalcLightSpecular(AllLights[i], worldPos, N, V, shininess);
+            FLightInfo light = AllLights[i];
+            result += CalcLightSpecular(light, worldPos, N, V, shininess) * CalcLocalShadow(i, light, worldPos);
         }
     }
 }
@@ -202,7 +301,9 @@ void AccumulateToonPointSpotDiffuse(float3 worldPos, float3 N, float4 screenPos,
         uint2 gridData = TileLightGrid[tileIdx];
         for (uint t = 0; t < gridData.y; ++t)
         {
-            result += CalcToonPointSpotDiffuse(AllLights[TileLightIndices[gridData.x + t]], worldPos, N);
+            uint lightIndex = TileLightIndices[gridData.x + t];
+            FLightInfo light = AllLights[lightIndex];
+            result += CalcToonPointSpotDiffuse(light, worldPos, N) * CalcLocalShadow(lightIndex, light, worldPos);
         }
     }
     else if (LightCullingMode == LIGHT_CULLING_CLUSTER)
@@ -211,14 +312,17 @@ void AccumulateToonPointSpotDiffuse(float3 worldPos, float3 N, float4 screenPos,
         uint2 gridData = g_ClusterLightGrid[clusterIdx];
         for (uint t = 0; t < gridData.y; ++t)
         {
-            result += CalcToonPointSpotDiffuse(AllLights[g_ClusterLightIndices[gridData.x + t]], worldPos, N);
+            uint lightIndex = g_ClusterLightIndices[gridData.x + t];
+            FLightInfo light = AllLights[lightIndex];
+            result += CalcToonPointSpotDiffuse(light, worldPos, N) * CalcLocalShadow(lightIndex, light, worldPos);
         }
     }
     else
     {
         for (uint i = 0; i < NumActivePointLights + NumActiveSpotLights; ++i)
         {
-            result += CalcToonPointSpotDiffuse(AllLights[i], worldPos, N);
+            FLightInfo light = AllLights[i];
+            result += CalcToonPointSpotDiffuse(light, worldPos, N) * CalcLocalShadow(i, light, worldPos);
         }
     }
 }

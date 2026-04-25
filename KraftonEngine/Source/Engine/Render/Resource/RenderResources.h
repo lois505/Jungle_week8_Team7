@@ -3,6 +3,7 @@
 #include "Render/Resource/Buffer.h"
 #include "Render/Pipeline/RenderConstants.h"
 #include "Render/Pipeline/ForwardLightData.h"
+#include "Render/Pipeline/LocalShadowInfo.h"
 
 #include "Render/Resource/RasterizerStateManager.h"
 #include "Render/Resource/DepthStencilStateManager.h"
@@ -70,6 +71,59 @@ struct FLightingResource
 	}
 };
 
+struct FLocalShadowResource
+{
+	ID3D11Buffer* ShadowBuffer = nullptr;
+	ID3D11ShaderResourceView* ShadowBufferSRV = nullptr;
+	uint32 MaxShadowCount = 0;
+
+	void Create(ID3D11Device* InDevice, uint32 InMaxShadowCount)
+	{
+		MaxShadowCount = InMaxShadowCount;
+
+		D3D11_BUFFER_DESC Desc = {};
+		Desc.ByteWidth = sizeof(FLocalShadowInfo) * MaxShadowCount;
+		Desc.Usage = D3D11_USAGE_DYNAMIC;
+		Desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+		Desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+		Desc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+		Desc.StructureByteStride = sizeof(FLocalShadowInfo);
+		InDevice->CreateBuffer(&Desc, nullptr, &ShadowBuffer);
+
+		D3D11_SHADER_RESOURCE_VIEW_DESC SRVDesc = {};
+		SRVDesc.Format = DXGI_FORMAT_UNKNOWN;
+		SRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+		SRVDesc.Buffer.NumElements = MaxShadowCount;
+		InDevice->CreateShaderResourceView(ShadowBuffer, &SRVDesc, &ShadowBufferSRV);
+	}
+
+	void Update(ID3D11Device* InDevice, ID3D11DeviceContext* InDeviceContext, const TArray<FLocalShadowInfo>& ShadowInfos)
+	{
+		if (MaxShadowCount < ShadowInfos.size())
+		{
+			Release();
+			uint32 NewCount = MaxShadowCount > 0 ? MaxShadowCount : 32;
+			while (NewCount < ShadowInfos.size())
+			{
+				NewCount *= 2;
+			}
+			Create(InDevice, NewCount);
+		}
+
+		D3D11_MAPPED_SUBRESOURCE Mapped = {};
+		InDeviceContext->Map(ShadowBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &Mapped);
+		memcpy(Mapped.pData, ShadowInfos.data(), sizeof(FLocalShadowInfo) * ShadowInfos.size());
+		InDeviceContext->Unmap(ShadowBuffer, 0);
+	}
+
+	void Release()
+	{
+		if (ShadowBuffer) { ShadowBuffer->Release(); ShadowBuffer = nullptr; }
+		if (ShadowBufferSRV) { ShadowBufferSRV->Release(); ShadowBufferSRV = nullptr; }
+		MaxShadowCount = 0;
+	}
+};
+
 struct FTileCullingResource
 {
 	// Buffers
@@ -101,6 +155,7 @@ struct FSystemResources
 	// --- Lighting ---
 	FConstantBuffer LightingConstantBuffer;		// b4 — ECBSlot::Lighting
 	FLightingResource ForwardLights;			// t8 — ELightTexSlot::AllLights
+	FLocalShadowResource LocalShadows;			// t13 — ELightTexSlot::LocalLights
 	FTileCullingResource TileCullingResource;	// t9/t10 — 타일 컬링 결과 버퍼
 	uint32 LastNumLights = 0;					// Dispatch용 총 라이트 수 캐시
 

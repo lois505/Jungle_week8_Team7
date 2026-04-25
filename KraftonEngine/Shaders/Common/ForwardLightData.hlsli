@@ -78,6 +78,16 @@ struct FClusterCullingState
     uint MaxLightsPerCluster;
 };
 
+struct FLocalShadowInfo
+{
+    float4x4 LightViewProj[6];
+    float4 AtlasRect[6]; // xy = normalized offset, zw = normalized size
+    uint CastShadow;
+    uint ShadowType;
+    float Bias;
+    float Padding;
+};
+
 // =============================================================================
 // 리소스 바인딩
 // =============================================================================
@@ -105,4 +115,5 @@ StructuredBuffer<uint> TileLightIndices : register(t9);
 StructuredBuffer<uint2> TileLightGrid : register(t10);
 StructuredBuffer<uint> g_ClusterLightIndices : register(t11);
 StructuredBuffer<uint2> g_ClusterLightGrid : register(t12);
+StructuredBuffer<FLocalShadowInfo> LocalLights : register(t13);
 #endif // FORWARD_LIGHT_DATA_HLSLI

@@ -1,5 +1,6 @@
 ﻿#include "ShadowResourceManager.h"
 
+#include "Render/Pipeline/RenderConstants.h"
 #include "Render/Proxy/SceneEnvironment.h"
 
 //	Resolution 관련 Helper
