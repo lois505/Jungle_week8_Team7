@@ -52,9 +52,10 @@ enum class ERenderPass : uint32
 enum class EShadowFilterMode : uint8
 {
 	None,
-	PCF,
+	PCF_BOX,
 	VSM,	//	원래는 Map 기록 방식으로도 구분해야 하지만, 구현 단순성 및 발제를 고려하여 FilterMode로 통합 
 	ESM,
+	PCF_POISSON,
 };
 
 //	Directional 전용 - console과 연동

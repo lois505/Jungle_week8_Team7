@@ -96,6 +96,8 @@ public:
 		Info.CastShadow = Settings.bCastShadows ? 1u : 0u;
 		Info.ShadowType = ELightType::Point;
 		Info.Bias = Settings.ShadowBias;
+		Info.SlopeBias = Settings.ShadowSlopeBias;
+		Info.Sharpen = Settings.ShadowSharpen;
 
 		for (int32 FaceIndex = 0; FaceIndex < 6; ++FaceIndex)
 		{
@@ -123,6 +125,8 @@ public:
 		Info.CastShadow = (Settings.bCastShadows && View.bAtlasAllocated) ? 1u : 0u;
 		Info.ShadowType = ELightType::Spot;
 		Info.Bias = Settings.ShadowBias;
+		Info.SlopeBias = Settings.ShadowSlopeBias;
+		Info.Sharpen = Settings.ShadowSharpen;
 		Info.LightViewProj[0] = View.LightViewProj.ConvertToPOD();
 		Info.AtlasRect[0] = MakeAtlasRect(View, Atlas);
 		return Info;

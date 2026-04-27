@@ -987,11 +987,13 @@ void FLevelViewportLayout::RenderPaneToolbar(int32 SlotIndex)
 				int32 ShadowFilterMode = static_cast<int32>(ShadowOptions.ShadowFilterMode);
 				ImGui::RadioButton("None##ShadowFilterMode", &ShadowFilterMode, static_cast<int32>(EShadowFilterMode::None));
 				ImGui::SameLine();
-				ImGui::RadioButton("PCF##ShadowFilterMode", &ShadowFilterMode, static_cast<int32>(EShadowFilterMode::PCF));
+				ImGui::RadioButton("PCF Box##ShadowFilterMode", &ShadowFilterMode, static_cast<int32>(EShadowFilterMode::PCF_BOX));
 				ImGui::SameLine();
 				ImGui::RadioButton("VSM##ShadowFilterMode", &ShadowFilterMode, static_cast<int32>(EShadowFilterMode::VSM));
 				ImGui::SameLine();
 				ImGui::RadioButton("ESM##ShadowFilterMode", &ShadowFilterMode, static_cast<int32>(EShadowFilterMode::ESM));
+				ImGui::SameLine();
+				ImGui::RadioButton("PCF Poisson##ShadowFilterMode", &ShadowFilterMode, static_cast<int32>(EShadowFilterMode::PCF_POISSON));
 				
 				if (ShadowFilterMode != static_cast<int32>(ShadowOptions.ShadowFilterMode))
 				{

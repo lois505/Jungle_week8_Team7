@@ -85,7 +85,9 @@ struct FLocalShadowInfo
     uint CastShadow;
     uint ShadowType;
     float Bias;
-    float Padding;
+    float SlopeBias;
+    float Sharpen;
+    float3 _pad3;
 };
 
 // =============================================================================

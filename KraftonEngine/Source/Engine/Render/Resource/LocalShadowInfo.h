@@ -9,9 +9,11 @@ struct FLocalShadowInfo
 	uint32 CastShadow; //4
 	uint32 ShadowType; //4
 	float Bias; //4
-	float Padding;//4
+	float SlopeBias;//4
+	float Sharpen;//4
+	float pad[3];
 };
 
 static_assert(sizeof(FLocalShadowInfo) % 16 == 0, "FLocalShadowInfo must be 16-byte aligned for StructuredBuffer");
-static_assert(sizeof(FLocalShadowInfo) == 496, "FLocalShadowInfo size mismatch with HLSL");
+static_assert(sizeof(FLocalShadowInfo) == 512, "FLocalShadowInfo size mismatch with HLSL");
 static_assert(alignof(FLocalShadowInfo) <= 16, "FLocalShadowInfo must not inherit SIMD alignment padding");
