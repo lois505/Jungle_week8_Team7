@@ -9,6 +9,7 @@ namespace
 	constexpr uint32 GBaseShadowResolution = 1024;
 	constexpr uint32 GMinShadowResolution = 64;
 	constexpr uint32 GMaxShadowResolution = 4096;
+	constexpr uint32 GLocalShadowAtlasResolution = 4096;
 
 	uint32 ComputeShadowResolution(const FLightShadowSettings& Settings, uint32 BaseResolution)
 	{
@@ -74,7 +75,8 @@ void FShadowResourceManager::Initialize(ID3D11Device* Device, ID3D11DeviceContex
 {
 	CachedDevice = Device;
 	CachedContext = Context;
-	CreateShadowMapAtlas(4096, 4096);
+	FShadowRuntimeOptions DefaultShadowOptions;
+	CreateShadowMapAtlas(GLocalShadowAtlasResolution, GLocalShadowAtlasResolution, DefaultShadowOptions);
 }
 
 void FShadowResourceManager::Release()
@@ -82,6 +84,9 @@ void FShadowResourceManager::Release()
 	ReleaseShadowMapResource(Atlas.Map);
 	Atlas.CursorX = 0;
 	Atlas.CursorY = 0;
+	CurrentAtlasFilterMode = EShadowFilterMode::None;
+	CurrentAtlasWidth = 0;
+	CurrentAtlasHeight = 0;
 
 	CachedDevice = nullptr;
 	CachedContext = nullptr;
@@ -89,6 +94,8 @@ void FShadowResourceManager::Release()
 
 void FShadowResourceManager::UpdateShadowResources(FSceneEnvironment& Environment, const FShadowRuntimeOptions& ShadowOptions)
 {
+	EnsureShadowMapAtlas(GLocalShadowAtlasResolution, GLocalShadowAtlasResolution, ShadowOptions);
+
 	if (Environment.HasGlobalDirectionalLight())
 	{
 		EnsureDirectionalShadow(Environment.GetGlobalDirectionalLightParams().ShadowData, GBaseShadowResolution, ShadowOptions);
@@ -344,9 +351,24 @@ void FShadowResourceManager::ReleaseShadowMapResource(FShadowMapResource& InMap)
 	InMap.Height = 0;
 }
 
-bool FShadowResourceManager::CreateShadowMapAtlas(int Width, int Height)
+bool FShadowResourceManager::EnsureShadowMapAtlas(uint32 Width, uint32 Height, const FShadowRuntimeOptions& ShadowOptions)
 {
-	if (!CachedDevice || Width <= 0 || Height <= 0)
+	if (Atlas.Map.Width == Width
+		&& Atlas.Map.Height == Height
+		&& CurrentAtlasWidth == Width
+		&& CurrentAtlasHeight == Height
+		&& CurrentAtlasFilterMode == ShadowOptions.ShadowFilterMode)
+	{
+		return true;
+	}
+
+	const bool bCreated = CreateShadowMapAtlas(Width, Height, ShadowOptions);
+	return bCreated;
+}
+
+bool FShadowResourceManager::CreateShadowMapAtlas(uint32 Width, uint32 Height, const FShadowRuntimeOptions& ShadowOptions)
+{
+	if (!CachedDevice || Width == 0 || Height == 0)
 	{
 		return false;
 	}
@@ -355,7 +377,22 @@ bool FShadowResourceManager::CreateShadowMapAtlas(int Width, int Height)
 	Atlas.CursorX = 0;
 	Atlas.CursorY = 0;
 
-	if (!CreateDepthShadowMapResource(Atlas.Map, static_cast<uint32>(Width), static_cast<uint32>(Height), true))
+	if (ShadowOptions.ShadowFilterMode == EShadowFilterMode::VSM || ShadowOptions.ShadowFilterMode == EShadowFilterMode::ESM)
+	{
+		if (!CreateVSMESMShadowMapResource(Atlas.Map, Width, Height))
+		{
+			ReleaseShadowMapResource(Atlas.Map);
+			return false;
+		}
+
+		// VSM/ESM은 RTV에 moment를 기록하지만, depth test를 위해 DSV는 별도로 필요하다.
+		if (!CreateDepthShadowMapResource(Atlas.Map, Width, Height, false))
+		{
+			ReleaseShadowMapResource(Atlas.Map);
+			return false;
+		}
+	}
+	else if (!CreateDepthShadowMapResource(Atlas.Map, Width, Height, true))
 	{
 		ReleaseShadowMapResource(Atlas.Map);
 		return false;
@@ -363,6 +400,9 @@ bool FShadowResourceManager::CreateShadowMapAtlas(int Width, int Height)
 
 	Atlas.CursorX = 0;
 	Atlas.CursorY = 0;
+	CurrentAtlasFilterMode = ShadowOptions.ShadowFilterMode;
+	CurrentAtlasWidth = Width;
+	CurrentAtlasHeight = Height;
 	Level = 0;
 	return true;
 }
@@ -400,7 +440,7 @@ FAtlasResourceInfo FShadowResourceManager::AllocateFromAtlas()
 	return Info;
 }
 
-bool FShadowResourceManager::ClearAtlas()
+bool FShadowResourceManager::ClearAtlas(const FShadowRuntimeOptions& ShadowOptions)
 {
 	if (!CachedContext || !Atlas.Map.DSV)
 	{
@@ -408,6 +448,12 @@ bool FShadowResourceManager::ClearAtlas()
 	}
 
 	CachedContext->ClearDepthStencilView(Atlas.Map.DSV, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 0.0f, 0);
+	if ((ShadowOptions.ShadowFilterMode == EShadowFilterMode::VSM || ShadowOptions.ShadowFilterMode == EShadowFilterMode::ESM) && Atlas.Map.RTV)
+	{
+		const float ClearColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
+		CachedContext->ClearRenderTargetView(Atlas.Map.RTV, ClearColor);
+	}
+
 	Atlas.CursorX = 0;
 	Atlas.CursorY = 0;
 	Level = 0;

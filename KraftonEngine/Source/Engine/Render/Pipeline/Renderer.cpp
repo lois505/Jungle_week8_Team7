@@ -75,8 +75,9 @@ void FRenderer::Render(const FFrameContext& Frame, FScene& Scene)
 		SCOPE_STAT_CAT("Shadow Pass", "4_ExecutePass");
 		const FShadowRuntimeOptions& ShadowOptions = ShadowRenderer.GetRuntimeOptions();
 
+		Resources.UnbindSystemTextures(Device);
 		Resources.UpdateShadowResources(Scene, ShadowOptions);
-		Resources.ShadowResourceManager.ClearAtlas();
+		Resources.ShadowResourceManager.ClearAtlas(ShadowOptions);
 		ShadowRenderer.RenderShadows(Device, Resources, Scene, Frame);
 
 		//	Restore

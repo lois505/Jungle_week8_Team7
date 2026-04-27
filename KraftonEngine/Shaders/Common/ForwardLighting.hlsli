@@ -27,6 +27,57 @@ float SampleShadowAtlas(float2 uv)
     return ShadowMapAtlasTexture.SampleLevel(PointClampSampler, uv, 0).r;
 }
 
+float2 SampleShadowAtlasGaussian3x3(float4 rect, float2 localUV, float2 atlasTileSize)
+{
+    float2 texelInTile = 1.0f / atlasTileSize;
+    float2 output = float2(0.0f, 0.0f);
+
+    [unroll]
+    for (int y = -1; y <= 1; y++)
+    {
+        [unroll]
+        for (int x = -1; x <= 1; x++)
+        {
+            float weight = ((x == 0) ? 2.0f : 1.0f) * ((y == 0) ? 2.0f : 1.0f);
+            float2 sampleLocalUV = localUV + float2(x, y) * texelInTile;
+            sampleLocalUV = clamp(sampleLocalUV, texelInTile * 0.5f, 1.0f - texelInTile * 0.5f);
+
+            float2 uv = rect.xy + sampleLocalUV * rect.zw;
+            output += ShadowMapAtlasTexture.SampleLevel(PointClampSampler, uv, 0).rg * weight;
+        }
+    }
+
+    return output / 16.0f;
+}
+
+float SampleShadowAtlasVSM(float4 rect, float2 localUV, float currentDepth, float bias, float2 atlasTileSize)
+{
+    float2 moments = SampleShadowAtlasGaussian3x3(rect, localUV, atlasTileSize);
+    float mean = moments.x;
+    float meanSq = moments.y;
+    float receiverDepth = currentDepth + bias;
+
+    if (receiverDepth >= mean)
+    {
+        return 1.0f;
+    }
+
+    float variance = max(meanSq - mean * mean, 0.00002f);
+    float depthDelta = mean - receiverDepth;
+    float visibility = variance / (variance + depthDelta * depthDelta);
+
+    return saturate(visibility);
+}
+
+float SampleShadowAtlasESM(float4 rect, float2 localUV, float currentDepth, float bias, float2 atlasTileSize)
+{
+    const float exponent = 40.0f;
+    float avgExpDepth = SampleShadowAtlasGaussian3x3(rect, localUV, atlasTileSize).x;
+    float receiverExpDepth = exp(exponent * saturate(currentDepth + bias));
+
+    return saturate(receiverExpDepth / max(avgExpDepth, 0.000001f));
+}
+
 //  PCF (주변 픽셀을 다 더하고 평균내어 결정)
 //  rect : xy(top-left), zw(width-height)
 float SampleShadowAtlasPCFBox(float4 rect, float2 localUV, float currentDepth, float bias, float2 atlasTileSize)
@@ -114,7 +165,7 @@ float SampleShadowAtlasPCFPoisson(float4 rect, float2 localUV, float currentDept
     {
         float2 rotatedOffset = Rotate2D(PoissonDisk16[i], angle);
         // float2 sampleLocalUV = localUV + PoissonDisk16[i] * radius * texelInTile;
-        float2 sampleLocalUV = localUV + rotatedOffset * radius * texelInTile;;
+        float2 sampleLocalUV = localUV + rotatedOffset * radius * texelInTile;
     
         sampleLocalUV = clamp(sampleLocalUV, texelInTile * 0.5f, 1.0f - texelInTile * 0.5f);
 
@@ -175,7 +226,15 @@ float CalcShadowFromView(FLocalShadowInfo shadow, uint viewIndex, float3 worldPo
     float bias = shadow.Bias + shadow.SlopeBias * slope;
 
     float shadowVisibility = 0.0f;
-    if (ShadowFilterMode == SHADOW_FILTER_PCF_BOX)
+    if (ShadowFilterMode == SHADOW_FILTER_VSM)
+    {
+        shadowVisibility = SampleShadowAtlasVSM(rect, localUV, ndc.z, bias, tileSize);
+    }
+    else if (ShadowFilterMode == SHADOW_FILTER_ESM)
+    {
+        shadowVisibility = SampleShadowAtlasESM(rect, localUV, ndc.z, bias, tileSize);
+    }
+    else if (ShadowFilterMode == SHADOW_FILTER_PCF_BOX)
     {
         shadowVisibility = SampleShadowAtlasPCFBox(rect, localUV, ndc.z, bias, tileSize);
     }

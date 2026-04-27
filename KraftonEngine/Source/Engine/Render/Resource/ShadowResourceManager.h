@@ -18,9 +18,10 @@ public:
 	FShadowAtlasResource& GetAtlas() { return Atlas; }
 	const FShadowAtlasResource& GetAtlas() const { return Atlas; }
 	FAtlasResourceInfo AllocateFromAtlas();
-	bool ClearAtlas();
+	bool ClearAtlas(const FShadowRuntimeOptions& ShadowOptions);
 private:
-	bool CreateShadowMapAtlas(int Width, int Height);
+	bool EnsureShadowMapAtlas(uint32 Width, uint32 Height, const FShadowRuntimeOptions& ShadowOptions);
+	bool CreateShadowMapAtlas(uint32 Width, uint32 Height, const FShadowRuntimeOptions& ShadowOptions);
 	void EnsureDirectionalShadow(FDirectionalShadowData& Shadow, uint32 BaseResolution, const FShadowRuntimeOptions& ShadowOptions);
 	void EnsureSpotShadow(FSpotShadowData& Shadow, uint32 BaseResolution, const FShadowRuntimeOptions& ShadowOptions);
 	void EnsurePointShadow(FPointShadowData& Shadow, uint32 BaseResolution, const FShadowRuntimeOptions& ShadowOptions);
@@ -38,6 +39,9 @@ private:
 	ID3D11DeviceContext* CachedContext = nullptr;
 
 	FShadowAtlasResource Atlas;
+	EShadowFilterMode CurrentAtlasFilterMode = EShadowFilterMode::None;
+	uint32 CurrentAtlasWidth = 0;
+	uint32 CurrentAtlasHeight = 0;
 	uint32 Level = 0;
 	uint32 AtlasAllocSizeX = 512;
 	uint32 AtlasAllocSizeY = 512;

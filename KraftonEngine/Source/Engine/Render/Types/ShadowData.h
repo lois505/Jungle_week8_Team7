@@ -69,8 +69,6 @@ public:
 	FShadowViewData View[6];
 	int32 PreviewViewIndex = 0;
 
-
-
 public:
 
 	virtual FLocalShadowInfo ConvertToLocalShadowInfo(const FShadowAtlasResource& Atlas) const override

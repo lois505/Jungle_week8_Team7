@@ -1,4 +1,4 @@
-﻿#include "ShadowRenderer.h"
+#include "ShadowRenderer.h"
 
 #include "FrameContext.h"
 #include "ShadowPassContext.h"
@@ -28,7 +28,6 @@ namespace
 		DeviceContext->RSSetViewports(1, &Viewport);
 	}
 
-	//	View의 준비 상태를 체크
 	bool IsShadowViewReady(const FShadowViewData& View, const FShadowRuntimeOptions& ShadowOptions)
 	{
 		if (View.bAtlasAllocated)
@@ -36,7 +35,7 @@ namespace
 			return View.AtlasSizeX > 0 && View.AtlasSizeY > 0;
 		}
 
-		if (ShadowOptions.ShadowFilterMode == EShadowFilterMode::VSM || ShadowOptions.ShadowFilterMode == EShadowFilterMode::ESM)
+		if ((ShadowOptions.ShadowFilterMode == EShadowFilterMode::VSM || ShadowOptions.ShadowFilterMode == EShadowFilterMode::ESM))
 		{
 			return View.DepthMap.Texture && View.DepthMap.RTV && View.DepthMap.SRV
 				&& View.DepthMap.Width > 0 && View.DepthMap.Height > 0;
@@ -46,8 +45,15 @@ namespace
 			&& View.DepthMap.Width > 0 && View.DepthMap.Height > 0;
 	}
 
-	bool IsShadowAtlasReady(const FShadowAtlasResource& Atlas)
+	bool IsShadowAtlasReady(const FShadowAtlasResource& Atlas, const FShadowRuntimeOptions& ShadowOptions)
 	{
+		if ((ShadowOptions.ShadowFilterMode == EShadowFilterMode::VSM || ShadowOptions.ShadowFilterMode == EShadowFilterMode::ESM))
+		{
+			return Atlas.Map.Texture && Atlas.Map.RTV && Atlas.Map.SRV
+				&& Atlas.Map.DepthTexture && Atlas.Map.DSV
+				&& Atlas.Map.Width > 0 && Atlas.Map.Height > 0;
+		}
+
 		return Atlas.Map.DepthTexture && Atlas.Map.DSV && Atlas.Map.SRV && Atlas.Map.Width > 0 && Atlas.Map.Height > 0;
 	}
 
@@ -173,7 +179,12 @@ void FShadowRenderer::RenderShadowView(FD3DDevice& Device, FSystemResources& Res
 	PassContext.ViewProj = View.LightViewProj;
 
 	FShadowAtlasResource& Atlas = Resources.ShadowResourceManager.GetAtlas();
-	const bool bUseAtlas = View.bAtlasAllocated && IsShadowAtlasReady(Atlas);
+	const bool bUseAtlas = View.bAtlasAllocated && IsShadowAtlasReady(Atlas, ShadowOptions);
+
+	if (View.bAtlasAllocated && !bUseAtlas)
+	{
+		return;
+	}
 
 	if (!bUseAtlas && !IsShadowViewReady(View, ShadowOptions))
 	{
@@ -192,18 +203,36 @@ void FShadowRenderer::RenderShadowView(FD3DDevice& Device, FSystemResources& Res
 
 	if (bUseAtlas)
 	{
-		DeviceContext->OMSetRenderTargets(0, nullptr, Atlas.Map.DSV);
+		if ((ShadowOptions.ShadowFilterMode == EShadowFilterMode::VSM || ShadowOptions.ShadowFilterMode == EShadowFilterMode::ESM))
+		{
+			ID3D11RenderTargetView* RTV = Atlas.Map.RTV;
+			DeviceContext->OMSetRenderTargets(1, &RTV, Atlas.Map.DSV);
+		}
+		else
+		{
+			DeviceContext->OMSetRenderTargets(0, nullptr, Atlas.Map.DSV);
+		}
+
 		Resources.SetDepthStencilState(Device, EDepthStencilState::DepthGreaterEqual);
 	}
-	else if (ShadowOptions.ShadowFilterMode == EShadowFilterMode::VSM)
+	else if ((ShadowOptions.ShadowFilterMode == EShadowFilterMode::VSM || ShadowOptions.ShadowFilterMode == EShadowFilterMode::ESM))
 	{
 		ID3D11RenderTargetView* RTV = View.DepthMap.RTV;
-		DeviceContext->OMSetRenderTargets(1, &RTV, nullptr);
+		ID3D11DepthStencilView* DSV = View.DepthMap.DSV;
+		DeviceContext->OMSetRenderTargets(1, &RTV, DSV);
 
 		const float ClearColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
 		DeviceContext->ClearRenderTargetView(RTV, ClearColor);
 
-		Resources.SetDepthStencilState(Device, EDepthStencilState::NoDepth);
+		if (DSV)
+		{
+			DeviceContext->ClearDepthStencilView(DSV, D3D11_CLEAR_DEPTH, 0.0f, 0);
+			Resources.SetDepthStencilState(Device, EDepthStencilState::DepthGreaterEqual);
+		}
+		else
+		{
+			Resources.SetDepthStencilState(Device, EDepthStencilState::NoDepth);
+		}
 	}
 	else
 	{
@@ -220,7 +249,14 @@ void FShadowRenderer::RenderShadowView(FD3DDevice& Device, FSystemResources& Res
 
 	BindShadowFrameConstants(Device, Resources, PassContext);
 
-	FShaderManager::Get().GetOrCreate(EShaderPath::CommonShadowMap)->Bind(DeviceContext);
+	if ((ShadowOptions.ShadowFilterMode == EShadowFilterMode::VSM || ShadowOptions.ShadowFilterMode == EShadowFilterMode::ESM))
+	{
+		FShaderManager::Get().GetOrCreate(EShaderPath::MomentShadowMap)->Bind(DeviceContext);
+	}
+	else
+	{
+		FShaderManager::Get().GetOrCreate(EShaderPath::CommonShadowMap)->Bind(DeviceContext);
+	}
 
 	for (const FShadowDrawCommand& Cmd : Builder.GetCommands())
 	{
@@ -251,6 +287,13 @@ void FShadowRenderer::BindShadowFrameConstants(FD3DDevice& Device, FSystemResour
 	DeviceContext->VSSetConstantBuffers(ECBSlot::Frame, 1, &b0);
 	DeviceContext->PSSetConstantBuffers(ECBSlot::Frame, 1, &b0);
 	DeviceContext->CSSetConstantBuffers(ECBSlot::Frame, 1, &b0);
+
+	FLightingCBData ShadowPassLightingData = {};
+	ShadowPassLightingData.ShadowFilterMode = static_cast<uint32>(ShadowOptions.ShadowFilterMode);
+	Resources.LightingConstantBuffer.Update(DeviceContext, &ShadowPassLightingData, sizeof(FLightingCBData));
+
+	ID3D11Buffer* b4 = Resources.LightingConstantBuffer.GetBuffer();
+	DeviceContext->PSSetConstantBuffers(ECBSlot::Lighting, 1, &b4);
 }
 
 //	Draw Binding 로직 분리용
