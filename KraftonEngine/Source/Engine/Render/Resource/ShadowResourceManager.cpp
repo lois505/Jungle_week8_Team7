@@ -86,7 +86,10 @@ void FShadowResourceManager::EnsureDirectionalShadow(FDirectionalShadowData& Sha
 {
 	if (!Shadow.Settings.bCastShadows)
 	{
-		ReleaseShadowMapResource(Shadow.View.DepthMap);
+		for (int i = 0; i < Shadow.NUM_CASCADES; i++)
+		{
+			ReleaseShadowMapResource(Shadow.View[i].DepthMap);
+		}
 		return;
 	}
 
@@ -94,11 +97,17 @@ void FShadowResourceManager::EnsureDirectionalShadow(FDirectionalShadowData& Sha
 
 	if (ShadowOptions.ShadowFilterMode == EShadowFilterMode::VSM)
 	{
-		ResizeVSMShadowMapResource(Shadow.View.DepthMap, Resolution);
+		for (int i = 0; i < Shadow.NUM_CASCADES; i++)
+		{
+			ResizeVSMShadowMapResource(Shadow.View[i].DepthMap, Resolution);
+		}
 	}
 	else
 	{
-		ResizeDepthShadowMapResource(Shadow.View.DepthMap, Resolution);
+		for (int i = 0; i < Shadow.NUM_CASCADES; i++)
+		{
+			ResizeDepthShadowMapResource(Shadow.View[i].DepthMap, Resolution);
+		}
 	}
 }
 

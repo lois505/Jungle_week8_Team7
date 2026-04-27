@@ -9,4 +9,8 @@ public:
 	void ContributeSelectedVisuals(FScene& Scene) const;
 	virtual void PushToScene() override;
 	virtual void DestroyFromScene() override;
+
+protected:
+	virtual FMatrix GetViewMatrix() const override;
+	virtual FMatrix GetProjMatrix() const override;
 };

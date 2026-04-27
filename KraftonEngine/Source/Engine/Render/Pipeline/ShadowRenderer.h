@@ -25,7 +25,7 @@ public:
 
 private:
 	void RenderDirectionalShadow(FD3DDevice& Device, FSystemResources& Resources, FGlobalDirectionalLightParams& Light,
-		FScene& Scene);
+		FScene& Scene, const FFrameContext MainFrame);
 	void RenderPointShadow(FD3DDevice& Device, FSystemResources& Resources, FPointLightParams& Light, FScene& Scene);
 	void RenderSpotShadow(FD3DDevice& Device, FSystemResources& Resources, FSpotLightParams& Light, FScene& Scene);
 

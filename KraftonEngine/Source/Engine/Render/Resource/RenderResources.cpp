@@ -75,6 +75,7 @@ void FSystemResources::Create(ID3D11Device* InDevice, ID3D11DeviceContext* Conte
 {
 	FrameBuffer.Create(InDevice, sizeof(FFrameConstants));
 	LightingConstantBuffer.Create(InDevice, sizeof(FLightingCBData));
+	DirectionalShadowBuffer.Create(InDevice, sizeof(FDirectionalConstants));
 	ForwardLights.Create(InDevice, 32);
 	LocalShadows.Create(InDevice, 32);
 
@@ -148,12 +149,40 @@ void FSystemResources::UpdateLightAndShadowBuffer(FD3DDevice& Device, const FSce
 		GlobalLightingData.Ambient.Intensity = 0.15f;
 		GlobalLightingData.Ambient.Color = FVector4(1.0f, 1.0f, 1.0f, 1.0f);
 	}
+
+	const FShadowAtlasResource& ShadowAtlas = ShadowResourceManager.GetAtlas();
+
 	if (Env.HasGlobalDirectionalLight())
 	{
 		FGlobalDirectionalLightParams DirLightParams = Env.GetGlobalDirectionalLightParams();
 		GlobalLightingData.Directional.Intensity = DirLightParams.Intensity;
 		GlobalLightingData.Directional.Color = DirLightParams.LightColor;
 		GlobalLightingData.Directional.Direction = DirLightParams.Direction;
+
+		if (DirLightParams.ShadowData.Settings.bCastShadows)
+		{
+			const FDirectionalShadowData& ShadowData = DirLightParams.ShadowData;
+			FDirectionalConstants DirectionalCB = {};
+			DirectionalCB.NumcasCade = ShadowData.NUM_CASCADES;
+
+			for (int i = 0; i < ShadowData.NUM_CASCADES; i++)
+			{
+				const FShadowViewData& View = ShadowData.View[i];
+				DirectionalCB.DirLightViewProj[i] = View.LightViewProj.ConvertToPOD();
+				DirectionalCB.DirAtlasRect[i] = ShadowData.MakeAtlasRect(View, ShadowAtlas);
+				DirectionalCB.CascadeEndClip[i] = ShadowData.CascadeEndClipZ[i];
+			}
+
+			DirectionalCB.ShadowBias = DirLightParams.ShadowData.Settings.ShadowBias;
+			DirectionalCB.ShadowResolutionScale = DirLightParams.ShadowData.Settings.ShadowResolutionScale;
+			DirectionalCB.ShadowSlopeBias = DirLightParams.ShadowData.Settings.ShadowSlopeBias;
+			DirectionalCB.ShadowSharpen = DirLightParams.ShadowData.Settings.ShadowSharpen;
+
+			DirectionalShadowBuffer.Update(Ctx, &DirectionalCB, sizeof(FDirectionalConstants));
+			ID3D11Buffer* buf = DirectionalShadowBuffer.GetBuffer();
+			Ctx->PSSetConstantBuffers(ECBSlot::DirectionalShadow, 1, &buf);
+		}
+		
 	}
 
 	const uint32 NumPointLights = Env.GetNumPointLights();
@@ -166,7 +195,6 @@ void FSystemResources::UpdateLightAndShadowBuffer(FD3DDevice& Device, const FSce
 	LightInfos.reserve(NumPointLights + NumSpotLights);
 	ShadowInfos.reserve(NumPointLights + NumSpotLights);
 
-	const FShadowAtlasResource& ShadowAtlas = ShadowResourceManager.GetAtlas();
 	for (uint32 i = 0; i < NumPointLights; ++i)
 	{
 		const FPointLightParams& PointLight = Env.GetPointLight(i);

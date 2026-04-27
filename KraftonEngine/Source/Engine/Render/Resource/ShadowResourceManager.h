@@ -38,6 +38,7 @@ private:
 	ID3D11DeviceContext* CachedContext = nullptr;
 
 	FShadowAtlasResource Atlas;
+
 	uint32 Level = 0;
 	uint32 AtlasAllocSizeX = 512;
 	uint32 AtlasAllocSizeY = 512;

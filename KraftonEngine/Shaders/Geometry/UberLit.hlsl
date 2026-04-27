@@ -10,6 +10,8 @@
 //   LIGHTING_MODEL_UNLIT   1  — 라이팅 없음 (Albedo + Wireframe)
 // =============================================================================
 
+#define DEBUG_CASCADES 0  // 캐스케이드 디버그 색상: 0=off, 1=on
+
 #include "Common/Functions.hlsli"
 #include "Common/VertexLayouts.hlsli"
 #include "Common/SystemSamplers.hlsli"

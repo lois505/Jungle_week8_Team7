@@ -109,6 +109,19 @@ cbuffer LightingBuffer : register(b4)
     uint Pad;
 };
 
+cbuffer DirectionalShadowBuffer : register(b5)
+{
+    float4x4 DirLightViewProj[4];
+    float4 DirAtlasRect[4];
+    float4 CascadesEndClip; // float[4] 배열은 레지스터당 1개(64B)라 float4(16B)로 선언
+    int NumCascades;
+    float ShadowResolutionScale;
+    float ShadowBias;
+    float ShadowSlopeBias;
+    float ShadowSharpen;
+    float3 _Pad;
+}
+
 // ── Structured Buffers (t8~t10) ──
 StructuredBuffer<FLightInfo> AllLights : register(t8);
 StructuredBuffer<uint> TileLightIndices : register(t9);

@@ -4,6 +4,7 @@
 
 #include "ImGui/imgui.h"
 #include "Component/GizmoComponent.h"
+#include "Component/Light/DirectionalLightComponent.h"
 #include "Component/Light/PointLightComponent.h"
 #include "Component/Light/SpotLightComponent.h"
 #include "Component/PrimitiveComponent.h"
@@ -335,6 +336,11 @@ void FEditorPropertyWidget::RenderActorProperties(AActor* PrimaryActor, const TA
 
 	for (UActorComponent* Component : PrimaryActor->GetComponents())
 	{
+		if (Component && Component->IsA<UDirectionalLightComponent>())
+		{
+			RenderDirectionalLightShadowPreview(static_cast<UDirectionalLightComponent*>(Component));
+			break;
+		}
 		if (Component && Component->IsA<USpotLightComponent>())
 		{
 			RenderSpotLightShadowPreview(static_cast<USpotLightComponent*>(Component));
@@ -568,6 +574,55 @@ void FEditorPropertyWidget::RenderComponentProperties(AActor* Actor, const TArra
 	{
 		RenderPointLightShadowPreview(static_cast<UPointLightComponent*>(SelectedComponent));
 	}
+}
+
+void FEditorPropertyWidget::RenderDirectionalLightShadowPreview(UDirectionalLightComponent* DirLight)
+{
+	if (!DirLight || !DirLight->GetOwner() || !DirLight->GetOwner()->GetWorld())
+	{
+		return;
+	}
+
+	FSceneEnvironment& Env = DirLight->GetOwner()->GetWorld()->GetScene().GetEnvironment();
+	if (!Env.HasGlobalDirectionalLight())
+	{
+		return;
+	}
+
+	FGlobalDirectionalLightParams& Params = Env.GetGlobalDirectionalLightParams();
+
+	ImGui::Separator();
+	ImGui::Text("Directional Light Shadow Map (CSM)");
+
+	if (!Params.ShadowData.Settings.bCastShadows)
+	{
+		ImGui::TextDisabled("Cast Shadows is disabled.");
+		return;
+	}
+
+	static int PreviewCascadeIndex = 0;
+	const char* CascadeNames[FDirectionalShadowData::NUM_CASCADES] = { "Cascade 0", "Cascade 1", "Cascade 2", "Cascade 3"};
+	ImGui::Text("Cascade");
+	ImGui::SameLine(120);
+	ImGui::SetNextItemWidth(-1.0f);
+	if (ImGui::BeginCombo("##DirShadowCascade", CascadeNames[PreviewCascadeIndex]))
+	{
+		for (int i = 0; i < FDirectionalShadowData::NUM_CASCADES; ++i)
+		{
+			const bool bSelected = (PreviewCascadeIndex == i);
+			if (ImGui::Selectable(CascadeNames[i], bSelected))
+			{
+				PreviewCascadeIndex = i;
+			}
+			if (bSelected)
+			{
+				ImGui::SetItemDefaultFocus();
+			}
+		}
+		ImGui::EndCombo();
+	}
+
+	RenderShadowMapPreviewImage(Params.ShadowData.Settings, Params.ShadowData.View[PreviewCascadeIndex]);
 }
 
 void FEditorPropertyWidget::RenderPointLightShadowPreview(UPointLightComponent* PointLight)

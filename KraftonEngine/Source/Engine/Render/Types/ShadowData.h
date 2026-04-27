@@ -74,9 +74,12 @@ public:
 
 struct FDirectionalShadowData : FShadowCommonData
 {
-	FShadowViewData View;
+	static constexpr  int NUM_CASCADES = 4;
 
-	//	TODO : CSM 관련은 이 곳에 작성하는게 맞지 않을까요?
+	float DistributeExponent = 0.95f;
+	FShadowViewData View[NUM_CASCADES];
+	float CasCadeEnds[NUM_CASCADES + 1];
+	float CascadeEndClipZ[NUM_CASCADES];
 };
 
 struct FPointShadowData : FShadowCommonData

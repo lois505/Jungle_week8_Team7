@@ -409,6 +409,23 @@ FMatrix FMatrix::MakeProjectionMatrix(float FOV, float NearZ, float FarZ, float 
 	}
 }
 
+FMatrix FMatrix::MakeOrtho(
+	float MinX, float MaxX,
+	float MinY, float MaxY,
+	float MinZ, float MaxZ)
+{
+	float W = MaxX - MinX;
+	float H = MaxY - MinY;
+	float D = MinZ - MaxZ; // Reversed-Z: Near - Far
+
+	return FMatrix(
+		2.f / W, 0, 0, 0,
+		0, 2.f / H, 0, 0,
+		0, 0, 1.f / D, 0,
+		-(MaxX + MinX) / W, -(MaxY + MinY) / H, -MaxZ / D, 1
+	);
+}
+
 FMatrix FMatrix::GetCancelRotationMatrix(const FMatrix& InMatrix)
 {
 	FMatrix ret = FMatrix::Identity;
@@ -473,6 +490,32 @@ FVector FMatrix::TransformVector(const FVector& vector) const
 		vector.X * M[0][0] + vector.Y * M[1][0] + vector.Z * M[2][0],
 		vector.X * M[0][1] + vector.Y * M[1][1] + vector.Z * M[2][1],
 		vector.X * M[0][2] + vector.Y * M[1][2] + vector.Z * M[2][2]
+	);
+#endif
+}
+
+FVector4 FMatrix::TransformVector4(const FVector4& V) const
+{
+#if defined(_XM_SSE_INTRINSICS_) || defined(__SSE__)
+	__m128 vX = _mm_set1_ps(V.X);
+	__m128 vY = _mm_set1_ps(V.Y);
+	__m128 vZ = _mm_set1_ps(V.Z);
+	__m128 vW = _mm_set1_ps(V.W);
+
+	__m128 res = _mm_add_ps(
+		_mm_add_ps(_mm_mul_ps(vX, row[0]), _mm_mul_ps(vY, row[1])),
+		_mm_add_ps(_mm_mul_ps(vZ, row[2]), _mm_mul_ps(vW, row[3]))
+	);
+
+	FVector4 Out;
+	_mm_storeu_ps(&Out.X, res);
+	return Out;
+#else
+	return FVector4(
+		V.X * M[0][0] + V.Y * M[1][0] + V.Z * M[2][0] + V.W * M[3][0],
+		V.X * M[0][1] + V.Y * M[1][1] + V.Z * M[2][1] + V.W * M[3][1],
+		V.X * M[0][2] + V.Y * M[1][2] + V.Z * M[2][2] + V.W * M[3][2],
+		V.X * M[0][3] + V.Y * M[1][3] + V.Z * M[2][3] + V.W * M[3][3]
 	);
 #endif
 }
