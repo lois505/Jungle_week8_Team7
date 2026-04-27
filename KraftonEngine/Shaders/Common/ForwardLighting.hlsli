@@ -5,9 +5,50 @@
 #include "Common/SystemSamplers.hlsli"
 #include "Common/SystemResources.hlsli"
 
+#pragma region __FILTERING_MODE__
+
+#define NONE 0
+#define PCF 1
+#define VSM 2
+#define ESM 3
+
+#pragma endregion
+
 float SampleShadowAtlas(float2 uv)
 {
     return ShadowMapAtlasTexture.SampleLevel(PointClampSampler, uv, 0).r;
+}
+
+//  PCF (주변 픽셀을 다 더하고 평균내어 결정)
+//  rect : xy(top-left), zw(bottom-right)
+float SampleShadowAtlasPCF(float4 rect,float2 localUV, float currentDepth, float bias, float2 atlasTileSize)
+{
+    //  output means visibility
+    float output = 0.0f;
+    
+    float2 texelInTile = 1.0f / atlasTileSize;
+    
+    
+    [unroll]
+    for (int y = -1; y <= 1; y++)
+    {
+        [unroll]
+        for (int x = -1; x <= 1; x++)
+        {
+            float2 sampleLocalUV = localUV + float2(x,y) * texelInTile;
+            
+            sampleLocalUV = clamp(sampleLocalUV, texelInTile * 0.5f, 1.0f - texelInTile * 0.5f);
+            
+            float2 uv = rect.xy + sampleLocalUV * rect.zw;
+            
+            float storedDepth = ShadowMapAtlasTexture.SampleLevel(PointClampSampler, uv, 0).r;
+            
+            output += (currentDepth + bias >= storedDepth) ? 1.0f : 0.0f;
+        }
+    }
+    
+    //  Average
+    return output / 9.0f;
 }
 
 float2 ProjectToShadowUV(float4 lightClip)
@@ -20,6 +61,7 @@ bool IsValidShadowRect(float4 rect)
 {
     return rect.z > 0.0f && rect.w > 0.0f;
 }
+
 
 float CalcShadowFromView(FLocalShadowInfo shadow, uint viewIndex, float3 worldPos)
 {
@@ -50,10 +92,22 @@ float CalcShadowFromView(FLocalShadowInfo shadow, uint viewIndex, float3 worldPo
     localUV = clamp(localUV, halfTexelInTile, 1.0f - halfTexelInTile);
 
     float2 atlasUV = rect.xy + localUV * rect.zw;
-    float storedDepth = SampleShadowAtlas(atlasUV);
+    
+    switch (ShadowFilterMode)
+    {
+    case PCF :
+        {
+            return SampleShadowAtlasPCF(rect, localUV, ndc.z, shadow.Bias, tileSize);    
+        }
+    case NONE :
+    default:
+        {
+            float storedDepth = SampleShadowAtlas(atlasUV);
 
-    // This renderer uses reversed depth for shadow maps: clear 0, DepthGreaterEqual.
-    return (ndc.z + shadow.Bias >= storedDepth) ? 1.0f : 0.0f;
+            // This renderer uses reversed depth for shadow maps: clear 0, DepthGreaterEqual.
+            return (ndc.z + shadow.Bias >= storedDepth) ? 1.0f : 0.0f;   
+        }
+    }
 }
 
 uint SelectPointShadowFace(float3 lightToPixel)

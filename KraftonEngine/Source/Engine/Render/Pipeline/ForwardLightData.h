@@ -98,7 +98,7 @@ struct FLightingCBData
 	uint32  LightCullingMode;                  //  4B  | offset 112
 	uint32  VisualizeLightCulling;             //  4B  | offset 116
 	float   HeatMapMax;                        //  4B  | offset 120
-	uint32  _padFlags[1];                      //  4B  | offset 124 → 합계 128B
+	uint32  ShadowFilterMode;                  //  4B  | offset 124 → 합계 128B
 };
 static_assert(sizeof(FLightingCBData) % 16 == 0, "FLightingCBData must be 16-byte aligned");
 static_assert(sizeof(FLightingCBData) == 128, "FLightingCBData size mismatch with HLSL");

@@ -92,7 +92,7 @@ void FRenderer::Render(const FFrameContext& Frame, FScene& Scene)
 		ClusterState.ScreenWidth = static_cast<uint32>(Frame.ViewportWidth);
 		ClusterState.ScreenHeight = static_cast<uint32>(Frame.ViewportHeight);
 
-		Resources.UpdateLightAndShadowBuffer(Device, Scene, Frame, &ClusterState);
+		Resources.UpdateLightAndShadowBuffer(Device, Scene, Frame, ShadowRenderer.GetRuntimeOptions(), &ClusterState);
 	}
 
 	// 시스템 샘플러 영구 바인딩 (s0-s2)

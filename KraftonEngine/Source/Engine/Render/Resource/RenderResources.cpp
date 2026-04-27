@@ -7,7 +7,6 @@
 #include "Engine/Runtime/Engine.h"
 #include "Profiling/Timer.h"
 
-
 void FTileCullingResource::Create(ID3D11Device* Dev, uint32 InTileCountX, uint32 InTileCountY)
 {
 	Release();
@@ -129,7 +128,7 @@ void FSystemResources::UpdateFrameBuffer(FD3DDevice& Device, const FFrameContext
 	Ctx->CSSetConstantBuffers(ECBSlot::Frame, 1, &b0);
 }
 
-void FSystemResources::UpdateLightAndShadowBuffer(FD3DDevice& Device, const FScene& Scene, const FFrameContext& Frame, const FClusterCullingState* ClusterState)
+void FSystemResources::UpdateLightAndShadowBuffer(FD3DDevice& Device, const FScene& Scene, const FFrameContext& Frame, const FShadowRuntimeOptions& ShadowOptions, const FClusterCullingState* ClusterState)
 {
 	ID3D11Device* Dev = Device.GetDevice();
 	ID3D11DeviceContext* Ctx = Device.GetDeviceContext();
@@ -187,6 +186,8 @@ void FSystemResources::UpdateLightAndShadowBuffer(FD3DDevice& Device, const FSce
 	GlobalLightingData.LightCullingMode = static_cast<uint32>(Frame.RenderOptions.LightCullingMode);
 	GlobalLightingData.VisualizeLightCulling = Frame.RenderOptions.ViewMode == EViewMode::LightCulling ? 1u : 0u;
 	GlobalLightingData.HeatMapMax = Frame.RenderOptions.HeatMapMax;
+	GlobalLightingData.ShadowFilterMode = static_cast<uint32>(ShadowOptions.ShadowFilterMode);
+	
 	if (ClusterState)
 	{
 		GlobalLightingData.ClusterCullingState = *ClusterState;

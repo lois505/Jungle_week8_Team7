@@ -106,7 +106,7 @@ cbuffer LightingBuffer : register(b4)
     uint LightCullingMode;
     uint VisualizeLightCulling;
     float HeatMapMax;
-    uint Pad;
+    uint ShadowFilterMode;
 };
 
 // ── Structured Buffers (t8~t10) ──

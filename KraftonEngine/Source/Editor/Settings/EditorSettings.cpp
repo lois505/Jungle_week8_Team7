@@ -10,6 +10,7 @@ namespace Key
 	// Section
 	constexpr const char* Viewport = "Viewport";
 	constexpr const char* Paths = "Paths";
+	constexpr const char* Shadow = "Shadow";
 
 	// Viewport
 	constexpr const char* CameraSpeed = "CameraSpeed";
@@ -40,6 +41,10 @@ namespace Key
 	// Paths
 	constexpr const char* EditorStartLevel = "EditorStartLevel";
 	constexpr const char* ContentBrowserPath = "ContentBrowserPath";
+
+	// Shadow
+	constexpr const char* ShadowFilterMode = "ShadowFilterMode";
+	constexpr const char* DirectionalShadowMode = "DirectionalShadowMode";
 
 	// Layout
 	constexpr const char* Layout = "Layout";
@@ -90,6 +95,12 @@ void FEditorSettings::SaveToFile(const FString& Path) const
 	PathsObj[Key::EditorStartLevel] = EditorStartLevel;
 	PathsObj[Key::ContentBrowserPath] = ContentBrowserPath;
 	Root[Key::Paths] = PathsObj;
+
+	// Shadow
+	JSON ShadowObj = Object();
+	ShadowObj[Key::ShadowFilterMode] = static_cast<int32>(ShadowFilterMode);
+	ShadowObj[Key::DirectionalShadowMode] = static_cast<int32>(DirectionalShadowMode);
+	Root[Key::Shadow] = ShadowObj;
 
 	// Layout
 	JSON LayoutObj = Object();
@@ -218,6 +229,17 @@ void FEditorSettings::LoadFromFile(const FString& Path)
 			EditorStartLevel = PathsObj[Key::EditorStartLevel].ToString();
 		if (PathsObj.hasKey(Key::ContentBrowserPath))
 			ContentBrowserPath = PathsObj[Key::ContentBrowserPath].ToString();
+	}
+
+	// Shadow
+	if (Root.hasKey(Key::Shadow))
+	{
+		JSON ShadowObj = Root[Key::Shadow];
+
+		if (ShadowObj.hasKey(Key::ShadowFilterMode))
+			ShadowFilterMode = static_cast<EShadowFilterMode>(ShadowObj[Key::ShadowFilterMode].ToInt());
+		if (ShadowObj.hasKey(Key::DirectionalShadowMode))
+			DirectionalShadowMode = static_cast<EDirectionalShadowMode>(ShadowObj[Key::DirectionalShadowMode].ToInt());
 	}
 
 	// Layout

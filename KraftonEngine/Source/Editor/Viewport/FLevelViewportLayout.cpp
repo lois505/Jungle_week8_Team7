@@ -968,6 +968,55 @@ void FLevelViewportLayout::RenderPaneToolbar(int32 SlotIndex)
 				ImGui::Checkbox("Enable2.5DCulling", &Opts.Enable25DCulling);
 				ImGui::Checkbox("Visualize2.5DCulling", &Opts.ShowFlags.bVisualize25DCulling);
 
+				ImGui::Separator();
+
+				// Renderer-wide shadow settings
+				ImGui::Text("Shadow");
+				FEditorSettings& Settings = FEditorSettings::Get();
+				FShadowRuntimeOptions ShadowOptions;
+				if (GEngine)
+				{
+					ShadowOptions = GEngine->GetRenderer().GetRuntimeOptions();
+				}
+				else
+				{
+					ShadowOptions.ShadowFilterMode = Settings.ShadowFilterMode;
+					ShadowOptions.DirectionalShadowMode = Settings.DirectionalShadowMode;
+				}
+
+				int32 ShadowFilterMode = static_cast<int32>(ShadowOptions.ShadowFilterMode);
+				ImGui::RadioButton("None##ShadowFilterMode", &ShadowFilterMode, static_cast<int32>(EShadowFilterMode::None));
+				ImGui::SameLine();
+				ImGui::RadioButton("PCF##ShadowFilterMode", &ShadowFilterMode, static_cast<int32>(EShadowFilterMode::PCF));
+				ImGui::SameLine();
+				ImGui::RadioButton("VSM##ShadowFilterMode", &ShadowFilterMode, static_cast<int32>(EShadowFilterMode::VSM));
+				ImGui::SameLine();
+				ImGui::RadioButton("ESM##ShadowFilterMode", &ShadowFilterMode, static_cast<int32>(EShadowFilterMode::ESM));
+				
+				if (ShadowFilterMode != static_cast<int32>(ShadowOptions.ShadowFilterMode))
+				{
+					Settings.ShadowFilterMode = static_cast<EShadowFilterMode>(ShadowFilterMode);
+					if (GEngine)
+					{
+						GEngine->GetRenderer().SetShadowFilterMode(Settings.ShadowFilterMode);
+						ShadowOptions = GEngine->GetRenderer().GetRuntimeOptions();
+					}
+				}
+
+				int32 DirectionalShadowMode = static_cast<int32>(ShadowOptions.DirectionalShadowMode);
+				ImGui::RadioButton("Single##DirectionalShadowMode", &DirectionalShadowMode, static_cast<int32>(EDirectionalShadowMode::Single));
+				ImGui::SameLine();
+				ImGui::RadioButton("CSM##DirectionalShadowMode", &DirectionalShadowMode, static_cast<int32>(EDirectionalShadowMode::CSM));
+
+				if (DirectionalShadowMode != static_cast<int32>(ShadowOptions.DirectionalShadowMode))
+				{
+					Settings.DirectionalShadowMode = static_cast<EDirectionalShadowMode>(DirectionalShadowMode);
+					if (GEngine)
+					{
+						GEngine->GetRenderer().SetDirectionalShadowMode(Settings.DirectionalShadowMode);
+					}
+				}
+
 				ImGui::EndPopup();
 			}
 		} // SlotIndex guard
@@ -1022,6 +1071,13 @@ void FLevelViewportLayout::SaveToSettings()
 			S.PerspCamFarClip = CS.FarZ;
 		}
 	}
+
+	if (GEngine)
+	{
+		const FShadowRuntimeOptions& ShadowOptions = GEngine->GetRenderer().GetRuntimeOptions();
+		S.ShadowFilterMode = ShadowOptions.ShadowFilterMode;
+		S.DirectionalShadowMode = ShadowOptions.DirectionalShadowMode;
+	}
 }
 
 void FLevelViewportLayout::LoadFromSettings()
@@ -1057,6 +1113,12 @@ void FLevelViewportLayout::LoadFromSettings()
 
 		// ViewportType에 따라 카메라 ortho/방향 설정
 		VC->SetViewportType(S.SlotOptions[i].ViewportType);
+	}
+
+	if (GEngine)
+	{
+		GEngine->GetRenderer().SetShadowFilterMode(S.ShadowFilterMode);
+		GEngine->GetRenderer().SetDirectionalShadowMode(S.DirectionalShadowMode);
 	}
 
 	// Splitter 비율 복원

@@ -5,6 +5,7 @@
 #include "Core/Singleton.h"
 #include "Math/Vector.h"
 #include "Math/Rotator.h"
+#include "Render/Types/RenderTypes.h"
 #include "Render/Types/ViewTypes.h"
 
 class FEditorSettings : public TSingleton<FEditorSettings>
@@ -31,6 +32,10 @@ public:
 	float PerspCamFOV = 60.0f;
 	float PerspCamNearClip = 0.1f;
 	float PerspCamFarClip = 1000.0f;
+
+	// Renderer-wide shadow options
+	EShadowFilterMode ShadowFilterMode = EShadowFilterMode::None;
+	EDirectionalShadowMode DirectionalShadowMode = EDirectionalShadowMode::Single;
 
 	// File paths
 	FString EditorStartLevel;  // 비어있으면 빈 씬, 씬 파일명(확장자 제외)이면 자동 로드
