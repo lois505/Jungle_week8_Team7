@@ -1,33 +1,10 @@
 ﻿#pragma once
 #include "Render/Device/D3DDevice.h"
 #include "Render/Types/ShadowData.h"
-
+#include "Render/Resource/ShadowAtlasResource.h"
 struct FSpotShadowData;
 struct FDirectionalShadowData;
 class FSceneEnvironment;
-
-struct FShadowAtlasResource
-{
-	ID3D11Texture2D* Texture = nullptr;
-	ID3D11DepthStencilView* DSV = nullptr;
-	ID3D11ShaderResourceView* SRV = nullptr;
-
-	uint32 Width = 0;
-	uint32 Height = 0;
-
-	uint32 CursorX = 0;
-	uint32 CursorY = 0;
-};
-
-struct FAtlasResourceInfo
-{
-	uint32 OffsetX = 0;
-	uint32 OffsetY = 0;
-	uint32 Width = 0;
-	uint32 Height = 0;
-	uint32 Index = 0;
-	bool bAllocated = false;
-};
 
 class FShadowResourceManager
 {
@@ -56,14 +33,9 @@ private:
 
 	void ReleaseShadowMapResource(FShadowMapResource& InMap);
 
-
-
-
-
 private:
 	ID3D11Device* CachedDevice = nullptr;
 	ID3D11DeviceContext* CachedContext = nullptr;
-
 
 	FShadowAtlasResource Atlas;
 	uint32 Level = 0;

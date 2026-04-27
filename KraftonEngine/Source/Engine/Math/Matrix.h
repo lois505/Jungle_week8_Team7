@@ -9,6 +9,12 @@
 #include <immintrin.h>  // GCC / Clang
 #endif
 
+struct FMatrixPOD
+{
+public:
+	float M[4][4];
+};
+
 struct FMatrix {
 	static const FMatrix Identity;
 
@@ -25,6 +31,19 @@ struct FMatrix {
 		// AVX
 		__m256 _rowin256[2];
 	};
+
+	FMatrixPOD ConvertToPOD() const
+	{
+		FMatrixPOD POD;
+		for (int i = 0;i < 4;++i)
+		{
+			for (int j = 0;j < 4;++j)
+			{
+				POD.M[i][j] = M[i][j];
+			}
+		}
+		return POD;
+	}
 
 	// Default constructor (Zero matrix)
 	FMatrix() {

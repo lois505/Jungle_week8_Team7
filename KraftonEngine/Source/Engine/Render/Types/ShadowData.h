@@ -2,6 +2,9 @@
 
 #include "Core/CoreTypes.h"
 #include "Math/Matrix.h"
+#include "Render/Resource/ShadowAtlasResource.h"
+#include "Render/Resource/LocalShadowInfo.h"
+#include "Render/Pipeline/ForwardLightData.h"
 
 struct ID3D11DepthStencilView;
 struct ID3D11RenderTargetView;
@@ -47,8 +50,26 @@ struct FShadowViewData
 
 struct FShadowCommonData
 {
+public:
+
 	FLightShadowSettings Settings;
 	bool bOverrideCameraWithLight = false;
+
+public:
+	FVector4 MakeAtlasRect(const FShadowViewData& View, const FShadowAtlasResource& Atlas) const
+	{
+		if (!View.bAtlasAllocated || Atlas.Width == 0 || Atlas.Height == 0)
+		{
+			return FVector4(0.0f, 0.0f, 0.0f, 0.0f);
+		}
+
+		return FVector4(
+			static_cast<float>(View.AtlasOffsetX) / static_cast<float>(Atlas.Width),
+			static_cast<float>(View.AtlasOffsetY) / static_cast<float>(Atlas.Height),
+			static_cast<float>(View.AtlasSizeX) / static_cast<float>(Atlas.Width),
+			static_cast<float>(View.AtlasSizeY) / static_cast<float>(Atlas.Height));
+	}
+	virtual FLocalShadowInfo ConvertToLocalShadowInfo(const FShadowAtlasResource& Atlas) const { return FLocalShadowInfo(); }
 };
 
 struct FDirectionalShadowData : FShadowCommonData
@@ -60,12 +81,51 @@ struct FDirectionalShadowData : FShadowCommonData
 
 struct FPointShadowData : FShadowCommonData
 {
+public:
+
 	FShadowViewData View[6];
 	int32 PreviewViewIndex = 0;
+
+
+
+public:
+
+	virtual FLocalShadowInfo ConvertToLocalShadowInfo(const FShadowAtlasResource& Atlas) const override
+	{
+		FLocalShadowInfo Info = {};
+		Info.CastShadow = Settings.bCastShadows ? 1u : 0u;
+		Info.ShadowType = ELightType::Point;
+		Info.Bias = Settings.ShadowBias;
+
+		for (int32 FaceIndex = 0; FaceIndex < 6; ++FaceIndex)
+		{
+			const FShadowViewData& ViewData = View[FaceIndex];
+			Info.LightViewProj[FaceIndex] = ViewData.LightViewProj.ConvertToPOD();
+			Info.AtlasRect[FaceIndex] = MakeAtlasRect(ViewData, Atlas);
+			Info.CastShadow &= ViewData.bAtlasAllocated ? 1u : 0u;
+		}
+
+		return Info;
+	}
+
 };
 
 struct FSpotShadowData : FShadowCommonData
 {
+public:
 	FShadowViewData View;
+
+
+public:
+	virtual FLocalShadowInfo ConvertToLocalShadowInfo(const FShadowAtlasResource& Atlas) const override
+	{
+		FLocalShadowInfo Info = {};
+		Info.CastShadow = (Settings.bCastShadows && View.bAtlasAllocated) ? 1u : 0u;
+		Info.ShadowType = ELightType::Spot;
+		Info.Bias = Settings.ShadowBias;
+		Info.LightViewProj[0] = View.LightViewProj.ConvertToPOD();
+		Info.AtlasRect[0] = MakeAtlasRect(View, Atlas);
+		return Info;
+	}
 };
 

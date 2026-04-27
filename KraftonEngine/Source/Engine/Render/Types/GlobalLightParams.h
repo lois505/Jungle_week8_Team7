@@ -48,6 +48,8 @@ struct FPointLightParams : FLightBaseParams
 		Info.LightType = LightType;
 		return Info;
 	}
+
+
 };
 
 struct FSpotLightParams : FPointLightParams

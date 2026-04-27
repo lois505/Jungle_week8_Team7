@@ -94,9 +94,11 @@ void FShadowRenderer::RenderShadows(FD3DDevice& Device, FSystemResources& Resour
 		{
 			for (int32 FaceIndex = 0; FaceIndex < 6; ++FaceIndex)
 			{
+				//Get Available Atals Infomation(Offset, Size) From ShadowResourceManager. After that, Assign to PointLightParam
 				AssignAtlasRect(Params.ShadowData.View[FaceIndex], Resources.ShadowResourceManager.AllocateFromAtlas());
 			}
 		}
+		//Draw To Shadow Atlas | (Inside) RenderShadowView Decide if Light will drawn to Atals or just single DSV
 		RenderPointShadow(Device, Resources, Env.GetPointLight(i), Scene);
 	}
 
@@ -105,8 +107,10 @@ void FShadowRenderer::RenderShadows(FD3DDevice& Device, FSystemResources& Resour
 		FSpotLightParams& Params = Env.GetSpotLight(i);
 		if (Params.ShadowData.Settings.bCastShadows)
 		{
+			//Get Available Atals Infomation(Offset, Size) From ShadowResourceManager and Assign to SpotLightParams
 			AssignAtlasRect(Params.ShadowData.View, Resources.ShadowResourceManager.AllocateFromAtlas());
 		}
+		//Draw To Shadow Atlas | (Inside)  RenderShadowView Decide if Light will drawn to Atals or just single DSV
 		RenderSpotShadow(Device, Resources, Env.GetSpotLight(i), Scene);
 	}
 

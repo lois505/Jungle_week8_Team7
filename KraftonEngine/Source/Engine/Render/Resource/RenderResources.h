@@ -3,7 +3,7 @@
 #include "Render/Resource/Buffer.h"
 #include "Render/Pipeline/RenderConstants.h"
 #include "Render/Pipeline/ForwardLightData.h"
-#include "Render/Pipeline/LocalShadowInfo.h"
+#include "Render/Resource/LocalShadowInfo.h"
 
 #include "Render/Resource/RasterizerStateManager.h"
 #include "Render/Resource/DepthStencilStateManager.h"
@@ -186,7 +186,7 @@ struct FSystemResources
 	void UpdateFrameBuffer(FD3DDevice& Device, const FFrameContext& Frame);
 
 	// 라이팅 CB + StructuredBuffer 업데이트 + 바인딩 (b4, t8)
-	void UpdateLightBuffer(FD3DDevice& Device, const FScene& Scene, const FFrameContext& Frame, const FClusterCullingState* ClusterState = nullptr);
+	void UpdateLightAndShadowBuffer(FD3DDevice& Device, const FScene& Scene, const FFrameContext& Frame, const FClusterCullingState* ClusterState = nullptr);
 
 	// s0-s2 시스템 샘플러 일괄 바인딩 (프레임 1회)
 	void BindSystemSamplers(FD3DDevice& Device);

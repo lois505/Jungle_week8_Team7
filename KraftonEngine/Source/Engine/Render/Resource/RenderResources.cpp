@@ -7,51 +7,6 @@
 #include "Engine/Runtime/Engine.h"
 #include "Profiling/Timer.h"
 
-namespace
-{
-	FVector4 MakeAtlasRect(const FShadowViewData& View, const FShadowAtlasResource& Atlas)
-	{
-		if (!View.bAtlasAllocated || Atlas.Width == 0 || Atlas.Height == 0)
-		{
-			return FVector4(0.0f, 0.0f, 0.0f, 0.0f);
-		}
-
-		return FVector4(
-			static_cast<float>(View.AtlasOffsetX) / static_cast<float>(Atlas.Width),
-			static_cast<float>(View.AtlasOffsetY) / static_cast<float>(Atlas.Height),
-			static_cast<float>(View.AtlasSizeX) / static_cast<float>(Atlas.Width),
-			static_cast<float>(View.AtlasSizeY) / static_cast<float>(Atlas.Height));
-	}
-
-	FLocalShadowInfo MakePointShadowInfo(const FPointLightParams& Light, const FShadowAtlasResource& Atlas)
-	{
-		FLocalShadowInfo Info = {};
-		Info.CastShadow = Light.ShadowData.Settings.bCastShadows ? 1u : 0u;
-		Info.ShadowType = ELightType::Point;
-		Info.Bias = Light.ShadowData.Settings.ShadowBias;
-
-		for (int32 FaceIndex = 0; FaceIndex < 6; ++FaceIndex)
-		{
-			const FShadowViewData& View = Light.ShadowData.View[FaceIndex];
-			Info.LightViewProj[FaceIndex] = View.LightViewProj;
-			Info.AtlasRect[FaceIndex] = MakeAtlasRect(View, Atlas);
-			Info.CastShadow &= View.bAtlasAllocated ? 1u : 0u;
-		}
-
-		return Info;
-	}
-
-	FLocalShadowInfo MakeSpotShadowInfo(const FSpotLightParams& Light, const FShadowAtlasResource& Atlas)
-	{
-		FLocalShadowInfo Info = {};
-		Info.CastShadow = (Light.ShadowData.Settings.bCastShadows && Light.ShadowData.View.bAtlasAllocated) ? 1u : 0u;
-		Info.ShadowType = ELightType::Spot;
-		Info.Bias = Light.ShadowData.Settings.ShadowBias;
-		Info.LightViewProj[0] = Light.ShadowData.View.LightViewProj;
-		Info.AtlasRect[0] = MakeAtlasRect(Light.ShadowData.View, Atlas);
-		return Info;
-	}
-}
 
 void FTileCullingResource::Create(ID3D11Device* Dev, uint32 InTileCountX, uint32 InTileCountY)
 {
@@ -174,9 +129,7 @@ void FSystemResources::UpdateFrameBuffer(FD3DDevice& Device, const FFrameContext
 	Ctx->CSSetConstantBuffers(ECBSlot::Frame, 1, &b0);
 }
 
-//void FSystemResources::UpdateFrameBufferAsLightView(FD3DDevice& Device, const )
-
-void FSystemResources::UpdateLightBuffer(FD3DDevice& Device, const FScene& Scene, const FFrameContext& Frame, const FClusterCullingState* ClusterState)
+void FSystemResources::UpdateLightAndShadowBuffer(FD3DDevice& Device, const FScene& Scene, const FFrameContext& Frame, const FClusterCullingState* ClusterState)
 {
 	ID3D11Device* Dev = Device.GetDevice();
 	ID3D11DeviceContext* Ctx = Device.GetDeviceContext();
@@ -219,14 +172,14 @@ void FSystemResources::UpdateLightBuffer(FD3DDevice& Device, const FScene& Scene
 		const FPointLightParams& PointLight = Env.GetPointLight(i);
 
 		LightInfos.emplace_back(PointLight.ToLightInfo());
-		ShadowInfos.emplace_back(MakePointShadowInfo(PointLight, ShadowAtlas));
+		ShadowInfos.emplace_back(PointLight.ShadowData.ConvertToLocalShadowInfo(ShadowAtlas));
 	}
 	for (uint32 i = 0; i < NumSpotLights; ++i)
 	{
 		const FSpotLightParams& SpotLight = Env.GetSpotLight(i);
 
 		LightInfos.emplace_back(SpotLight.ToLightInfo());
-		ShadowInfos.emplace_back(MakeSpotShadowInfo(SpotLight, ShadowAtlas));
+		ShadowInfos.emplace_back(SpotLight.ShadowData.ConvertToLocalShadowInfo(ShadowAtlas));
 	}
 
 	LastNumLights = static_cast<uint32>(LightInfos.size());
