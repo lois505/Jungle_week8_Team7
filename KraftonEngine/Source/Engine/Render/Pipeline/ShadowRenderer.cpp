@@ -2,9 +2,11 @@
 
 #include "FrameContext.h"
 #include "ShadowPassContext.h"
+#include "RenderConstants.h"
 #include "Render/Proxy/FScene.h"
 #include "Render/Resource/RenderResources.h"
 #include "Render/Resource/ShaderManager.h"
+#include "Component/Light/DirectionalLightComponent.h"
 
 namespace
 {
@@ -45,11 +47,13 @@ namespace
 void FShadowRenderer::Create(ID3D11Device* Device, ID3D11DeviceContext* DeviceContext)
 {
 	Builder.Create(Device, DeviceContext);
+	PSMBuffer.Create(Device, sizeof(FPSMConstants));
 }
 
 void FShadowRenderer::Release()
 {
 	Builder.Release();
+	PSMBuffer.Release();
 }
 
 void FShadowRenderer::RenderShadows(FD3DDevice& Device, FSystemResources& Resources, FScene& Scene,
@@ -93,8 +97,25 @@ void FShadowRenderer::RenderDirectionalShadow(FD3DDevice& Device, FSystemResourc
 		return;
 	}
 
-	FMatrix PSM = (MainFrame.View * MainFrame.Proj) * Light.ShadowData.View.LightView;
-	Light.ShadowData.View.LightViewProj = PSM;
+	const FMatrix CameraVP = MainFrame.View * MainFrame.Proj;
+
+	const UDirectionalLightComponent* Owner = Scene.GetEnvironment().GetDirectionalLightOwner();
+	if (Owner)
+	{
+		Owner->UpdatePSMMatrices(CameraVP,
+			Light.ShadowData.View.LightView,
+			Light.ShadowData.View.LightProj);
+	}
+
+	FPSMConstants PSMData;
+	if (Owner)
+	{
+		PSMData.LightViewProj = Owner->GetPSMViewProj();
+		Light.ShadowData.View.LightViewProj = CameraVP;
+	}
+	PSMBuffer.Update(Device.GetDeviceContext(), &PSMData, sizeof(FPSMConstants));
+	ID3D11Buffer* b2 = PSMBuffer.GetBuffer();
+	Device.GetDeviceContext()->VSSetConstantBuffers(ECBSlot::PerShader0, 1, &b2);
 
 	FShader* Shader = FShaderManager::Get().GetOrCreate(EShaderPath::PSM);
 	RenderShadowView(Device, Resources, Light.ShadowData.View, Scene, Shader);
@@ -115,8 +136,7 @@ void FShadowRenderer::RenderPointShadow(FD3DDevice& Device, FSystemResources& Re
 			continue;
 		}
 
-		// 임시로 PSM으로 적용했습니다.
-		FShader* Shader = FShaderManager::Get().GetOrCreate(EShaderPath::PSM);
+		FShader* Shader = FShaderManager::Get().GetOrCreate(EShaderPath::CommonShadowMap);
 		RenderShadowView(Device, Resources, Light.ShadowData.View[i], Scene, Shader);
 	}
 }
@@ -133,7 +153,7 @@ void FShadowRenderer::RenderSpotShadow(FD3DDevice& Device, FSystemResources& Res
 		return;
 	}
 
-	FShader* Shader = FShaderManager::Get().GetOrCreate(EShaderPath::PSM);
+	FShader* Shader = FShaderManager::Get().GetOrCreate(EShaderPath::CommonShadowMap);
 	RenderShadowView(Device, Resources, Light.ShadowData.View, Scene, Shader);
 }
 
@@ -203,9 +223,9 @@ void FShadowRenderer::BindShadowFrameConstants(FD3DDevice& Device, FSystemResour
 	ID3D11DeviceContext* DeviceContext = Device.GetDeviceContext();
 
 	FFrameConstants FrameData = {};
-	FrameData.View = Context.View;
-	FrameData.Projection = Context.Proj;
-	FrameData.InvProj = Context.Proj.GetInverse();
+	FrameData.View        = Context.View;
+	FrameData.Projection  = Context.Proj;
+	FrameData.InvProj     = Context.Proj.GetInverse();
 	FrameData.InvViewProj = Context.ViewProj.GetInverse();
 	FrameData.bIsWireframe = 0.0f;
 	FrameData.WireframeColor = FVector(1.0f, 1.0f, 1.0f);

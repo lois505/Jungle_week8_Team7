@@ -16,6 +16,7 @@
 
 #if !defined(LIGHTING_MODEL_UNLIT)
 #include "Common/ForwardLighting.hlsli"
+#include "Common/Shadow.hlsli"
 #endif
 
 // ── 기본값 설정 ──
@@ -151,21 +152,22 @@ UberPS_Output PS(UberVS_Output input)
 #else
     float3 diffuse = float3(0, 0, 0);
     float3 specular = float3(0, 0, 0);
+    float shadowFactor = SampleShadow(input.worldPos, N);
 
 #if defined(LIGHTING_MODEL_GOURAUD) && LIGHTING_MODEL_GOURAUD
     // Gouraud: VS에서 정점 단위로 계산 → PS에서 보간된 값 사용
-    diffuse  = input.litDiffuse;
-    specular = input.litSpecular;
+    diffuse  = input.litDiffuse * shadowFactor;
+    specular = input.litSpecular * shadowFactor;
 
 #elif defined(LIGHTING_MODEL_LAMBERT) && LIGHTING_MODEL_LAMBERT
-    diffuse = AccumulateDiffuse(input.worldPos, N, input.position);
+    diffuse = AccumulateDiffuse(input.worldPos, N, input.position, shadowFactor);
 
 #elif defined(LIGHTING_MODEL_PHONG) && LIGHTING_MODEL_PHONG
-    diffuse = AccumulateDiffuse(input.worldPos, N, input.position);
-    specular = AccumulateSpecular(input.worldPos, N, V, g_DefaultShininess, input.position);
+    diffuse = AccumulateDiffuse(input.worldPos, N, input.position, shadowFactor);
+    specular = AccumulateSpecular(input.worldPos, N, V, g_DefaultShininess, input.position, shadowFactor);
 
 #elif defined(LIGHTING_MODEL_TOON) && LIGHTING_MODEL_TOON
-    diffuse = AccumulateToonDiffuse(input.worldPos, N, input.position);
+    diffuse = AccumulateToonDiffuse(input.worldPos, N, input.position, shadowFactor);
 #endif
 
     // Culling Heatmap → SV_TARGET2

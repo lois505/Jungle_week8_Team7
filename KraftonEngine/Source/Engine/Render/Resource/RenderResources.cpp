@@ -77,6 +77,7 @@ void FSystemResources::Create(ID3D11Device* InDevice)
 	ForwardLights.Create(InDevice, 32);
 
 	ShadowResourceManager.Initialize(InDevice);
+	ShadowConstantBuffer.Create(InDevice, sizeof(FShadowConstants));
 
 	RasterizerStateManager.Create(InDevice);
 	DepthStencilStateManager.Create(InDevice);
@@ -99,6 +100,7 @@ void FSystemResources::Release()
 	TileCullingResource.Release();
 
 	ShadowResourceManager.Release();
+	ShadowConstantBuffer.Release();
 }
 
 void FSystemResources::UpdateFrameBuffer(FD3DDevice& Device, const FFrameContext& Frame)
@@ -255,6 +257,36 @@ void FSystemResources::ResetRenderStateCache()
 	RasterizerStateManager.ResetCache();
 	DepthStencilStateManager.ResetCache();
 	BlendStateManager.ResetCache();
+}
+
+void FSystemResources::BindShadowBuffer(FD3DDevice& Device, const FScene& Scene)
+{
+	ID3D11DeviceContext* Ctx = Device.GetDeviceContext();
+
+	const FSceneEnvironment& Env = Scene.GetEnvironment();
+
+	FShadowConstants ShadowData = {};
+	ID3D11ShaderResourceView* ShadowSRV = nullptr;
+
+	if (Env.HasGlobalDirectionalLight())
+	{
+		const FGlobalDirectionalLightParams& Light = Env.GetGlobalDirectionalLightParams();
+		if (Light.ShadowData.Settings.bCastShadows && Light.ShadowData.View.DepthMap.SRV)
+		{
+			ShadowData.LgihtViewProj    = Light.ShadowData.View.LightViewProj;
+			ShadowData.ShadowBias       = Light.ShadowData.Settings.ShadowBias;
+			ShadowData.ShadowSlopeBias  = Light.ShadowData.Settings.ShadowSlopeBias;
+			ShadowData.bShadowEnabled   = 1.0f;
+			ShadowSRV = Light.ShadowData.View.DepthMap.SRV;
+		}
+	}
+
+	ShadowConstantBuffer.Update(Ctx, &ShadowData, sizeof(FShadowConstants));
+	ID3D11Buffer* b5 = ShadowConstantBuffer.GetBuffer();
+	Ctx->VSSetConstantBuffers(ECBSlot::Shadow, 1, &b5);
+	Ctx->PSSetConstantBuffers(ECBSlot::Shadow, 1, &b5);
+
+	Ctx->PSSetShaderResources(EShadowTexSlot::ShadowMap, 1, &ShadowSRV);
 }
 
 void FSystemResources::UnbindSystemTextures(FD3DDevice& Device)

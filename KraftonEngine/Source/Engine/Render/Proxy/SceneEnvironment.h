@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Core/CoreTypes.h"
 #include "Render/Types/FogParams.h"
@@ -38,6 +38,15 @@ public:
 	bool HasGlobalDirectionalLight() const { return !DirectionalLights.empty(); }
 	const FGlobalDirectionalLightParams& GetGlobalDirectionalLightParams() const { return DirectionalLights[0].Params; }
 	FGlobalDirectionalLightParams& GetGlobalDirectionalLightParams() { return DirectionalLights[0].Params; }
+	const UDirectionalLightComponent* GetDirectionalLightOwner() 
+	{ 
+		if (DirectionalLights.empty())
+		{
+			return nullptr;
+		}
+
+		return DirectionalLights[0].Owner; 
+	}
 
 	// --- Point Lights ---
 	void AddPointLight(const UPointLightComponent* Owner, const FPointLightParams& Params);

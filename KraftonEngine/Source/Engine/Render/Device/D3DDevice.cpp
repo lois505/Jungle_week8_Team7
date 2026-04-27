@@ -1,4 +1,4 @@
-#include "D3DDevice.h"
+﻿#include "D3DDevice.h"
 
 //	Safe Release Macro
 #define SAFE_RELEASE(Obj) if (Obj) { Obj->Release(); Obj = nullptr; }

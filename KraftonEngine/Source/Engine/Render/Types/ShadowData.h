@@ -12,8 +12,8 @@ struct FLightShadowSettings
 {
 	bool bCastShadows = false;
 	float ShadowResolutionScale = 1.0f;
-	float ShadowBias = 0.0f;
-	float ShadowSlopeBias = 0.0f;
+	float ShadowBias = 0.005f;
+	float ShadowSlopeBias = 0.002f;
 	float ShadowSharpen = 1.0f;
 };
 

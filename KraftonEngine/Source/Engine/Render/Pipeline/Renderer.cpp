@@ -94,7 +94,10 @@ void FRenderer::Render(const FFrameContext& Frame, FScene& Scene)
 		Resources.UpdateLightBuffer(Device, Scene, Frame, &ClusterState);
 	}
 
-	// 시스템 샘플러 영구 바인딩 (s0-s2)
+	// Shadow CB (b5) + Shadow Map SRV (t5) 바인딩
+	Resources.BindShadowBuffer(Device, Scene);
+
+	// 시스템 샘플러 영구 바인딩 (s0-s4)
 	Resources.BindSystemSamplers(Device);
 
 	FDrawCommandList& CommandList = Builder.GetCommandList();

@@ -106,6 +106,7 @@ struct FSystemResources
 
 	//	--- Shadow ---
 	FShadowResourceManager ShadowResourceManager;
+	FConstantBuffer ShadowConstantBuffer;			// b5 — ECBSlot::Shadow
 	
 	// --- Render State Managers ---
 	FRasterizerStateManager RasterizerStateManager;
@@ -123,6 +124,9 @@ struct FSystemResources
 	
 	//	Shadow Map Update - Wrapper
 	void UpdateShadowResources(FScene & Scene , const FShadowRuntimeOptions& ShadowOptions);
+
+	// Shadow CB (b5) + Shadow Map SRV (t5) 바인딩 — 메인 라이팅 패스 시작 시 호출
+	void BindShadowBuffer(FD3DDevice& Device, const FScene& Scene);
 
 	// 리사이즈 시 렌더 상태 캐시 무효화
 	void ResetRenderStateCache();

@@ -24,7 +24,7 @@ public:
 	bool IsVisible() const { return bVisible; }
 
 protected:
-	FMatrix GetViewMatrix() const;
+	virtual FMatrix GetViewMatrix() const;
 	virtual FMatrix GetProjMatrix() const;
 	FMatrix GetViewProjMatrix() const;
 

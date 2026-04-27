@@ -50,6 +50,12 @@ namespace ELightCullingSRVSlot
 	constexpr uint32 LightInfos = 1;
 }
 
+// HLSL 섀도우 텍스처 슬롯 — 메인 라이팅 패스 바인딩
+namespace EShadowTexSlot
+{
+	constexpr uint32 ShadowMap = 5;  // t5: Directional Shadow Depth Map
+}
+
 // HLSL 시스템 텍스처 슬롯 — Renderer가 패스 단위로 바인딩 (프레임 공통)
 namespace ESystemTexSlot
 {
@@ -155,6 +161,19 @@ struct FFXAAConstants
 	float _pad[2];
 };
 
+struct FPSMConstants
+{
+	FMatrix LightViewProj;
+};
+
+struct FShadowConstants
+{
+	FMatrix LgihtViewProj;
+	float ShadowBias;
+	float ShadowSlopeBias;
+	float bShadowEnabled;
+	float _pad;
+};
 
 // ============================================================
 // 타입별 CB 바인딩 디스크립터 — GPU CB에 업로드할 데이터를 인라인 보관

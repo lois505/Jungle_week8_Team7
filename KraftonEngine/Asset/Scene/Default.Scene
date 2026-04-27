@@ -65,18 +65,37 @@
       },
       "bVisible" : true
     }, {
-      "ClassName" : "APointLightActor",
+      "ClassName" : "AStaticMeshActor",
+      "NonSceneComponents" : [],
+      "PrimitiveKey" : "80",
+      "RootComponent" : {
+        "Children" : [],
+        "ClassName" : "UStaticMeshComponent",
+        "Properties" : {
+          "Element 0" : {
+            "Path" : "Asset/Materials/Auto/BasicShapeMaterial.mat"
+          },
+          "Location" : [2.125094, -3.243201, 0.105210],
+          "Rotation" : [0.000000, 0.000000, 0.000000],
+          "Scale" : [10.000000, 10.000000, 1.000000],
+          "Static Mesh" : "Data/BasicShape/Cube.OBJ",
+          "Visible" : true,
+          "bEditorOnly" : false,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
+      "ClassName" : "ADirectionalLightActor",
       "NonSceneComponents" : [],
       "RootComponent" : {
         "Children" : [{
             "Children" : [],
-            "ClassName" : "UPointLightComponent",
+            "ClassName" : "UDirectionalLightComponent",
             "Properties" : {
-              "AttenuationRadius" : 6.480000,
-              "Cast Shadows" : true,
-              "Color" : [0.129872, 0.110559, 0.873418, 1.000000],
-              "Intensity" : 2.000000,
-              "LightFalloffExponent" : 1.000000,
+              "Cast Shadows" : false,
+              "Color" : [1.000000, 1.000000, 1.000000, 1.000000],
+              "Intensity" : 1.000000,
               "Location" : [0.000000, 0.000000, 0.000000],
               "Rotation" : [0.000000, 0.000000, 0.000000],
               "Scale" : [1.000000, 1.000000, 1.000000],
@@ -92,9 +111,9 @@
         "ClassName" : "UBillboardComponent",
         "Properties" : {
           "Height" : 1.000000,
-          "Location" : [1.530642, -3.288431, 3.215281],
+          "Location" : [0.000000, 0.000000, 0.000000],
           "Material" : {
-            "Path" : "Asset/Materials/Editor/PointLight.mat"
+            "Path" : "Asset/Materials/Editor/DirectionalLight.mat"
           },
           "Rotation" : [0.000000, 0.000000, 0.000000],
           "Scale" : [1.000000, 1.000000, 1.000000],
@@ -113,9 +132,9 @@
   "PerspectiveCamera" : {
     "FOV" : 1.047198,
     "FarClip" : 1000.000000,
-    "Location" : [22.329035, 20.029774, 14.215248],
+    "Location" : [-34.934647, -3.261724, 9.562002],
     "NearClip" : 0.100000,
-    "Rotation" : [0.000000, 21.317795, -133.349884]
+    "Rotation" : [0.000000, 7.218047, -7.800718]
   },
   "Primitives" : {
     "61" : {
@@ -123,6 +142,13 @@
       "ObjStaticMeshAsset" : "Data/Lumine/LumineModel.obj",
       "Rotation" : [0.000000, -0.000000, 89.999992],
       "Scale" : [3.000000, 3.000000, 3.000000],
+      "Type" : "StaticMeshComp"
+    },
+    "80" : {
+      "Location" : [2.125094, -3.243201, 0.105210],
+      "ObjStaticMeshAsset" : "Data/BasicShape/Cube.OBJ",
+      "Rotation" : [0.000000, -0.000000, 0.000000],
+      "Scale" : [10.000000, 10.000000, 1.000000],
       "Type" : "StaticMeshComp"
     }
   },

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Render/Types/RenderTypes.h"
 #include "Render/Pipeline/RenderConstants.h"
@@ -16,4 +16,5 @@ private:
 	ID3D11SamplerState* LinearClampSampler = nullptr;	// s0
 	ID3D11SamplerState* LinearWrapSampler = nullptr;	// s1
 	ID3D11SamplerState* PointClampSampler = nullptr;	// s2
+	ID3D11SamplerState* ShadowSampler = nullptr;		// s3
 };

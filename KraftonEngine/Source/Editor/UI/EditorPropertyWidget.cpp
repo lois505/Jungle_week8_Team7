@@ -6,6 +6,7 @@
 #include "Component/GizmoComponent.h"
 #include "Component/Light/PointLightComponent.h"
 #include "Component/Light/SpotLightComponent.h"
+#include "Component/Light/DirectionalLightComponent.h"
 #include "Component/PrimitiveComponent.h"
 #include "Component/StaticMeshComponent.h"
 #include "Component/SceneComponent.h"
@@ -567,6 +568,10 @@ void FEditorPropertyWidget::RenderComponentProperties(AActor* Actor, const TArra
 	{
 		RenderPointLightShadowPreview(static_cast<UPointLightComponent*>(SelectedComponent));
 	}
+	else if (SelectedComponent->IsA<UDirectionalLightComponent>())
+	{
+		RenderDirectionalLightShadowPreview(static_cast<UDirectionalLightComponent*>(SelectedComponent));
+	}
 }
 
 void FEditorPropertyWidget::RenderPointLightShadowPreview(UPointLightComponent* PointLight)
@@ -640,6 +645,27 @@ void FEditorPropertyWidget::RenderSpotLightShadowPreview(USpotLightComponent* Sp
 	ImGui::Separator();
 	ImGui::Text("Spot Light Shadow Map");
 	RenderShadowMapPreviewImage(Params->ShadowData.Settings, Params->ShadowData.View.DepthMap);
+}
+
+void FEditorPropertyWidget::RenderDirectionalLightShadowPreview(UDirectionalLightComponent* DirLight)
+{
+	if (!DirLight || !DirLight->GetOwner() || !DirLight->GetOwner()->GetWorld())
+	{
+		return;
+	}
+
+	const FSceneEnvironment& Env = DirLight->GetOwner()->GetWorld()->GetScene().GetEnvironment();
+	if (!Env.HasGlobalDirectionalLight())
+	{
+		return;
+	}
+
+	const FGlobalDirectionalLightParams& Light = Env.GetGlobalDirectionalLightParams();
+
+	ImGui::Separator();
+	ImGui::Text("Directional Light Shadow Map (PSM)");
+
+	RenderShadowMapPreviewImage(Light.ShadowData.Settings, Light.ShadowData.View.DepthMap);
 }
 
 void FEditorPropertyWidget::RenderShadowMapPreviewImage(const FLightShadowSettings& Settings, const FShadowMapResource& DepthMap)

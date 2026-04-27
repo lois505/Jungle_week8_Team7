@@ -4,6 +4,8 @@
 #include "GameFramework/World.h"
 #include "Engine/Serialization/Archive.h"
 #include <cmath>
+#include <algorithm>
+#include <cfloat>
 
 IMPLEMENT_CLASS(UDirectionalLightComponent, ULightComponent)
 
@@ -54,6 +56,52 @@ namespace
 	}
 }
 
+FMatrix UDirectionalLightComponent::GetViewMatrix() const
+{
+	UpdateWorldMatrix();
+
+	FVector LightDir = GetForwardVector().Normalized();
+
+	FVector RefUp = (std::abs(LightDir.Z) < 0.99f) ? FVector(0.f, 0.f, 1.f) : FVector(0.f, 1.f, 0.f);
+
+	FVector Right = RefUp.Cross(LightDir).Normalized();
+	FVector Up    = LightDir.Cross(Right).Normalized();
+
+	const float LightDistance = 1000.f;
+	FVector EyePos = -LightDir * LightDistance;
+
+	return FMatrix::MakeViewMatrix(LightDir, Right, Up, EyePos);
+}
+
+FMatrix UDirectionalLightComponent::GetProjMatrix() const
+{
+	return FMatrix::Identity;
+}
+
+void UDirectionalLightComponent::UpdatePSMMatrices(const FMatrix& CamVP, FMatrix& OutView, FMatrix& OutProj) const
+{
+	UpdateWorldMatrix();
+	FVector LightDir = GetForwardVector().Normalized();
+
+	constexpr float LightDist = 1000.f;
+	FVector NDCLightPos = CamVP.TransformPositionWithW(-LightDir * LightDist);
+
+	const FVector NDCCenter(0.f, 0.f, 0.5f);
+	FVector LookDir = (NDCCenter - NDCLightPos).Normalized();
+
+	FVector RefUp = (std::abs(LookDir.Z) < 0.99f) ? FVector(0.f, 0.f, 1.f) : FVector(0.f, 1.f, 0.f);
+	FVector Right = RefUp.Cross(LookDir).Normalized();
+	FVector Up    = LookDir.Cross(Right).Normalized();
+
+	FMatrix PSMView = FMatrix::MakeViewMatrix(LookDir, Right, Up, NDCLightPos);
+
+	FMatrix PSMProj = FMatrix::MakeProjectionMatrix(0.f, 0.01f, 1000.f, 1.f, true, 4.f);
+
+	OutView = PSMView;
+	OutProj = PSMProj;
+	PSMCamViewProj = OutView * OutProj;
+}
+
 void UDirectionalLightComponent::ContributeSelectedVisuals(FScene& Scene) const
 {
 	FVector WorldPos = GetWorldLocation();
@@ -71,16 +119,17 @@ void UDirectionalLightComponent::PushToScene()
 	Params.Intensity = Intensity;
 	Params.LightColor = LightColor;
 	Params.bVisible = bVisible;
-	
+
 	Params.ShadowData.Settings.bCastShadows = bCastShadows;
 	Params.ShadowData.Settings.ShadowResolutionScale = ShadowResolutionScale;
 	Params.ShadowData.Settings.ShadowBias = ShadowBias;
 	Params.ShadowData.Settings.ShadowSlopeBias = ShadowSlopeBias;
 	Params.ShadowData.Settings.ShadowSharpen = ShadowSharpen;
 	//	bOverrideCameraWithLight는 나중에 고려
-	
+
 	Params.ShadowData.View.DepthMap = {};
 	Params.ShadowData.View.LightView = GetViewMatrix();
+	Params.ShadowData.View.LightProj = GetProjMatrix();
 
 	World->GetScene().GetEnvironment().AddGlobalDirectionalLight(this, Params);
 }

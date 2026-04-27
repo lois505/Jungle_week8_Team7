@@ -223,10 +223,10 @@ void AccumulateToonPointSpotDiffuse(float3 worldPos, float3 N, float4 screenPos,
     }
 }
 
-float3 AccumulateToonDiffuse(float3 worldPos, float3 N, float4 screenPos)
+float3 AccumulateToonDiffuse(float3 worldPos, float3 N, float4 screenPos, float shadowFactor = 1.0f)
 {
     float3 result = CalcAmbient(AmbientLight.Color.rgb, AmbientLight.Intensity) * 0.15f;
-    result += CalcToonDirectionalDiffuse(N);
+    result += CalcToonDirectionalDiffuse(N) * shadowFactor;
     AccumulateToonPointSpotDiffuse(worldPos, N, screenPos, result);
     return result;
 }
@@ -238,21 +238,21 @@ float CalcRimMask(float3 N, float3 V)
 }
 #endif
 
-float3 AccumulateDiffuse(float3 worldPos, float3 N, float4 screenPos)
+float3 AccumulateDiffuse(float3 worldPos, float3 N, float4 screenPos, float shadowFactor = 1.0f)
 {
     float3 result = float3(0, 0, 0);
     result += CalcAmbient(AmbientLight.Color.rgb, AmbientLight.Intensity);
     result += CalcDirectionalDiffuse(DirectionalLight.Color.rgb, DirectionalLight.Direction,
-                                     DirectionalLight.Intensity, N);
+                                     DirectionalLight.Intensity, N) * shadowFactor;
     AccumulatePointSpotDiffuse(worldPos, N, screenPos, result);
     return result;
 }
 
-float3 AccumulateSpecular(float3 worldPos, float3 N, float3 V, float shininess, float4 screenPos)
+float3 AccumulateSpecular(float3 worldPos, float3 N, float3 V, float shininess, float4 screenPos, float shadowFactor = 1.0f)
 {
     float3 result = float3(0, 0, 0);
     result += CalcDirectionalSpecular(DirectionalLight.Color.rgb, DirectionalLight.Direction,
-                                      DirectionalLight.Intensity, N, V, shininess);
+                                      DirectionalLight.Intensity, N, V, shininess) * shadowFactor;
     AccumulatePointSpotSpecular(worldPos, N, V, shininess, screenPos, result);
     return result;
 }

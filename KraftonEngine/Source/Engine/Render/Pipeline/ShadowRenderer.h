@@ -2,6 +2,7 @@
 #include "ShadowDrawCommandBuilder.h"
 #include "Render/Device/D3DDevice.h"
 #include "Render/Types/GlobalLightParams.h"
+#include "Render/Resource/Buffer.h"
 
 struct FShadowPassContext;
 struct FGlobalDirectionalLightParams;
@@ -39,4 +40,6 @@ private:
 	FShadowRuntimeOptions ShadowOptions;
 
 	FShadowDrawCommandBuilder Builder;
+
+	FConstantBuffer PSMBuffer;
 };
