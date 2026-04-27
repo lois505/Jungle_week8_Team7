@@ -211,7 +211,7 @@ void FSystemResources::UpdateLightAndShadowBuffer(FD3DDevice& Device, const FSce
 	Ctx->VSSetShaderResources(ELightTexSlot::LocalLights, 1, &LocalShadows.ShadowBufferSRV);
 	Ctx->PSSetShaderResources(ELightTexSlot::LocalLights, 1, &LocalShadows.ShadowBufferSRV);
 
-	ID3D11ShaderResourceView* ShadowAtlasSRV = ShadowAtlas.SRV;
+	ID3D11ShaderResourceView* ShadowAtlasSRV = ShadowAtlas.Map.SRV;
 	Ctx->PSSetShaderResources(ESystemTexSlot::ShadowMapAtlas, 1, &ShadowAtlasSRV);
 
 	if (Frame.RenderOptions.LightCullingMode == ELightCullingMode::Tile)

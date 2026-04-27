@@ -25,11 +25,11 @@ private:
 	void EnsureSpotShadow(FSpotShadowData& Shadow, uint32 BaseResolution, const FShadowRuntimeOptions& ShadowOptions);
 	void EnsurePointShadow(FPointShadowData& Shadow, uint32 BaseResolution, const FShadowRuntimeOptions& ShadowOptions);
 
-	bool CreateDepthShadowMapResource(FShadowMapResource& OutMap, uint32 Resolution);
-	bool CreateVSMShadowMapResource(FShadowMapResource& OutMap, uint32 Resolution);
+	bool CreateDepthShadowMapResource(FShadowMapResource& OutMap, uint32 Width, uint32 Height, bool bCreateSRV);
+	bool CreateVSMESMShadowMapResource(FShadowMapResource& OutMap, uint32 Width, uint32 Height);
 
 	void ResizeDepthShadowMapResource(FShadowMapResource& OutMap, uint32 Resolution);
-	void ResizeVSMShadowMapResource(FShadowMapResource& OutMap, uint32 Resolution);
+	void ResizeVSMESMShadowMapResource(FShadowMapResource& OutMap, uint32 Resolution);
 
 	void ReleaseShadowMapResource(FShadowMapResource& InMap);
 

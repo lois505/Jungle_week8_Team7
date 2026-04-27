@@ -79,6 +79,24 @@ static const float2 PoissonDisk16[16] =
     float2(0.14383161f, -0.14100790f)
 };
 
+//  Rotate PCF
+float Hash12(float2 p)
+{
+    float3 p3 = frac(float3(p.x, p.y, p.x) * 0.1031f);
+    p3 += dot(p3, p3.yzx + 33.33f);
+    return frac((p3.x +p3.y) * p3.z);
+}
+
+float2 Rotate2D(float2 v, float angle)
+{
+    float s = sin(angle);
+    float c = cos(angle);
+    return float2(
+        c * v.x - s * v.y,
+        s * v.x + c * v.y
+        );
+}
+
 float SampleShadowAtlasPCFPoisson(float4 rect, float2 localUV, float currentDepth, float bias, float2 atlasTileSize)
 {
     float output = 0.0f;
@@ -86,12 +104,18 @@ float SampleShadowAtlasPCFPoisson(float4 rect, float2 localUV, float currentDept
     float2 texelInTile = 1.0f / atlasTileSize;
 
     const float radius = 2.5f;
+    
+    //  LocalUV를 tile pixel 좌표처럼 변환해서 고정 random  생성 (Frame마다 변하게 하지 않도록 일관된 Seed 부여)
+    float2 tilePixel = floor(localUV * atlasTileSize);
+    float angle = Hash12(tilePixel) * 6.2831853f;   //  2 * pi 곱함
 
     [unroll]
     for (int i = 0; i < 16; i++)
     {
-        float2 sampleLocalUV = localUV + PoissonDisk16[i] * radius * texelInTile;
-
+        float2 rotatedOffset = Rotate2D(PoissonDisk16[i], angle);
+        // float2 sampleLocalUV = localUV + PoissonDisk16[i] * radius * texelInTile;
+        float2 sampleLocalUV = localUV + rotatedOffset * radius * texelInTile;;
+    
         sampleLocalUV = clamp(sampleLocalUV, texelInTile * 0.5f, 1.0f - texelInTile * 0.5f);
 
         float2 uv = rect.xy + sampleLocalUV * rect.zw;

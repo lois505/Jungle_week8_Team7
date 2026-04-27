@@ -36,19 +36,19 @@ namespace
 			return View.AtlasSizeX > 0 && View.AtlasSizeY > 0;
 		}
 
-		if (ShadowOptions.ShadowFilterMode == EShadowFilterMode::VSM)
+		if (ShadowOptions.ShadowFilterMode == EShadowFilterMode::VSM || ShadowOptions.ShadowFilterMode == EShadowFilterMode::ESM)
 		{
 			return View.DepthMap.Texture && View.DepthMap.RTV && View.DepthMap.SRV
 				&& View.DepthMap.Width > 0 && View.DepthMap.Height > 0;
 		}
 
-		return View.DepthMap.Texture && View.DepthMap.DSV && View.DepthMap.SRV
+		return View.DepthMap.DepthTexture && View.DepthMap.DSV && View.DepthMap.SRV
 			&& View.DepthMap.Width > 0 && View.DepthMap.Height > 0;
 	}
 
 	bool IsShadowAtlasReady(const FShadowAtlasResource& Atlas)
 	{
-		return Atlas.Texture && Atlas.DSV && Atlas.SRV && Atlas.Width > 0 && Atlas.Height > 0;
+		return Atlas.Map.DepthTexture && Atlas.Map.DSV && Atlas.Map.SRV && Atlas.Map.Width > 0 && Atlas.Map.Height > 0;
 	}
 
 	void AssignAtlasRect(FShadowViewData& View, const FAtlasResourceInfo& Info)
@@ -192,7 +192,7 @@ void FShadowRenderer::RenderShadowView(FD3DDevice& Device, FSystemResources& Res
 
 	if (bUseAtlas)
 	{
-		DeviceContext->OMSetRenderTargets(0, nullptr, Atlas.DSV);
+		DeviceContext->OMSetRenderTargets(0, nullptr, Atlas.Map.DSV);
 		Resources.SetDepthStencilState(Device, EDepthStencilState::DepthGreaterEqual);
 	}
 	else if (ShadowOptions.ShadowFilterMode == EShadowFilterMode::VSM)

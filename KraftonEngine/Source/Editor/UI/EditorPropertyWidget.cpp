@@ -653,29 +653,29 @@ void FEditorPropertyWidget::RenderShadowMapPreviewImage(const FLightShadowSettin
 	if (View.bAtlasAllocated)
 	{
 		const FShadowAtlasResource& Atlas = GEngine->GetRenderer().GetShadowAtlas();
-		if (!Atlas.SRV || Atlas.Width == 0 || Atlas.Height == 0)
+		if (!Atlas.Map.SRV || Atlas.Map.Width == 0 || Atlas.Map.Height == 0)
 		{
 			ImGui::TextDisabled("Shadow atlas is not ready yet.");
 			return;
 		}
 
-		const float U0 = static_cast<float>(View.AtlasOffsetX) / static_cast<float>(Atlas.Width);
-		const float V0 = static_cast<float>(View.AtlasOffsetY) / static_cast<float>(Atlas.Height);
-		const float U1 = static_cast<float>(View.AtlasOffsetX + View.AtlasSizeX) / static_cast<float>(Atlas.Width);
-		const float V1 = static_cast<float>(View.AtlasOffsetY + View.AtlasSizeY) / static_cast<float>(Atlas.Height);
+		const float U0 = static_cast<float>(View.AtlasOffsetX) / static_cast<float>(Atlas.Map.Width);
+		const float V0 = static_cast<float>(View.AtlasOffsetY) / static_cast<float>(Atlas.Map.Height);
+		const float U1 = static_cast<float>(View.AtlasOffsetX + View.AtlasSizeX) / static_cast<float>(Atlas.Map.Width);
+		const float V1 = static_cast<float>(View.AtlasOffsetY + View.AtlasSizeY) / static_cast<float>(Atlas.Map.Height);
 
 		ImGui::TextDisabled("Atlas tile: %u,%u %ux%u / %ux%u",
 			View.AtlasOffsetX,
 			View.AtlasOffsetY,
 			View.AtlasSizeX,
 			View.AtlasSizeY,
-			Atlas.Width,
-			Atlas.Height);
+			Atlas.Map.Width,
+			Atlas.Map.Height);
 
 		const float AvailableWidth = ImGui::GetContentRegionAvail().x;
 		const float PreviewSize = AvailableWidth < 256.0f ? AvailableWidth : 256.0f;
 		ImGui::Image(
-			reinterpret_cast<ImTextureID>(Atlas.SRV),
+			reinterpret_cast<ImTextureID>(Atlas.Map.SRV),
 			ImVec2(PreviewSize, PreviewSize),
 			ImVec2(U0, V0),
 			ImVec2(U1, V1));

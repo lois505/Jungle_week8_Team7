@@ -6,11 +6,6 @@
 #include "Render/Resource/LocalShadowInfo.h"
 #include "Render/Pipeline/ForwardLightData.h"
 
-struct ID3D11DepthStencilView;
-struct ID3D11RenderTargetView;
-struct ID3D11ShaderResourceView;
-struct ID3D11Texture2D;
-
 struct FLightShadowSettings
 {
 	bool bCastShadows = false;
@@ -18,18 +13,6 @@ struct FLightShadowSettings
 	float ShadowBias = 0.0f;
 	float ShadowSlopeBias = 0.0f;
 	float ShadowSharpen = 1.0f;
-};
-
-struct FShadowMapResource
-{
-	ID3D11Texture2D* Texture = nullptr;
-	//	RTV, DSV 중 뭘 쓸지 고민해보아야 함 -> 아마 RTV 쓸 듯?
-	ID3D11RenderTargetView* RTV = nullptr;
-	ID3D11DepthStencilView* DSV = nullptr;
-	ID3D11ShaderResourceView* SRV = nullptr;
-
-	uint32 Width = 0;
-	uint32 Height = 0;
 };
 
 struct FShadowViewData
@@ -58,16 +41,16 @@ public:
 public:
 	FVector4 MakeAtlasRect(const FShadowViewData& View, const FShadowAtlasResource& Atlas) const
 	{
-		if (!View.bAtlasAllocated || Atlas.Width == 0 || Atlas.Height == 0)
+		if (!View.bAtlasAllocated || Atlas.Map.Width == 0 || Atlas.Map.Height == 0)
 		{
 			return FVector4(0.0f, 0.0f, 0.0f, 0.0f);
 		}
 
 		return FVector4(
-			static_cast<float>(View.AtlasOffsetX) / static_cast<float>(Atlas.Width),
-			static_cast<float>(View.AtlasOffsetY) / static_cast<float>(Atlas.Height),
-			static_cast<float>(View.AtlasSizeX) / static_cast<float>(Atlas.Width),
-			static_cast<float>(View.AtlasSizeY) / static_cast<float>(Atlas.Height));
+			static_cast<float>(View.AtlasOffsetX) / static_cast<float>(Atlas.Map.Width),
+			static_cast<float>(View.AtlasOffsetY) / static_cast<float>(Atlas.Map.Height),
+			static_cast<float>(View.AtlasSizeX) / static_cast<float>(Atlas.Map.Width),
+			static_cast<float>(View.AtlasSizeY) / static_cast<float>(Atlas.Map.Height));
 	}
 	virtual FLocalShadowInfo ConvertToLocalShadowInfo(const FShadowAtlasResource& Atlas) const { return FLocalShadowInfo(); }
 };
