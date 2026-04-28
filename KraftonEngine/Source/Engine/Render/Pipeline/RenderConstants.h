@@ -160,14 +160,11 @@ struct FFXAAConstants
 struct FDirectionalConstants
 {
 	FMatrixPOD DirLightViewProj[4];
-	FVector4 DirAtlasRect[4];
 	float CascadeEndClip[4];
 	int32 NumcasCade;
-	float ShadowResolutionScale;
 	float ShadowBias;
 	float ShadowSlopeBias;
 	float ShadowSharpen;
-	float _pad[3];
 };
 
 // ============================================================

@@ -57,6 +57,8 @@ void FShadowResourceManager::Release()
 	Atlas.CursorX = 0;
 	Atlas.CursorY = 0;
 
+	ReleaseDirectionalShadowArray(); 
+
 	CachedDevice = nullptr;
 	CachedContext = nullptr;
 }
@@ -86,29 +88,21 @@ void FShadowResourceManager::EnsureDirectionalShadow(FDirectionalShadowData& Sha
 {
 	if (!Shadow.Settings.bCastShadows)
 	{
-		for (int i = 0; i < Shadow.NUM_CASCADES; i++)
-		{
-			ReleaseShadowMapResource(Shadow.View[i].DepthMap);
-		}
+		ReleaseDirectionalShadowArray();
 		return;
 	}
 
 	const uint32 Resolution = ComputeShadowResolution(Shadow.Settings, BaseResolution);
 
-	if (ShadowOptions.ShadowFilterMode == EShadowFilterMode::VSM)
-	{
-		for (int i = 0; i < Shadow.NUM_CASCADES; i++)
-		{
-			ResizeVSMShadowMapResource(Shadow.View[i].DepthMap, Resolution);
-		}
-	}
-	else
-	{
-		for (int i = 0; i < Shadow.NUM_CASCADES; i++)
-		{
-			ResizeDepthShadowMapResource(Shadow.View[i].DepthMap, Resolution);
-		}
-	}
+	ResizeDirectionalShadowArray(Resolution, Shadow.NUM_CASCADES);
+
+	//if (ShadowOptions.ShadowFilterMode == EShadowFilterMode::VSM)
+	//{
+	//	for (int i = 0; i < Shadow.NUM_CASCADES; i++)
+	//	{
+	//		ResizeVSMShadowMapResource(Shadow.View[i].DepthMap, Resolution);
+	//	}
+	//}
 }
 
 
@@ -267,6 +261,57 @@ bool FShadowResourceManager::CreateVSMShadowMapResource(FShadowMapResource& OutM
 	return true;
 }
 
+void FShadowResourceManager::CreateDirectionalShadowArray(uint32 Resolution, int NumCascades)
+{
+	if (!CachedDevice || Resolution == 0)
+	{
+		return;
+	}
+
+	ReleaseDirectionalShadowArray();
+	DirShadowArray.Width = Resolution;
+	DirShadowArray.Height = Resolution;
+	DirShadowArray.NumElements = NumCascades;
+
+	D3D11_TEXTURE2D_DESC desc = {};
+	desc.Width = desc.Height = Resolution;
+	desc.ArraySize = NumCascades + 1; // 0=PSM reserved, 1~NumCascades=CSM
+	desc.Format = DXGI_FORMAT_R24G8_TYPELESS;
+	desc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
+	desc.MipLevels = 1;
+	desc.SampleDesc = { 1, 0 };
+	CachedDevice->CreateTexture2D(&desc, nullptr, &DirShadowArray.Texture);
+
+	// 캐스케이드마다 슬라이스 DSV
+	for (int i = 1; i <= NumCascades; ++i) {
+		D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
+		dsvDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+		dsvDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DARRAY;
+		dsvDesc.Texture2DArray = { 0, (UINT)i, 1 };
+		CachedDevice->CreateDepthStencilView(DirShadowArray.Texture, &dsvDesc, &DirShadowArray.DSVs[i]);
+
+		D3D11_SHADER_RESOURCE_VIEW_DESC previewDesc = {};
+		previewDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+		previewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
+		previewDesc.Texture2DArray.MostDetailedMip = 0;
+		previewDesc.Texture2DArray.MipLevels = 1;
+		previewDesc.Texture2DArray.FirstArraySlice = i;
+		previewDesc.Texture2DArray.ArraySize = 1; 
+
+		CachedDevice->CreateShaderResourceView(DirShadowArray.Texture, &previewDesc, &DirShadowArray.PreviewSRVs[i]);
+	}
+
+	// 전체 배열 SRV
+	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+	srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
+	srvDesc.Texture2DArray.MostDetailedMip = 0;
+	srvDesc.Texture2DArray.MipLevels = 1;
+	srvDesc.Texture2DArray.FirstArraySlice = 0;
+	srvDesc.Texture2DArray.ArraySize = (UINT)(NumCascades + 1);
+	CachedDevice->CreateShaderResourceView(DirShadowArray.Texture, &srvDesc, &DirShadowArray.SRV);
+}
+
 
 void FShadowResourceManager::ResizeDepthShadowMapResource(FShadowMapResource& OutMap, uint32 Resolution)
 {
@@ -286,6 +331,17 @@ void FShadowResourceManager::ResizeVSMShadowMapResource(FShadowMapResource& OutM
 	}
 
 	CreateVSMShadowMapResource(OutMap, Resolution);
+}
+
+void FShadowResourceManager::ResizeDirectionalShadowArray(uint32 Resolution, int NumCascades)
+{
+	if (DirShadowArray.Texture && DirShadowArray.Width == Resolution &&
+		DirShadowArray.NumElements == NumCascades)
+	{
+		return;
+	}
+
+	CreateDirectionalShadowArray(Resolution, NumCascades);
 }
 
 
@@ -317,6 +373,30 @@ void FShadowResourceManager::ReleaseShadowMapResource(FShadowMapResource& InMap)
 
 	InMap.Width = 0;
 	InMap.Height = 0;
+}
+
+void FShadowResourceManager::ReleaseDirectionalShadowArray()
+{
+	if (DirShadowArray.Texture)
+	{
+		DirShadowArray.Texture->Release();
+		DirShadowArray.Texture = nullptr;
+	}
+
+	if (DirShadowArray.SRV)
+	{
+		DirShadowArray.SRV->Release();
+		DirShadowArray.SRV = nullptr;
+	}
+
+	for (int i = 0; i < 5; i++)
+	{
+		if (DirShadowArray.DSVs[i])
+		{
+			DirShadowArray.DSVs[i]->Release();
+			DirShadowArray.DSVs[i] = nullptr;
+		}
+	}
 }
 
 bool FShadowResourceManager::CreateShadowMapAtlas(int Width, int Height)

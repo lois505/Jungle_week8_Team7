@@ -169,14 +169,19 @@ void FSystemResources::UpdateLightAndShadowBuffer(FD3DDevice& Device, const FSce
 			{
 				const FShadowViewData& View = ShadowData.View[i];
 				DirectionalCB.DirLightViewProj[i] = View.LightViewProj.ConvertToPOD();
-				DirectionalCB.DirAtlasRect[i] = ShadowData.MakeAtlasRect(View, ShadowAtlas);
 				DirectionalCB.CascadeEndClip[i] = ShadowData.CascadeEndClipZ[i];
 			}
 
 			DirectionalCB.ShadowBias = DirLightParams.ShadowData.Settings.ShadowBias;
-			DirectionalCB.ShadowResolutionScale = DirLightParams.ShadowData.Settings.ShadowResolutionScale;
 			DirectionalCB.ShadowSlopeBias = DirLightParams.ShadowData.Settings.ShadowSlopeBias;
 			DirectionalCB.ShadowSharpen = DirLightParams.ShadowData.Settings.ShadowSharpen;
+
+			// 추가 팁: 셰이더에서 texelSize를 계산할 수 있도록 해상도 정보를 CB에 포함하세요.
+			// 현재 Resolution이 2048이라면, 셰이더는 이 값을 받아 PCF 필터링 보폭을 정하게 됩니다.
+			//DirectionalCB.ShadowResolution = (float)ShadowResourceManager.GetShadowArray().CurrentWidth;
+
+			ID3D11ShaderResourceView* DirShadowSRV = ShadowResourceManager.GetShadowArray().SRV;
+			Ctx->PSSetShaderResources(22, 1, &DirShadowSRV);
 
 			DirectionalShadowBuffer.Update(Ctx, &DirectionalCB, sizeof(FDirectionalConstants));
 			ID3D11Buffer* buf = DirectionalShadowBuffer.GetBuffer();

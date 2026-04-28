@@ -12,5 +12,6 @@ Texture2D<float4> GBufferNormalTexture : register(t18); // GBuffer World Normal 
 Texture2D<uint2> StencilTexture : register(t19); // CopyResource된 Stencil (X24_G8_UINT)
 Texture2D<float4> CullingHeatmapTexture : register(t20); // Tile Culling Heatmap (R8G8B8A8_UNORM)
 Texture2D<float> ShadowMapAtlasTexture : register(t21);
+Texture2DArray<float> DirectionalShadowArray : register(t22);
 
 #endif // SYSTEM_RESOURCES_HLSL

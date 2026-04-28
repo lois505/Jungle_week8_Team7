@@ -10,6 +10,11 @@ float SampleShadowAtlas(float2 uv)
     return ShadowMapAtlasTexture.SampleLevel(PointClampSampler, uv, 0).r;
 }
 
+float SampleDirectionalShadow(int indx, float2 uv)
+{
+    return DirectionalShadowArray.SampleLevel(PointClampSampler, float3(uv, (float)indx), 0).r;
+}
+
 float2 ProjectToShadowUV(float4 lightClip)
 {
     float3 ndc = lightClip.xyz / max(lightClip.w, 0.0001f);
@@ -117,7 +122,10 @@ float CalcDirectionalShadow(float3 worldPos, float3 worldNormal, float4 screenPo
     float NdotL = saturate(dot(worldNormal, DirectionalLight.Direction));
     float slopeFactor = 1.0f - NdotL;
     
-    float texelSize = 1.0f / (2048.0f * ShadowResolutionScale);
+    uint width, height, element;
+    DirectionalShadowArray.GetDimensions(width, height, element);
+    
+    float texelSize = 1.0f / (float)width;
     
     float finalBias = (ShadowBias + (ShadowSlopeBias * slopeFactor)) * texelSize;
 
@@ -132,17 +140,11 @@ float CalcDirectionalShadow(float3 worldPos, float3 worldNormal, float4 screenPo
         return 1.0f;
     
     float2 localUV = float2(ndc.x * 0.5f + 0.5f, -ndc.y * 0.5f + 0.5f);
-
-    float4 rect = DirAtlasRect[cascadeIndex];
-    if (!IsValidShadowRect(rect))
-        return 1.0f;
-    
-    float2 atlasUV = rect.xy + localUV * rect.zw;
-    float storedDepth = SampleShadowAtlas(atlasUV);
+    float storedDepth = SampleDirectionalShadow(cascadeIndex + 1, localUV); // slot 0 reserved for PSM
     
     float shadowFactor = (ndc.z + finalBias >= storedDepth) ? 1.0f : 0.0f;
     shadowFactor = saturate((shadowFactor - 0.5f) * ShadowSharpen + 0.5f);
-
+    
     return shadowFactor;
 }
 

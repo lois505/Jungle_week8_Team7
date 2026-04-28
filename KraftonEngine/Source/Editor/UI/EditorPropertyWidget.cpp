@@ -574,6 +574,10 @@ void FEditorPropertyWidget::RenderComponentProperties(AActor* Actor, const TArra
 	{
 		RenderPointLightShadowPreview(static_cast<UPointLightComponent*>(SelectedComponent));
 	}
+	else if (SelectedComponent->IsA<UDirectionalLightComponent>())
+	{
+		RenderDirectionalLightShadowPreview(static_cast<UDirectionalLightComponent*>(SelectedComponent));
+	}
 }
 
 void FEditorPropertyWidget::RenderDirectionalLightShadowPreview(UDirectionalLightComponent* DirLight)
@@ -600,17 +604,17 @@ void FEditorPropertyWidget::RenderDirectionalLightShadowPreview(UDirectionalLigh
 		return;
 	}
 
-	static int PreviewCascadeIndex = 0;
-	const char* CascadeNames[FDirectionalShadowData::NUM_CASCADES] = { "Cascade 0", "Cascade 1", "Cascade 2", "Cascade 3"};
+	static int PreviewCascadeIndex = 1;
+	const char* CascadeNames[FDirectionalShadowData::NUM_CASCADES] = {"Cascade 0", "Cascade 1", "Cascade 2", "Cascade 3"};
 	ImGui::Text("Cascade");
 	ImGui::SameLine(120);
 	ImGui::SetNextItemWidth(-1.0f);
-	if (ImGui::BeginCombo("##DirShadowCascade", CascadeNames[PreviewCascadeIndex]))
+	if (ImGui::BeginCombo("##DirShadowCascade", CascadeNames[PreviewCascadeIndex - 1]))
 	{
-		for (int i = 0; i < FDirectionalShadowData::NUM_CASCADES; ++i)
+		for (int i = 1; i <= FDirectionalShadowData::NUM_CASCADES; ++i)
 		{
 			const bool bSelected = (PreviewCascadeIndex == i);
-			if (ImGui::Selectable(CascadeNames[i], bSelected))
+			if (ImGui::Selectable(CascadeNames[i-1], bSelected))
 			{
 				PreviewCascadeIndex = i;
 			}
@@ -622,7 +626,27 @@ void FEditorPropertyWidget::RenderDirectionalLightShadowPreview(UDirectionalLigh
 		ImGui::EndCombo();
 	}
 
-	RenderShadowMapPreviewImage(Params.ShadowData.Settings, Params.ShadowData.View[PreviewCascadeIndex]);
+	const FDirectionalShadowArray& DirShadowArray = GEngine->GetRenderer().GetDirShadowArray();
+
+	if (DirShadowArray.PreviewSRVs[PreviewCascadeIndex])
+	{
+		ImGui::TextDisabled("CSM Slice: %d | %ux%u",
+			PreviewCascadeIndex,
+			Params.ShadowData.Settings.ShadowResolutionScale * 1024.0f,
+			Params.ShadowData.Settings.ShadowResolutionScale * 1024.0f);
+
+		const float AvailableWidth = ImGui::GetContentRegionAvail().x;
+		const float PreviewSize = AvailableWidth < 256.0f ? AvailableWidth : 256.0f;
+
+		ImGui::Image(
+			reinterpret_cast<ImTextureID>(DirShadowArray.PreviewSRVs[PreviewCascadeIndex]),
+			ImVec2(PreviewSize, PreviewSize)
+		);
+	}
+	else
+	{
+		ImGui::TextColored(ImVec4(1, 0, 0, 1), "Shadow Preview SRV is NULL!");
+	}
 }
 
 void FEditorPropertyWidget::RenderPointLightShadowPreview(UPointLightComponent* PointLight)

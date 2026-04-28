@@ -120,6 +120,15 @@ namespace
 				MinZ = std::min(MinZ, Light.Z); MaxZ = std::max(MaxZ, Light.Z);
 			}
 
+			float Resolution = ShadowData.Settings.ShadowResolutionScale * 1024.0f;
+			float WorldUnitsPerTexel = (MaxX - MinX) / Resolution;
+
+			MinX = std::floor(MinX / WorldUnitsPerTexel) * WorldUnitsPerTexel;
+			MaxX = MinX + (MaxX - MinX);
+
+			MinY = std::floor(MinY / WorldUnitsPerTexel) * WorldUnitsPerTexel;
+			MaxY = MinY + (MaxY - MinY);
+
 			FShadowViewData& View = ShadowData.View[i];
 			View.LightView = LightView;
 			View.LightProj = FMatrix::MakeOrtho(MinX, MaxX, MinY, MaxY, MinZ, MaxZ);
@@ -153,16 +162,10 @@ void FShadowRenderer::RenderShadows(FD3DDevice& Device, FSystemResources& Resour
 
 	if (Scene.GetEnvironment().HasGlobalDirectionalLight())
 	{
-		FGlobalDirectionalLightParams& Params = Env.GetGlobalDirectionalLightParams();
-		if (Params.ShadowData.Settings.bCastShadows)
+		if (Env.GetGlobalDirectionalLightParams().ShadowData.Settings.bCastShadows)
 		{
-			for (int32 i = 0; i < Params.ShadowData.NUM_CASCADES; i++)
-			{
-				AssignAtlasRect(Params.ShadowData.View[i], Resources.ShadowResourceManager.AllocateFromAtlas());
-			}
+			RenderDirectionalShadow(Device, Resources, Env.GetGlobalDirectionalLightParams(), Scene, MainFrame);
 		}
-
-		RenderDirectionalShadow(Device, Resources, Env.GetGlobalDirectionalLightParams(), Scene, MainFrame);
 	}
 
 	for (uint32 i = 0; i < Env.GetNumPointLights(); i++)
@@ -202,10 +205,15 @@ void FShadowRenderer::RenderDirectionalShadow(FD3DDevice& Device, FSystemResourc
 
 	for (int i = 0; i < Light.ShadowData.NUM_CASCADES; i++)
 	{
-		if (!IsShadowViewReady(Light.ShadowData.View[i], ShadowOptions))
-		{
-			return;
-		}
+		auto* dsv = Resources.ShadowResourceManager.GetShadowArray().DSVs[i + 1]; // slices 1~4, slot 0 reserved for PSM
+
+		Light.ShadowData.View[i].DepthMap.DSV = dsv;
+		Light.ShadowData.View[i].DepthMap.Texture = Resources.ShadowResourceManager.GetShadowArray().Texture;
+		Light.ShadowData.View[i].DepthMap.SRV = Resources.ShadowResourceManager.GetShadowArray().SRV;
+
+		float Resolution = Light.ShadowData.Settings.ShadowResolutionScale * 1024.0f;
+		Light.ShadowData.View[i].DepthMap.Width = (uint32)Resolution;
+		Light.ShadowData.View[i].DepthMap.Height = (uint32)Resolution;
 
 		RenderShadowView(Device, Resources, Light.ShadowData.View[i], Scene);
 	}

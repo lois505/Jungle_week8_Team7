@@ -14,7 +14,7 @@ struct ID3D11Texture2D;
 struct FLightShadowSettings
 {
 	bool bCastShadows = false;
-	float ShadowResolutionScale = 1.0f;
+	float ShadowResolutionScale = 1.f;
 	float ShadowBias = 0.0f;
 	float ShadowSlopeBias = 0.0f;
 	float ShadowSharpen = 1.0f;
@@ -46,6 +46,18 @@ struct FShadowViewData
 	uint32 AtlasSizeY = 0;
 	uint32 AtlasIndex = 0;
 	bool bAtlasAllocated = false;
+};
+
+struct FDirectionalShadowArray
+{
+	ID3D11Texture2D* Texture = nullptr;
+	ID3D11DepthStencilView* DSVs[5] = {};
+	ID3D11ShaderResourceView* SRV = nullptr;
+	ID3D11ShaderResourceView* PreviewSRVs[5] = {};
+
+	float Width;
+	float Height;
+	uint32 NumElements;
 };
 
 struct FShadowCommonData

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 /*
 	실제 렌더링을 담당하는 Class 입니다. (Rendering 최상위 클래스)
@@ -44,6 +44,7 @@ public:
 	uint32                    GetNumLights()    const  { return Resources.LastNumLights; }
 	FTileBasedLightCulling&   GetTileBaseCulling()     { return TileBasedCulling; }
 	const FShadowAtlasResource& GetShadowAtlas() const { return Resources.ShadowResourceManager.GetAtlas(); }
+	const FDirectionalShadowArray& GetDirShadowArray() const { return Resources.ShadowResourceManager.GetShadowArray(); }
 
 	void BindTileCullingResources() { Resources.BindTileCullingBuffers(Device); }
 	void UnbindTileCullingResources() { Resources.UnbindTileCullingBuffers(Device); }
