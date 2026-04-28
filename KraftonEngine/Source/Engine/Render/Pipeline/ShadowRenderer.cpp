@@ -1,4 +1,4 @@
-#include "ShadowRenderer.h"
+﻿#include "ShadowRenderer.h"
 
 #include "FrameContext.h"
 #include "ShadowPassContext.h"
@@ -296,11 +296,30 @@ namespace
 
 		OutVirtualCameraViewProjection = VirtualCameraView * VirtualCameraProj;
 
-		const TStaticArray<FVector, 8> WorldFrustumCorners = BuildWorldFrustumCornersFromViewProjection(OutVirtualCameraViewProjection);
+		//const TStaticArray<FVector, 8> WorldFrustumCorners = BuildWorldFrustumCornersFromViewProjection(OutVirtualCameraViewProjection);
+		//TStaticArray<FVector4, 8> PostPerspectiveCorners = {};
+		//for (int32 i = 0; i < static_cast<int32>(WorldFrustumCorners.size()); ++i)
+		//{
+		//	FVector4 ProjectedCorner = OutVirtualCameraViewProjection.TransformVector4(FVector4(WorldFrustumCorners[i], 1.0f));
+		//	if (std::abs(ProjectedCorner.W) > 1e-6f)
+		//	{
+		//		const float InvW = 1.0f / ProjectedCorner.W;
+		//		ProjectedCorner.X *= InvW;
+		//		ProjectedCorner.Y *= InvW;
+		//		ProjectedCorner.Z *= InvW;
+		//		ProjectedCorner.W = 1.0f;
+		//	}
+
+		//	PostPerspectiveCorners[i] = ProjectedCorner;
+		//}
+
+		FVector AABBCorners[8];
+		ReceiverBounds.GetCorners(AABBCorners);
+
 		TStaticArray<FVector4, 8> PostPerspectiveCorners = {};
-		for (int32 i = 0; i < static_cast<int32>(WorldFrustumCorners.size()); ++i)
+		for (int32 i = 0; i < 8; ++i)
 		{
-			FVector4 ProjectedCorner = OutVirtualCameraViewProjection.TransformVector4(FVector4(WorldFrustumCorners[i], 1.0f));
+			FVector4 ProjectedCorner = OutVirtualCameraViewProjection.TransformVector4(FVector4(AABBCorners[i], 1.0f));
 			if (std::abs(ProjectedCorner.W) > 1e-6f)
 			{
 				const float InvW = 1.0f / ProjectedCorner.W;
@@ -309,7 +328,6 @@ namespace
 				ProjectedCorner.Z *= InvW;
 				ProjectedCorner.W = 1.0f;
 			}
-
 			PostPerspectiveCorners[i] = ProjectedCorner;
 		}
 
