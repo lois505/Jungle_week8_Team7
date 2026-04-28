@@ -2,6 +2,7 @@
 
 #include "FrameContext.h"
 #include "ShadowPassContext.h"
+#include "Render/Culling/ConvexVolume.h"
 #include "Render/Proxy/FScene.h"
 #include "Render/Proxy/PrimitiveSceneProxy.h"
 #include "Render/Resource/RenderResources.h"
@@ -114,6 +115,107 @@ namespace
 		return Bounds;
 	}
 
+	void AppendBoundingBoxCorners(TArray<FVector4>& OutPoints, const FBoundingBox& Bounds, const FMatrix& Transform)
+	{
+		FVector Corners[8];
+		Bounds.GetCorners(Corners);
+
+		for (const FVector& Corner : Corners)
+		{
+			FVector4 ProjectedCorner = Transform.TransformVector4(FVector4(Corner, 1.0f));
+			if (std::abs(ProjectedCorner.W) > 1e-6f)
+			{
+				const float InvW = 1.0f / ProjectedCorner.W;
+				ProjectedCorner.X *= InvW;
+				ProjectedCorner.Y *= InvW;
+				ProjectedCorner.Z *= InvW;
+				ProjectedCorner.W = 1.0f;
+			}
+
+			OutPoints.push_back(ProjectedCorner);
+		}
+	}
+
+	void AppendIntersectingSubBoxes(TArray<FVector4>& OutPoints, const FBoundingBox& Bounds,
+		const FFrameContext& MainFrame, const FMatrix& Transform)
+	{
+		const FVector Size = Bounds.Max - Bounds.Min;
+		const int32 SplitX = Size.X > 1.0f ? 4 : 1;
+		const int32 SplitY = Size.Y > 1.0f ? 4 : 1;
+		const int32 SplitZ = Size.Z > 1.0f ? 4 : 1;
+
+		for (int32 z = 0; z < SplitZ; ++z)
+		{
+			for (int32 y = 0; y < SplitY; ++y)
+			{
+				for (int32 x = 0; x < SplitX; ++x)
+				{
+					const FVector Min(
+						Bounds.Min.X + Size.X * (static_cast<float>(x) / static_cast<float>(SplitX)),
+						Bounds.Min.Y + Size.Y * (static_cast<float>(y) / static_cast<float>(SplitY)),
+						Bounds.Min.Z + Size.Z * (static_cast<float>(z) / static_cast<float>(SplitZ)));
+					const FVector Max(
+						Bounds.Min.X + Size.X * (static_cast<float>(x + 1) / static_cast<float>(SplitX)),
+						Bounds.Min.Y + Size.Y * (static_cast<float>(y + 1) / static_cast<float>(SplitY)),
+						Bounds.Min.Z + Size.Z * (static_cast<float>(z + 1) / static_cast<float>(SplitZ)));
+
+					const FBoundingBox SubBox(Min, Max);
+					if (MainFrame.FrustumVolume.ClassifyAABB(SubBox) != EAABBFrustumClassify::Outside)
+					{
+						AppendBoundingBoxCorners(OutPoints, SubBox, Transform);
+					}
+				}
+			}
+		}
+	}
+
+	TArray<FVector4> BuildPostPerspectiveReceiverPoints(const FScene& Scene, const FFrameContext& MainFrame,
+		const FMatrix& VirtualCameraViewProjection)
+	{
+		TArray<FVector4> Points;
+		Points.reserve(Scene.GetProxyCount() * 8);
+
+		for (const FPrimitiveSceneProxy* Proxy : Scene.GetAllProxies())
+		{
+			if (!Proxy || !IsShadowCasterReceiverProxy(*Proxy))
+			{
+				continue;
+			}
+
+			const FBoundingBox& Bounds = Proxy->GetCachedBounds();
+			const EAABBFrustumClassify Classify = MainFrame.FrustumVolume.ClassifyAABB(Bounds);
+			if (Classify == EAABBFrustumClassify::Outside)
+			{
+				continue;
+			}
+
+			if (Classify == EAABBFrustumClassify::Contains)
+			{
+				AppendBoundingBoxCorners(Points, Bounds, VirtualCameraViewProjection);
+			}
+			else
+			{
+				AppendIntersectingSubBoxes(Points, Bounds, MainFrame, VirtualCameraViewProjection);
+			}
+		}
+
+		if (Points.empty())
+		{
+			Points = {
+				FVector4(-1.0f, -1.0f, 0.0f, 1.0f),
+				FVector4( 1.0f, -1.0f, 0.0f, 1.0f),
+				FVector4(-1.0f,  1.0f, 0.0f, 1.0f),
+				FVector4( 1.0f,  1.0f, 0.0f, 1.0f),
+				FVector4(-1.0f, -1.0f, 1.0f, 1.0f),
+				FVector4( 1.0f, -1.0f, 1.0f, 1.0f),
+				FVector4(-1.0f,  1.0f, 1.0f, 1.0f),
+				FVector4( 1.0f,  1.0f, 1.0f, 1.0f),
+			};
+		}
+
+		return Points;
+	}
+
 	float ComputeCameraFitNear(const FFrameContext& MainFrame, const FBoundingBox& ReceiverBounds)
 	{
 		if (!ReceiverBounds.IsValid())
@@ -140,23 +242,7 @@ namespace
 		return MainFrame.NearClip;
 	}
 
-	TStaticArray<FVector, 8> BuildWorldFrustumCornersFromViewProjection(const FMatrix& ViewProjection)
-	{
-		const FMatrix InvViewProjection = ViewProjection.GetInverse();
-
-		return {
-			InvViewProjection.TransformPositionWithW(FVector(-1.0f,  1.0f, 1.0f)),
-			InvViewProjection.TransformPositionWithW(FVector( 1.0f,  1.0f, 1.0f)),
-			InvViewProjection.TransformPositionWithW(FVector( 1.0f, -1.0f, 1.0f)),
-			InvViewProjection.TransformPositionWithW(FVector(-1.0f, -1.0f, 1.0f)),
-			InvViewProjection.TransformPositionWithW(FVector(-1.0f,  1.0f, 0.0f)),
-			InvViewProjection.TransformPositionWithW(FVector( 1.0f,  1.0f, 0.0f)),
-			InvViewProjection.TransformPositionWithW(FVector( 1.0f, -1.0f, 0.0f)),
-			InvViewProjection.TransformPositionWithW(FVector(-1.0f, -1.0f, 0.0f)),
-		};
-	}
-
-	FVector ComputeCenter(const TStaticArray<FVector4, 8>& Points)
+	FVector ComputeCenter(const TArray<FVector4>& Points)
 	{
 		FVector Center;
 		for (const FVector4& Point : Points)
@@ -167,7 +253,7 @@ namespace
 		return Center / static_cast<float>(Points.size());
 	}
 
-	float ComputeBoundingSphereRadius(const TStaticArray<FVector4, 8>& Points, const FVector& Center)
+	float ComputeBoundingSphereRadius(const TArray<FVector4>& Points, const FVector& Center)
 	{
 		float Radius = 0.0f;
 		for (const FVector4& Point : Points)
@@ -198,7 +284,7 @@ namespace
 		return FMatrix::MakeViewMatrix(Forward, Right, Up, Location);
 	}
 
-	FMatrix MakeOrthoFitToPoints(const FMatrix& View, const TStaticArray<FVector4, 8>& Points)
+	FMatrix MakeOrthoFitToPoints(const FMatrix& View, const TArray<FVector4>& Points)
 	{
 		float MinX = FLT_MAX, MaxX = -FLT_MAX;
 		float MinY = FLT_MAX, MaxY = -FLT_MAX;
@@ -235,7 +321,64 @@ namespace
 		return FMatrix::MakeOrtho(MinX, MaxX, MinY, MaxY, MinZ, MaxZ);
 	}
 
-	FMatrix MakeReversedInversePerspectiveFitToPoints(const FMatrix& View, const TStaticArray<FVector4, 8>& Points)
+	struct FPSMBoundingCone
+	{
+		FMatrix View = FMatrix::Identity;
+		float FovX = 0.0f;
+		float FovY = 0.0f;
+		float NearZ = 0.001f;
+		float FarZ = 1.0f;
+		bool bValid = false;
+	};
+
+	FPSMBoundingCone BuildBoundingCone(const TArray<FVector4>& Points, const FVector& Apex)
+	{
+		FPSMBoundingCone Cone;
+		if (Points.empty())
+		{
+			return Cone;
+		}
+
+		const FVector Center = ComputeCenter(Points);
+		FVector Direction = Center - Apex;
+		if (Direction.Length() <= 1e-4f)
+		{
+			Direction = FVector(0.0f, 0.0f, 1.0f);
+		}
+		Direction.Normalize();
+
+		Cone.View = MakeViewFromLocationAndTarget(Apex, Apex + Direction);
+		float MaxAbsXOverZ = 0.0f;
+		float MaxAbsYOverZ = 0.0f;
+		Cone.NearZ = FLT_MAX;
+		Cone.FarZ = -FLT_MAX;
+
+		for (const FVector4& Point : Points)
+		{
+			const FVector4 ViewPoint = Cone.View.TransformVector4(Point);
+			if (ViewPoint.Z <= 1e-4f)
+			{
+				continue;
+			}
+
+			MaxAbsXOverZ = std::max(MaxAbsXOverZ, std::abs(ViewPoint.X / ViewPoint.Z));
+			MaxAbsYOverZ = std::max(MaxAbsYOverZ, std::abs(ViewPoint.Y / ViewPoint.Z));
+			Cone.NearZ = std::min(Cone.NearZ, ViewPoint.Z);
+			Cone.FarZ = std::max(Cone.FarZ, ViewPoint.Z);
+		}
+
+		if (MaxAbsXOverZ <= 1e-6f || MaxAbsYOverZ <= 1e-6f || Cone.NearZ == FLT_MAX || Cone.FarZ <= Cone.NearZ)
+		{
+			return Cone;
+		}
+
+		Cone.FovX = std::atan(MaxAbsXOverZ);
+		Cone.FovY = std::atan(MaxAbsYOverZ);
+		Cone.bValid = true;
+		return Cone;
+	}
+
+	FMatrix MakeReversedInversePerspectiveFitToPoints(const FMatrix& View, const TArray<FVector4>& Points)
 	{
 		float MaxAbsXOverZ = 0.0f;
 		float MaxAbsYOverZ = 0.0f;
@@ -296,25 +439,10 @@ namespace
 
 		OutVirtualCameraViewProjection = VirtualCameraView * VirtualCameraProj;
 
-		const TStaticArray<FVector, 8> WorldFrustumCorners = BuildWorldFrustumCornersFromViewProjection(OutVirtualCameraViewProjection);
-		TStaticArray<FVector4, 8> PostPerspectiveCorners = {};
-		for (int32 i = 0; i < static_cast<int32>(WorldFrustumCorners.size()); ++i)
-		{
-			FVector4 ProjectedCorner = OutVirtualCameraViewProjection.TransformVector4(FVector4(WorldFrustumCorners[i], 1.0f));
-			if (std::abs(ProjectedCorner.W) > 1e-6f)
-			{
-				const float InvW = 1.0f / ProjectedCorner.W;
-				ProjectedCorner.X *= InvW;
-				ProjectedCorner.Y *= InvW;
-				ProjectedCorner.Z *= InvW;
-				ProjectedCorner.W = 1.0f;
-			}
-
-			PostPerspectiveCorners[i] = ProjectedCorner;
-		}
-
-		const FVector PPCenter = ComputeCenter(PostPerspectiveCorners);
-		const float PPRadius = ComputeBoundingSphereRadius(PostPerspectiveCorners, PPCenter);
+		const TArray<FVector4> PostPerspectiveReceiverPoints =
+			BuildPostPerspectiveReceiverPoints(Scene, MainFrame, OutVirtualCameraViewProjection);
+		const FVector PPCenter = ComputeCenter(PostPerspectiveReceiverPoints);
+		const float PPRadius = ComputeBoundingSphereRadius(PostPerspectiveReceiverPoints, PPCenter);
 
 		const FVector LightToSceneDirection = LightDirection.Normalized();
 		const FVector SceneToLightDirection = -LightToSceneDirection;
@@ -334,28 +462,40 @@ namespace
 
 			const FVector LightPositionPP = PPCenter + LightDirectionPP * (PPRadius * 2.0f);
 			OutPSMLightView = MakeViewFromLocationAndTarget(LightPositionPP, PPCenter);
-			OutPSMLightProj = MakeOrthoFitToPoints(OutPSMLightView, PostPerspectiveCorners);
+			OutPSMLightProj = MakeOrthoFitToPoints(OutPSMLightView, PostPerspectiveReceiverPoints);
 			return;
 		}
 
 		const float InvLightW = 1.0f / LightPP.W;
 		const FVector LightPositionPP(LightPP.X * InvLightW, LightPP.Y * InvLightW, LightPP.Z * InvLightW);
 		const float DistanceToCenter = FVector::Distance(LightPositionPP, PPCenter);
+		const FPSMBoundingCone ReceiverCone = BuildBoundingCone(PostPerspectiveReceiverPoints, LightPositionPP);
 
-		OutPSMLightView = MakeViewFromLocationAndTarget(LightPositionPP, PPCenter);
+		OutPSMLightView = ReceiverCone.bValid
+			? ReceiverCone.View
+			: MakeViewFromLocationAndTarget(LightPositionPP, PPCenter);
 
 		if (bLightBehindEye || DistanceToCenter <= PPRadius * 1.05f)
 		{
 			OutPSMLightProj = bLightBehindEye
-				? MakeReversedInversePerspectiveFitToPoints(OutPSMLightView, PostPerspectiveCorners)
-				: MakeOrthoFitToPoints(OutPSMLightView, PostPerspectiveCorners);
+				? MakeReversedInversePerspectiveFitToPoints(OutPSMLightView, PostPerspectiveReceiverPoints)
+				: MakeOrthoFitToPoints(OutPSMLightView, PostPerspectiveReceiverPoints);
 			return;
 		}
 
-		const float FovPP = std::min(2.8f, 2.0f * std::atan(PPRadius / DistanceToCenter));
-		const float NearPP = std::max(0.001f, DistanceToCenter - PPRadius);
-		const float FarPP = std::max(NearPP + 0.001f, DistanceToCenter + PPRadius);
-		OutPSMLightProj = FMatrix::MakeProjectionMatrix(FovPP, NearPP, FarPP, 1.0f);
+		const float FovPP = ReceiverCone.bValid
+			? std::min(2.8f, ReceiverCone.FovY * 2.0f)
+			: std::min(2.8f, 2.0f * std::atan(PPRadius / DistanceToCenter));
+		const float AspectPP = ReceiverCone.bValid
+			? std::max(0.001f, std::tan(ReceiverCone.FovX) / std::max(std::tan(ReceiverCone.FovY), 0.001f))
+			: 1.0f;
+		const float NearPP = ReceiverCone.bValid
+			? std::max(0.001f, ReceiverCone.NearZ * 0.6f)
+			: std::max(0.001f, DistanceToCenter - PPRadius);
+		const float FarPP = ReceiverCone.bValid
+			? std::max(NearPP + 0.001f, ReceiverCone.FarZ)
+			: std::max(NearPP + 0.001f, DistanceToCenter + PPRadius);
+		OutPSMLightProj = FMatrix::MakeProjectionMatrix(FovPP, NearPP, FarPP, AspectPP);
 	}
 
 	void UpdateCacades(FDirectionalShadowData& ShadowData, const FVector& LightDirection, const FFrameContext& MainFrame)

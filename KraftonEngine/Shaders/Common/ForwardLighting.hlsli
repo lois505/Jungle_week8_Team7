@@ -370,7 +370,8 @@ float CalcDirectionalPSMShadow(float3 worldPos, float3 worldNormal)
     DirectionalShadowArray.GetDimensions(width, height, element);
     float2 shadowMapSize = max(float2((float)width, (float)height), float2(1.0f, 1.0f));
     float texelSize = 1.0f / shadowMapSize.x;
-    float finalBias = (ShadowBias + (ShadowSlopeBias * slopeFactor)) * texelSize;
+    float userBias = ShadowBias + (ShadowSlopeBias * slopeFactor);
+    float finalBias = max(userBias * texelSize, (0.25f + 0.25f * slopeFactor) * texelSize);
 
     float4 mainClip = mul(float4(worldPos, 1.0f), PSMMainViewProjection);
     float4 lightClip = mul(mainClip, PSMLightViewProjection);
@@ -392,6 +393,16 @@ float CalcDirectionalPSMShadow(float3 worldPos, float3 worldNormal)
     localUV = clamp(localUV, halfTexel, 1.0f - halfTexel);
 
     const int directionalSlice = 0;
+    float3 sceneToLight = normalize(-DirectionalLight.Direction);
+    float worldBias = max(userBias * 0.02f, 0.0015f + 0.0015f * slopeFactor);
+    float3 biasedWorldPos = worldPos + sceneToLight * worldBias;
+    float4 biasedMainClip = mul(float4(biasedWorldPos, 1.0f), PSMMainViewProjection);
+    float4 biasedLightClip = mul(biasedMainClip, PSMLightViewProjection);
+    float currentDepth = ndc.z;
+    if (abs(biasedLightClip.w) > 0.0001f)
+    {
+        currentDepth = (biasedLightClip.z / biasedLightClip.w);
+    }
 
     float directionalShadowPCFBox = 0.0f;
     {
@@ -404,7 +415,7 @@ float CalcDirectionalPSMShadow(float3 worldPos, float3 worldNormal)
             {
                 float2 sampleUV = clamp(localUV + float2(x, y) * texel, halfTexel, 1.0f - halfTexel);
                 float storedDepth = SampleDirectionalShadow(directionalSlice, sampleUV);
-                directionalShadowPCFBox += (ndc.z + finalBias >= storedDepth) ? 1.0f : 0.0f;
+                directionalShadowPCFBox += (currentDepth + finalBias >= storedDepth) ? 1.0f : 0.0f;
             }
         }
         directionalShadowPCFBox /= 9.0f;
@@ -423,7 +434,7 @@ float CalcDirectionalPSMShadow(float3 worldPos, float3 worldNormal)
             float2 sampleUV = localUV + Rotate2D(PoissonDisk16[i], angle) * radius * texel;
             sampleUV = clamp(sampleUV, halfTexel, 1.0f - halfTexel);
             float storedDepth = SampleDirectionalShadow(directionalSlice, sampleUV);
-            directionalShadowPCFPoisson += (ndc.z + finalBias >= storedDepth) ? 1.0f : 0.0f;
+            directionalShadowPCFPoisson += (currentDepth + finalBias >= storedDepth) ? 1.0f : 0.0f;
         }
         directionalShadowPCFPoisson /= 16.0f;
     }
@@ -431,11 +442,11 @@ float CalcDirectionalPSMShadow(float3 worldPos, float3 worldNormal)
     float shadowVisibility = 1.0f;
     if (ShadowFilterMode == SHADOW_FILTER_VSM)
     {
-        shadowVisibility = SampleDirectionalVSM(directionalSlice, localUV, ndc.z, finalBias, shadowMapSize);
+        shadowVisibility = SampleDirectionalVSM(directionalSlice, localUV, currentDepth, finalBias, shadowMapSize);
     }
     else if (ShadowFilterMode == SHADOW_FILTER_ESM)
     {
-        shadowVisibility = SampleDirectionalESM(directionalSlice, localUV, ndc.z, finalBias, shadowMapSize);
+        shadowVisibility = SampleDirectionalESM(directionalSlice, localUV, currentDepth, finalBias, shadowMapSize);
     }
     else if (ShadowFilterMode == SHADOW_FILTER_PCF_BOX)
     {
@@ -448,7 +459,7 @@ float CalcDirectionalPSMShadow(float3 worldPos, float3 worldNormal)
     else
     {
         float storedDepth = SampleDirectionalShadow(directionalSlice, localUV);
-        shadowVisibility = (ndc.z + finalBias >= storedDepth) ? 1.0f : 0.0f;
+        shadowVisibility = (currentDepth + finalBias >= storedDepth) ? 1.0f : 0.0f;
     }
 
     return ApplyShadowSharpen(shadowVisibility, ShadowSharpen);
