@@ -11,41 +11,74 @@
 #include "Input/InputSystem.h"
 #include "GameFramework/AActor.h"
 #include "Materials/MaterialManager.h"
+#include "Profiling/StartupTrace.h"
 #include <filesystem>
 
 IMPLEMENT_CLASS(UEditorEngine, UEngine)
 
 void UEditorEngine::Init(FWindowsWindow* InWindow)
 {
-	// 엔진 공통 초기화 (Renderer, D3D, 싱글턴 등)
-	UEngine::Init(InWindow);
+	STARTUP_TRACE_SCOPE("UEditorEngine::Init");
 
-	FObjManager::ScanMeshAssets();
-	FMaterialManager::Get().ScanMaterialAssets();
+	// 엔진 공통 초기화 (Renderer, D3D, 싱글턴 등)
+	{
+		STARTUP_TRACE_SCOPE("UEngine.Init");
+		UEngine::Init(InWindow);
+	}
+
+	{
+		STARTUP_TRACE_SCOPE("ScanMeshAssets");
+		FObjManager::ScanMeshAssets();
+	}
+	{
+		STARTUP_TRACE_SCOPE("ScanMaterialAssets");
+		FMaterialManager::Get().ScanMaterialAssets();
+	}
 
 	// 에디터 전용 초기화
-	FEditorSettings::Get().LoadFromFile(FEditorSettings::GetDefaultSettingsPath());
+	{
+		STARTUP_TRACE_SCOPE("EditorSettings.LoadFromFile");
+		FEditorSettings::Get().LoadFromFile(FEditorSettings::GetDefaultSettingsPath());
+	}
 
-	MainPanel.Create(Window, Renderer, this);
+	{
+		STARTUP_TRACE_SCOPE("MainPanel.Create");
+		MainPanel.Create(Window, Renderer, this);
+	}
 
 	// 기본 월드 생성 — 모든 서브시스템 초기화의 기반
-	CreateWorldContext(EWorldType::Editor, FName("Default"));
-	SetActiveWorld(WorldList[0].ContextHandle);
-	GetWorld()->InitWorld();
+	{
+		STARTUP_TRACE_SCOPE("CreateDefaultEditorWorld");
+		CreateWorldContext(EWorldType::Editor, FName("Default"));
+		SetActiveWorld(WorldList[0].ContextHandle);
+		GetWorld()->InitWorld();
+	}
 
 	// Selection & Gizmo
-	SelectionManager.Init();
-	SelectionManager.SetWorld(GetWorld());
+	{
+		STARTUP_TRACE_SCOPE("SelectionManager.Init");
+		SelectionManager.Init();
+		SelectionManager.SetWorld(GetWorld());
+	}
 
 	// 뷰포트 레이아웃 초기화 + 저장된 설정 복원
-	ViewportLayout.Initialize(this, Window, Renderer, &SelectionManager);
-	ViewportLayout.LoadFromSettings();
+	{
+		STARTUP_TRACE_SCOPE("ViewportLayout.InitializeAndLoad");
+		ViewportLayout.Initialize(this, Window, Renderer, &SelectionManager);
+		ViewportLayout.LoadFromSettings();
+	}
 
 	// EditorStartLevel이 설정돼 있으면 기본 월드를 교체 (EditorSceneWidget::LoadScene과 동일 플로우)
-	LoadStartLevel();
+	{
+		STARTUP_TRACE_SCOPE("LoadStartLevel");
+		LoadStartLevel();
+	}
 
 	// Editor render pipeline
-	SetRenderPipeline(std::make_unique<FEditorRenderPipeline>(this, Renderer));
+	{
+		STARTUP_TRACE_SCOPE("SetEditorRenderPipeline");
+		SetRenderPipeline(std::make_unique<FEditorRenderPipeline>(this, Renderer));
+	}
 }
 
 void UEditorEngine::Shutdown()
@@ -326,6 +359,8 @@ void UEditorEngine::NewScene()
 
 void UEditorEngine::LoadStartLevel()
 {
+	STARTUP_TRACE_SCOPE("UEditorEngine::LoadStartLevel");
+
 	const FString& StartLevel = FEditorSettings::Get().EditorStartLevel;
 	if (StartLevel.empty())
 	{
@@ -337,11 +372,17 @@ void UEditorEngine::LoadStartLevel()
 	FString FilePath = FPaths::ToUtf8(ScenePath.wstring());
 
 	// EditorSceneWidget::LoadScene과 동일한 플로우
-	ClearScene();
+	{
+		STARTUP_TRACE_SCOPE("LoadStartLevel.ClearScene");
+		ClearScene();
+	}
 
 	FWorldContext LoadCtx;
 	FPerspectiveCameraData CamData;
-	FSceneSaveManager::LoadSceneFromJSON(FilePath, LoadCtx, CamData);
+	{
+		STARTUP_TRACE_SCOPE("LoadSceneFromJSON");
+		FSceneSaveManager::LoadSceneFromJSON(FilePath, LoadCtx, CamData);
+	}
 	if (!LoadCtx.World)
 	{
 		// 로드 실패 시 빈 씬으로 복구
@@ -349,12 +390,18 @@ void UEditorEngine::LoadStartLevel()
 		return;
 	}
 
-	WorldList.push_back(LoadCtx);
-	SetActiveWorld(LoadCtx.ContextHandle);
-	SelectionManager.SetWorld(LoadCtx.World);
-	LoadCtx.World->WarmupPickingData();
+	{
+		STARTUP_TRACE_SCOPE("AttachLoadedWorldAndWarmupPicking");
+		WorldList.push_back(LoadCtx);
+		SetActiveWorld(LoadCtx.ContextHandle);
+		SelectionManager.SetWorld(LoadCtx.World);
+		LoadCtx.World->WarmupPickingData();
+	}
 
-	ResetViewport();
+	{
+		STARTUP_TRACE_SCOPE("LoadStartLevel.ResetViewport");
+		ResetViewport();
+	}
 
 	// ResetViewport()가 카메라를 기본값으로 초기화하므로 그 이후에 복원
 	if (CamData.bValid)

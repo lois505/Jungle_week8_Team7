@@ -6,6 +6,7 @@
 #include "Render/Pipeline/LODContext.h"
 #include <algorithm>
 #include "Profiling/Stats.h"
+#include "Profiling/StartupTrace.h"
 
 IMPLEMENT_CLASS(UWorld, UObject)
 
@@ -132,12 +133,18 @@ void UWorld::EndDeferredPickingBVHUpdate()
 
 void UWorld::WarmupPickingData() const
 {
+	STARTUP_TRACE_SCOPE("UWorld::WarmupPickingData");
+
+	uint32 VisibleActorCount = 0;
+	uint32 StaticMeshPrimitiveCount = 0;
+
 	for (AActor* Actor : GetActors())
 	{
 		if (!Actor || !Actor->IsVisible())
 		{
 			continue;
 		}
+		++VisibleActorCount;
 
 		for (UPrimitiveComponent* Primitive : Actor->GetPrimitiveComponents())
 		{
@@ -149,12 +156,15 @@ void UWorld::WarmupPickingData() const
 			UStaticMeshComponent* StaticMeshComponent = static_cast<UStaticMeshComponent*>(Primitive);
 			if (UStaticMesh* StaticMesh = StaticMeshComponent->GetStaticMesh())
 			{
+				++StaticMeshPrimitiveCount;
 				StaticMesh->EnsureMeshTrianglePickingBVHBuilt();
 			}
 		}
 	}
 
 	BuildWorldPrimitivePickingBVHNow();
+	STARTUP_TRACE_LOG("WarmupPickingData done. visibleActors=%u staticMeshPrimitives=%u",
+		VisibleActorCount, StaticMeshPrimitiveCount);
 }
 
 bool UWorld::RaycastPrimitives(const FRay& Ray, FHitResult& OutHitResult, AActor*& OutActor) const

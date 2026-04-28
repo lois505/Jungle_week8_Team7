@@ -15,6 +15,7 @@
 #include "GameFramework/World.h"
 #include "GameFramework/AActor.h"
 #include "Core/TickFunction.h"
+#include "Profiling/StartupTrace.h"
 
 DEFINE_CLASS(UEngine, UObject)
 
@@ -39,24 +40,54 @@ namespace
 
 void UEngine::Init(FWindowsWindow* InWindow)
 {
+	STARTUP_TRACE_SCOPE("UEngine::Init");
+
 	Window = InWindow;
 
 	// 싱글턴 초기화 순서 보장
-	FNamePool::Get();
-	FObjectFactory::Get();
+	{
+		STARTUP_TRACE_SCOPE("Init.NamePoolAndObjectFactory");
+		FNamePool::Get();
+		FObjectFactory::Get();
+	}
 
-	InputSystem::Get().SetOwnerWindow(Window->GetHWND());
-	Renderer.Create(Window->GetHWND());
+	{
+		STARTUP_TRACE_SCOPE("InputSystem.SetOwnerWindow");
+		InputSystem::Get().SetOwnerWindow(Window->GetHWND());
+	}
+
+	{
+		STARTUP_TRACE_SCOPE("Renderer.Create");
+		Renderer.Create(Window->GetHWND());
+	}
 
 	ID3D11Device* Device = Renderer.GetFD3DDevice().GetDevice();
-	FMeshBufferManager::Get().Initialize(Device);
-	FResourceManager::Get().LoadFromFile(FPaths::ToUtf8(FPaths::ResourceFilePath()), Device);
-	FResourceManager::Get().LoadFromDirectory(FPaths::ToUtf8(FPaths::RootDir()), Device);
+	{
+		STARTUP_TRACE_SCOPE("MeshBufferManager.Initialize");
+		FMeshBufferManager::Get().Initialize(Device);
+	}
+	{
+		STARTUP_TRACE_SCOPE("ResourceManager.LoadFromFile");
+		FResourceManager::Get().LoadFromFile(FPaths::ToUtf8(FPaths::ResourceFilePath()), Device);
+	}
+	{
+		STARTUP_TRACE_SCOPE("ResourceManager.LoadFromDirectory");
+		FResourceManager::Get().LoadFromDirectory(FPaths::ToUtf8(FPaths::RootDir()), Device);
+	}
 
-	SetRenderPipeline(std::make_unique<FDefaultRenderPipeline>(this, Renderer));
+	{
+		STARTUP_TRACE_SCOPE("SetDefaultRenderPipeline");
+		SetRenderPipeline(std::make_unique<FDefaultRenderPipeline>(this, Renderer));
+	}
 
-	FLogManager::Get().Initialize();
-	FDirectoryWatcher::Get().Initialize();
+	{
+		STARTUP_TRACE_SCOPE("LogManager.Initialize");
+		FLogManager::Get().Initialize();
+	}
+	{
+		STARTUP_TRACE_SCOPE("DirectoryWatcher.Initialize");
+		FDirectoryWatcher::Get().Initialize();
+	}
 }
 
 void UEngine::Shutdown()

@@ -18,6 +18,7 @@
 #include "Core/PropertyTypes.h"
 #include "Object/FName.h"
 #include "Profiling/PlatformTime.h"
+#include "Profiling/StartupTrace.h"
 
 // ---- JSON vector helpers ---------------------------------------------------
 
@@ -431,7 +432,11 @@ void FSceneSaveManager::DeserializeCamera(json::JSON& CameraJSON, FPerspectiveCa
 
 void FSceneSaveManager::LoadSceneFromJSON(const string& filepath, FWorldContext& OutWorldContext, FPerspectiveCameraData& OutCam)
 {
+	STARTUP_TRACE_SCOPE("FSceneSaveManager::LoadSceneFromJSON");
+
 	using json::JSON;
+	STARTUP_TRACE_LOG("Scene path: %s", filepath.c_str());
+
 	std::ifstream File(std::filesystem::path(FPaths::ToWide(filepath)));
 	if (!File.is_open()) {
 		std::cerr << "Failed to open file at target destination" << std::endl;
@@ -460,11 +465,15 @@ void FSceneSaveManager::LoadSceneFromJSON(const string& filepath, FWorldContext&
 		? root[SceneKeys::ContextHandle].ToString()
 		: ContextName;
 
-	World->InitWorld();
+	{
+		STARTUP_TRACE_SCOPE("SceneLoad.InitWorld");
+		World->InitWorld();
+	}
 
 	// Deserialize Primitives (top-level) and Camera first
 	std::unordered_map<string, AActor*> CreatedFromPrimitives;
 	if (root.hasKey("Primitives")) {
+		STARTUP_TRACE_SCOPE("SceneLoad.DeserializePrimitives");
 		JSON& Prims = root["Primitives"];
 		DeserializePrimitives(Prims, World, CreatedFromPrimitives);
 	}
@@ -481,6 +490,7 @@ void FSceneSaveManager::LoadSceneFromJSON(const string& filepath, FWorldContext&
 	// Deserialize Actors
 	if (root.hasKey(SceneKeys::Actors))
 	{
+		STARTUP_TRACE_SCOPE("SceneLoad.DeserializeActors");
 		for (auto& ActorJSON : root[SceneKeys::Actors].ArrayRange()) {
 			string ActorClass = ActorJSON[SceneKeys::ClassName].ToString();
 			// If this actor references a PrimitiveKey and that primitive already created an actor,
