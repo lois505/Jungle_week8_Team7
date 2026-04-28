@@ -207,6 +207,24 @@ void FShadowRenderer::RenderShadows(FD3DDevice& Device, FSystemResources& Resour
 
 void FShadowRenderer::RenderDirectionalShadow(FD3DDevice& Device, FSystemResources& Resources, FGlobalDirectionalLightParams& Light, FScene& Scene, const FFrameContext MainFrame)
 {
+	const TStaticArray<FVector, 8> WorldFrustumCorners = MainFrame.FrustumVolume.GetFrustumCorners();
+	const FMatrix MainViewProjection = MainFrame.View * MainFrame.Proj;
+	TStaticArray<FVector4, 8> PSMFrustumCorners = {};
+
+	for (int32 i = 0; i < static_cast<int32>(WorldFrustumCorners.size()); ++i)
+	{
+		FVector4 ProjectedCorner = MainViewProjection.TransformVector4(FVector4(WorldFrustumCorners[i], 1.0f));
+		if (std::abs(ProjectedCorner.W) > 1e-6f)
+		{
+			ProjectedCorner.X /= ProjectedCorner.W;
+			ProjectedCorner.Y /= ProjectedCorner.W;
+			ProjectedCorner.Z /= ProjectedCorner.W;
+			ProjectedCorner.W = 1.0f;
+		}
+
+		PSMFrustumCorners[i] = ProjectedCorner;
+	}
+
 	UpdateCacades(Light.ShadowData, Light.Direction, MainFrame);
 	const FDirectionalShadowArray& DirectionalArray = Resources.ShadowResourceManager.GetShadowArray();
 
