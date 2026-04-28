@@ -596,7 +596,7 @@ void FEditorPropertyWidget::RenderDirectionalLightShadowPreview(UDirectionalLigh
 	FGlobalDirectionalLightParams& Params = Env.GetGlobalDirectionalLightParams();
 
 	ImGui::Separator();
-	ImGui::Text("Directional Light Shadow Map (CSM)");
+	ImGui::Text("Directional Light Shadow Map");
 
 	if (!Params.ShadowData.Settings.bCastShadows)
 	{
@@ -604,19 +604,20 @@ void FEditorPropertyWidget::RenderDirectionalLightShadowPreview(UDirectionalLigh
 		return;
 	}
 
-	static int PreviewCascadeIndex = 1;
-	const char* CascadeNames[FDirectionalShadowData::NUM_CASCADES] = {"Cascade 0", "Cascade 1", "Cascade 2", "Cascade 3"};
-	ImGui::Text("Cascade");
+	static int PreviewSliceIndex = 0;
+	constexpr int NumDirectionalPreviewSlices = FDirectionalShadowData::NUM_CASCADES + 1;
+	const char* SliceNames[NumDirectionalPreviewSlices] = {"PSM", "Cascade 0", "Cascade 1", "Cascade 2", "Cascade 3"};
+	ImGui::Text("Slice");
 	ImGui::SameLine(120);
 	ImGui::SetNextItemWidth(-1.0f);
-	if (ImGui::BeginCombo("##DirShadowCascade", CascadeNames[PreviewCascadeIndex - 1]))
+	if (ImGui::BeginCombo("##DirShadowSlice", SliceNames[PreviewSliceIndex]))
 	{
-		for (int i = 1; i <= FDirectionalShadowData::NUM_CASCADES; ++i)
+		for (int i = 0; i < NumDirectionalPreviewSlices; ++i)
 		{
-			const bool bSelected = (PreviewCascadeIndex == i);
-			if (ImGui::Selectable(CascadeNames[i-1], bSelected))
+			const bool bSelected = (PreviewSliceIndex == i);
+			if (ImGui::Selectable(SliceNames[i], bSelected))
 			{
-				PreviewCascadeIndex = i;
+				PreviewSliceIndex = i;
 			}
 			if (bSelected)
 			{
@@ -628,10 +629,11 @@ void FEditorPropertyWidget::RenderDirectionalLightShadowPreview(UDirectionalLigh
 
 	const FDirectionalShadowArray& DirShadowArray = GEngine->GetRenderer().GetDirShadowArray();
 
-	if (DirShadowArray.PreviewSRVs[PreviewCascadeIndex])
+	if (DirShadowArray.PreviewSRVs[PreviewSliceIndex])
 	{
-		ImGui::TextDisabled("CSM Slice: %d | %ux%u",
-			PreviewCascadeIndex,
+		ImGui::TextDisabled("%s Slice: %d | %ux%u",
+			PreviewSliceIndex == 0 ? "PSM" : "CSM",
+			PreviewSliceIndex,
 			Params.ShadowData.Settings.ShadowResolutionScale * 1024.0f,
 			Params.ShadowData.Settings.ShadowResolutionScale * 1024.0f);
 
@@ -639,7 +641,7 @@ void FEditorPropertyWidget::RenderDirectionalLightShadowPreview(UDirectionalLigh
 		const float PreviewSize = AvailableWidth < 256.0f ? AvailableWidth : 256.0f;
 
 		ImGui::Image(
-			reinterpret_cast<ImTextureID>(DirShadowArray.PreviewSRVs[PreviewCascadeIndex]),
+			reinterpret_cast<ImTextureID>(DirShadowArray.PreviewSRVs[PreviewSliceIndex]),
 			ImVec2(PreviewSize, PreviewSize)
 		);
 	}

@@ -361,11 +361,115 @@ int GetCascadeIndex(float4 screenPos)
     return cascadeIndex;
 }
 
+float CalcDirectionalPSMShadow(float3 worldPos, float3 worldNormal)
+{
+    float NdotL = saturate(dot(worldNormal, DirectionalLight.Direction));
+    float slopeFactor = 1.0f - NdotL;
+
+    uint width, height, element;
+    DirectionalShadowArray.GetDimensions(width, height, element);
+    float2 shadowMapSize = max(float2((float)width, (float)height), float2(1.0f, 1.0f));
+    float texelSize = 1.0f / shadowMapSize.x;
+    float finalBias = (ShadowBias + (ShadowSlopeBias * slopeFactor)) * texelSize;
+
+    float4 mainClip = mul(float4(worldPos, 1.0f), PSMMainViewProjection);
+    if (abs(mainClip.w) <= 0.0001f)
+    {
+        return 1.0f;
+    }
+
+    float4 psmPosition = float4(mainClip.xyz / mainClip.w, 1.0f);
+    float4 lightClip = mul(psmPosition, PSMLightViewProjection);
+    if (abs(lightClip.w) <= 0.0001f)
+    {
+        return 1.0f;
+    }
+
+    float3 ndc = lightClip.xyz / lightClip.w;
+    if (ndc.x < -1.0f || ndc.x > 1.0f ||
+        ndc.y < -1.0f || ndc.y > 1.0f ||
+        ndc.z < 0.0f || ndc.z > 1.0f)
+    {
+        return 1.0f;
+    }
+
+    float2 localUV = float2(ndc.x * 0.5f + 0.5f, -ndc.y * 0.5f + 0.5f);
+    float2 halfTexel = 0.5f / shadowMapSize;
+    localUV = clamp(localUV, halfTexel, 1.0f - halfTexel);
+
+    const int directionalSlice = 0;
+
+    float directionalShadowPCFBox = 0.0f;
+    {
+        float2 texel = 1.0f / shadowMapSize;
+        [unroll]
+        for (int y = -1; y <= 1; ++y)
+        {
+            [unroll]
+            for (int x = -1; x <= 1; ++x)
+            {
+                float2 sampleUV = clamp(localUV + float2(x, y) * texel, halfTexel, 1.0f - halfTexel);
+                float storedDepth = SampleDirectionalShadow(directionalSlice, sampleUV);
+                directionalShadowPCFBox += (ndc.z + finalBias >= storedDepth) ? 1.0f : 0.0f;
+            }
+        }
+        directionalShadowPCFBox /= 9.0f;
+    }
+
+    float directionalShadowPCFPoisson = 0.0f;
+    {
+        float2 texel = 1.0f / shadowMapSize;
+        const float radius = 2.5f;
+        float2 pixel = floor(localUV * shadowMapSize);
+        float angle = Hash12(pixel) * 6.2831853f;
+
+        [unroll]
+        for (int i = 0; i < 16; ++i)
+        {
+            float2 sampleUV = localUV + Rotate2D(PoissonDisk16[i], angle) * radius * texel;
+            sampleUV = clamp(sampleUV, halfTexel, 1.0f - halfTexel);
+            float storedDepth = SampleDirectionalShadow(directionalSlice, sampleUV);
+            directionalShadowPCFPoisson += (ndc.z + finalBias >= storedDepth) ? 1.0f : 0.0f;
+        }
+        directionalShadowPCFPoisson /= 16.0f;
+    }
+
+    float shadowVisibility = 1.0f;
+    if (ShadowFilterMode == SHADOW_FILTER_VSM)
+    {
+        shadowVisibility = SampleDirectionalVSM(directionalSlice, localUV, ndc.z, finalBias, shadowMapSize);
+    }
+    else if (ShadowFilterMode == SHADOW_FILTER_ESM)
+    {
+        shadowVisibility = SampleDirectionalESM(directionalSlice, localUV, ndc.z, finalBias, shadowMapSize);
+    }
+    else if (ShadowFilterMode == SHADOW_FILTER_PCF_BOX)
+    {
+        shadowVisibility = directionalShadowPCFBox;
+    }
+    else if (ShadowFilterMode == SHADOW_FILTER_PCF_POISSON)
+    {
+        shadowVisibility = directionalShadowPCFPoisson;
+    }
+    else
+    {
+        float storedDepth = SampleDirectionalShadow(directionalSlice, localUV);
+        shadowVisibility = (ndc.z + finalBias >= storedDepth) ? 1.0f : 0.0f;
+    }
+
+    return ApplyShadowSharpen(shadowVisibility, ShadowSharpen);
+}
+
 float CalcDirectionalShadow(float3 worldPos, float3 worldNormal, float4 screenPos)
 {
     if (NumCascades <= 0)
     {
         return 1.0f;
+    }
+
+    if (UsePSMShadow != 0)
+    {
+        return CalcDirectionalPSMShadow(worldPos, worldNormal);
     }
 
     int cascadeIndex = GetCascadeIndex(screenPos);

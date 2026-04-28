@@ -309,7 +309,7 @@ void FShadowResourceManager::CreateDirectionalShadowArray(uint32 Resolution, int
 	Desc.SampleDesc = { 1, 0 };
 	CachedDevice->CreateTexture2D(&Desc, nullptr, &DirShadowArray.Texture);
 
-	for (int i = 1; i <= NumCascades; ++i)
+	for (int i = 0; i <= NumCascades; ++i)
 	{
 		D3D11_DEPTH_STENCIL_VIEW_DESC DSVDesc = {};
 		DSVDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
@@ -348,7 +348,7 @@ void FShadowResourceManager::CreateDirectionalShadowArray(uint32 Resolution, int
 
 	CachedDevice->CreateTexture2D(&MomentDesc, nullptr, &DirShadowArray.MomentTexture);
 
-	for (int i = 1; i <= NumCascades; ++i)
+	for (int i = 0; i <= NumCascades; ++i)
 	{
 		D3D11_RENDER_TARGET_VIEW_DESC RTVDesc = {};
 		RTVDesc.Format = DXGI_FORMAT_R32G32_FLOAT;
@@ -393,7 +393,8 @@ void FShadowResourceManager::ResizeDirectionalShadowArray(uint32 Resolution, int
 {
 	if (DirShadowArray.Texture
 		&& static_cast<uint32>(DirShadowArray.Width) == Resolution
-		&& DirShadowArray.NumElements == static_cast<uint32>(NumCascades))
+		&& DirShadowArray.NumElements == static_cast<uint32>(NumCascades)
+		&& DirShadowArray.DSVs[0])
 	{
 		return;
 	}

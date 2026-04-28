@@ -75,6 +75,8 @@ struct FDirectionalShadowData : FShadowCommonData
 	static constexpr  int NUM_CASCADES = 4;
 
 	float DistributeExponent = 0.95f;
+	FShadowViewData PSMView;
+	FMatrix MainViewProjection = FMatrix::Identity;
 	FShadowViewData View[NUM_CASCADES];
 	float CasCadeEnds[NUM_CASCADES + 1];
 	float CascadeEndClipZ[NUM_CASCADES];

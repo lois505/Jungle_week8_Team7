@@ -207,6 +207,7 @@ void FShadowRenderer::RenderShadows(FD3DDevice& Device, FSystemResources& Resour
 
 void FShadowRenderer::RenderDirectionalShadow(FD3DDevice& Device, FSystemResources& Resources, FGlobalDirectionalLightParams& Light, FScene& Scene, const FFrameContext MainFrame)
 {
+	// Construct main-camera frustum corners in PSM space (post-projective/NDC space).
 	const TStaticArray<FVector, 8> WorldFrustumCorners = MainFrame.FrustumVolume.GetFrustumCorners();
 	const FMatrix MainViewProjection = MainFrame.View * MainFrame.Proj;
 	TStaticArray<FVector4, 8> PSMFrustumCorners = {};
@@ -225,8 +226,77 @@ void FShadowRenderer::RenderDirectionalShadow(FD3DDevice& Device, FSystemResourc
 		PSMFrustumCorners[i] = ProjectedCorner;
 	}
 
+	// Construct the light direction in PSM space.
+	const FVector WorldFrustumCenter = MainFrame.FrustumVolume.GetFrustumCenter();
+	const FVector PSMFrustumCenter = MainViewProjection.TransformPositionWithW(WorldFrustumCenter);
+	const FVector PSMLightTarget = MainViewProjection.TransformPositionWithW(WorldFrustumCenter + Light.Direction);
+
+	FVector PSMLightDirection(
+		PSMLightTarget.X - PSMFrustumCenter.X,
+		PSMLightTarget.Y - PSMFrustumCenter.Y,
+		PSMLightTarget.Z - PSMFrustumCenter.Z);
+	PSMLightDirection.Normalize();
+
+	FVector PSMUpCandidate(0.0f, 0.0f, 1.0f);
+	if (std::abs(PSMLightDirection.Dot(PSMUpCandidate)) > 0.99f)
+	{
+		PSMUpCandidate = FVector(0.0f, 1.0f, 0.0f);
+	}
+
+	// Build a light view matrix in PSM space.
+	const FVector PSMRight = PSMUpCandidate.Cross(PSMLightDirection).Normalized();
+	const FVector PSMUp = PSMLightDirection.Cross(PSMRight).Normalized();
+	const FVector PSMViewLocation = PSMFrustumCenter;
+	const FMatrix PSMLightView = FMatrix::MakeViewMatrix(PSMLightDirection, PSMRight, PSMUp, PSMViewLocation);
+
+	float PSMMinX = FLT_MAX, PSMMaxX = -FLT_MAX;
+	float PSMMinY = FLT_MAX, PSMMaxY = -FLT_MAX;
+	float PSMMinZ = FLT_MAX, PSMMaxZ = -FLT_MAX;
+
+	// Compute the main-camera frustum bounds in PSM light-view space.
+	for (const FVector4& PSMCorner : PSMFrustumCorners)
+	{
+		const FVector4 PSMLightCorner = PSMLightView.TransformVector4(PSMCorner);
+		PSMMinX = std::min(PSMMinX, PSMLightCorner.X); PSMMaxX = std::max(PSMMaxX, PSMLightCorner.X);
+		PSMMinY = std::min(PSMMinY, PSMLightCorner.Y); PSMMaxY = std::max(PSMMaxY, PSMLightCorner.Y);
+		PSMMinZ = std::min(PSMMinZ, PSMLightCorner.Z); PSMMaxZ = std::max(PSMMaxZ, PSMLightCorner.Z);
+	}
+
+	// Build an orthographic projection that encloses the PSM-space frustum from the PSM light view.
+	const FMatrix PSMLightProj = FMatrix::MakeOrtho(PSMMinX, PSMMaxX, PSMMinY, PSMMaxY, PSMMinZ, PSMMaxZ);
+	const FMatrix PSMLightViewProj = PSMLightView * PSMLightProj;
+	Light.ShadowData.MainViewProjection = MainViewProjection;
+	Light.ShadowData.PSMView.LightView = PSMLightView;
+	Light.ShadowData.PSMView.LightProj = PSMLightProj;
+	Light.ShadowData.PSMView.LightViewProj = PSMLightViewProj;
+
 	UpdateCacades(Light.ShadowData, Light.Direction, MainFrame);
 	const FDirectionalShadowArray& DirectionalArray = Resources.ShadowResourceManager.GetShadowArray();
+
+	if (ShadowOptions.DirectionalShadowMode == EDirectionalShadowMode::Single)
+	{
+		FShadowMapResource& DepthMap = Light.ShadowData.PSMView.DepthMap;
+		DepthMap.DSV = DirectionalArray.DSVs[0];
+		DepthMap.DepthTexture = DirectionalArray.Texture;
+
+		if (ShadowOptions.ShadowFilterMode == EShadowFilterMode::VSM || ShadowOptions.ShadowFilterMode == EShadowFilterMode::ESM)
+		{
+			DepthMap.Texture = DirectionalArray.MomentTexture;
+			DepthMap.RTV = DirectionalArray.MomentRTVs[0];
+			DepthMap.SRV = DirectionalArray.MomentSRV;
+		}
+		else
+		{
+			DepthMap.Texture = DirectionalArray.Texture;
+			DepthMap.RTV = nullptr;
+			DepthMap.SRV = DirectionalArray.SRV;
+		}
+
+		DepthMap.Width = static_cast<uint32>(DirectionalArray.Width);
+		DepthMap.Height = static_cast<uint32>(DirectionalArray.Height);
+
+		RenderShadowView(Device, Resources, Light.ShadowData.PSMView, Scene, true, &Light.ShadowData.MainViewProjection);
+	}
 
 	for (int i = 0; i < Light.ShadowData.NUM_CASCADES; i++)
 	{
@@ -283,7 +353,8 @@ void FShadowRenderer::RenderSpotShadow(FD3DDevice& Device, FSystemResources& Res
 }
 
 //	각각의 View Rendering
-void FShadowRenderer::RenderShadowView(FD3DDevice& Device, FSystemResources& Resources, FShadowViewData& View, FScene& Scene)
+void FShadowRenderer::RenderShadowView(FD3DDevice& Device, FSystemResources& Resources, FShadowViewData& View, FScene& Scene,
+	bool bUsePSMShader, const FMatrix* PSMMainViewProjection)
 {
 	//	Preparing for Rendering
 	ID3D11DeviceContext* DeviceContext = Device.GetDeviceContext();
@@ -364,13 +435,24 @@ void FShadowRenderer::RenderShadowView(FD3DDevice& Device, FSystemResources& Res
 
 	BindShadowFrameConstants(Device, Resources, PassContext);
 
+	if (bUsePSMShader && PSMMainViewProjection)
+	{
+		FPSMShadowConstants PSMData = {};
+		PSMData.MainViewProjection = PSMMainViewProjection->ConvertToPOD();
+		PSMData.LightViewProj = View.LightViewProj.ConvertToPOD();
+		Resources.PSMShadowBuffer.Update(DeviceContext, &PSMData, sizeof(FPSMShadowConstants));
+
+		ID3D11Buffer* PSMBuffer = Resources.PSMShadowBuffer.GetBuffer();
+		DeviceContext->VSSetConstantBuffers(ECBSlot::PerShader0, 1, &PSMBuffer);
+	}
+
 	if ((ShadowOptions.ShadowFilterMode == EShadowFilterMode::VSM || ShadowOptions.ShadowFilterMode == EShadowFilterMode::ESM))
 	{
-		FShaderManager::Get().GetOrCreate(EShaderPath::MomentShadowMap)->Bind(DeviceContext);
+		FShaderManager::Get().GetOrCreate(bUsePSMShader ? EShaderPath::PSMMomentShadowMap : EShaderPath::MomentShadowMap)->Bind(DeviceContext);
 	}
 	else
 	{
-		FShaderManager::Get().GetOrCreate(EShaderPath::CommonShadowMap)->Bind(DeviceContext);
+		FShaderManager::Get().GetOrCreate(bUsePSMShader ? EShaderPath::PSMCommonShadowMap : EShaderPath::CommonShadowMap)->Bind(DeviceContext);
 	}
 
 	for (const FShadowDrawCommand& Cmd : Builder.GetCommands())

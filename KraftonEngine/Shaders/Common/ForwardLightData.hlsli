@@ -119,6 +119,10 @@ cbuffer DirectionalShadowBuffer : register(b5)
     float ShadowBias;
     float ShadowSlopeBias;
     float ShadowSharpen;
+    float4x4 PSMMainViewProjection;
+    float4x4 PSMLightViewProjection;
+    uint UsePSMShadow;
+    float3 DirectionalShadowPadding;
 }
 
 // ── Structured Buffers (t8~t10) ──
