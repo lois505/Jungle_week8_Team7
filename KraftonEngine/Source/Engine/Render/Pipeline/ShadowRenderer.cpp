@@ -3,8 +3,12 @@
 #include "FrameContext.h"
 #include "ShadowPassContext.h"
 #include "Render/Proxy/FScene.h"
+#include "Render/Proxy/PrimitiveSceneProxy.h"
 #include "Render/Resource/RenderResources.h"
 #include "Render/Resource/ShaderManager.h"
+
+#include <algorithm>
+#include <cmath>
 
 namespace
 {
@@ -64,6 +68,261 @@ namespace
 		View.AtlasSizeY = Info.Height;
 		View.AtlasIndex = Info.Index;
 		View.bAtlasAllocated = Info.bAllocated;
+	}
+
+	bool IsShadowCasterReceiverProxy(const FPrimitiveSceneProxy& Proxy)
+	{
+		if (!Proxy.IsVisible())
+		{
+			return false;
+		}
+
+		if (Proxy.HasProxyFlag(EPrimitiveProxyFlags::EditorOnly | EPrimitiveProxyFlags::Decal | EPrimitiveProxyFlags::FontBatched))
+		{
+			return false;
+		}
+
+		if (Proxy.HasProxyFlag(EPrimitiveProxyFlags::PerViewportUpdate | EPrimitiveProxyFlags::NeverCull))
+		{
+			return false;
+		}
+
+		if (Proxy.GetRenderPass() != ERenderPass::Opaque)
+		{
+			return false;
+		}
+
+		return Proxy.GetMeshBuffer() && !Proxy.GetSectionDraws().empty() && Proxy.GetCachedBounds().IsValid();
+	}
+
+	FBoundingBox BuildShadowReceiverBounds(const FScene& Scene)
+	{
+		FBoundingBox Bounds;
+
+		for (const FPrimitiveSceneProxy* Proxy : Scene.GetAllProxies())
+		{
+			if (!Proxy || !IsShadowCasterReceiverProxy(*Proxy))
+			{
+				continue;
+			}
+
+			const FBoundingBox& ProxyBounds = Proxy->GetCachedBounds();
+			Bounds.Expand(ProxyBounds.Min);
+			Bounds.Expand(ProxyBounds.Max);
+		}
+
+		return Bounds;
+	}
+
+	float ComputeCameraFitNear(const FFrameContext& MainFrame, const FBoundingBox& ReceiverBounds)
+	{
+		if (!ReceiverBounds.IsValid())
+		{
+			return MainFrame.NearClip;
+		}
+
+		FVector Corners[8];
+		ReceiverBounds.GetCorners(Corners);
+
+		float MinZ = FLT_MAX;
+		for (const FVector& Corner : Corners)
+		{
+			const FVector ToCorner = Corner - MainFrame.CameraPosition;
+			MinZ = std::min(MinZ, MainFrame.CameraForward.Dot(ToCorner));
+		}
+
+		const float MaxNear = std::max(MainFrame.NearClip, MainFrame.FarClip - 1.0f);
+		if (MinZ > MainFrame.NearClip && MinZ < MaxNear)
+		{
+			return MinZ;
+		}
+
+		return MainFrame.NearClip;
+	}
+
+	float ComputePSMVirtualSlideBack(const FFrameContext& MainFrame, float CameraFitNear)
+	{
+		const float DepthRange = std::max(MainFrame.FarClip - CameraFitNear, 1.0f);
+		const float SceneScaledSlide = DepthRange * 0.01f;
+		return std::min(std::max(SceneScaledSlide, 1.0f), 25.0f);
+	}
+
+	TStaticArray<FVector, 8> BuildWorldFrustumCornersFromViewProjection(const FMatrix& ViewProjection)
+	{
+		const FMatrix InvViewProjection = ViewProjection.GetInverse();
+
+		return {
+			InvViewProjection.TransformPositionWithW(FVector(-1.0f,  1.0f, 1.0f)),
+			InvViewProjection.TransformPositionWithW(FVector( 1.0f,  1.0f, 1.0f)),
+			InvViewProjection.TransformPositionWithW(FVector( 1.0f, -1.0f, 1.0f)),
+			InvViewProjection.TransformPositionWithW(FVector(-1.0f, -1.0f, 1.0f)),
+			InvViewProjection.TransformPositionWithW(FVector(-1.0f,  1.0f, 0.0f)),
+			InvViewProjection.TransformPositionWithW(FVector( 1.0f,  1.0f, 0.0f)),
+			InvViewProjection.TransformPositionWithW(FVector( 1.0f, -1.0f, 0.0f)),
+			InvViewProjection.TransformPositionWithW(FVector(-1.0f, -1.0f, 0.0f)),
+		};
+	}
+
+	FVector ComputeCenter(const TStaticArray<FVector4, 8>& Points)
+	{
+		FVector Center;
+		for (const FVector4& Point : Points)
+		{
+			Center += FVector(Point.X, Point.Y, Point.Z);
+		}
+
+		return Center / static_cast<float>(Points.size());
+	}
+
+	float ComputeBoundingSphereRadius(const TStaticArray<FVector4, 8>& Points, const FVector& Center)
+	{
+		float Radius = 0.0f;
+		for (const FVector4& Point : Points)
+		{
+			const FVector Delta = FVector(Point.X, Point.Y, Point.Z) - Center;
+			Radius = std::max(Radius, Delta.Length());
+		}
+
+		return std::max(Radius, 0.001f);
+	}
+
+	FMatrix MakeViewFromLocationAndTarget(const FVector& Location, const FVector& Target)
+	{
+		FVector Forward = (Target - Location).Normalized();
+		if (Forward.Length() <= 1e-4f)
+		{
+			Forward = FVector(0.0f, 0.0f, 1.0f);
+		}
+
+		FVector UpCandidate(0.0f, 1.0f, 0.0f);
+		if (std::abs(Forward.Dot(UpCandidate)) > 0.99f)
+		{
+			UpCandidate = FVector(1.0f, 0.0f, 0.0f);
+		}
+
+		const FVector Right = UpCandidate.Cross(Forward).Normalized();
+		const FVector Up = Forward.Cross(Right).Normalized();
+		return FMatrix::MakeViewMatrix(Forward, Right, Up, Location);
+	}
+
+	FMatrix MakeOrthoFitToPoints(const FMatrix& View, const TStaticArray<FVector4, 8>& Points)
+	{
+		float MinX = FLT_MAX, MaxX = -FLT_MAX;
+		float MinY = FLT_MAX, MaxY = -FLT_MAX;
+		float MinZ = FLT_MAX, MaxZ = -FLT_MAX;
+
+		for (const FVector4& Point : Points)
+		{
+			const FVector4 ViewPoint = View.TransformVector4(Point);
+			MinX = std::min(MinX, ViewPoint.X); MaxX = std::max(MaxX, ViewPoint.X);
+			MinY = std::min(MinY, ViewPoint.Y); MaxY = std::max(MaxY, ViewPoint.Y);
+			MinZ = std::min(MinZ, ViewPoint.Z); MaxZ = std::max(MaxZ, ViewPoint.Z);
+		}
+
+		constexpr float MinExtent = 0.001f;
+		if (MaxX - MinX < MinExtent)
+		{
+			const float Center = (MinX + MaxX) * 0.5f;
+			MinX = Center - MinExtent;
+			MaxX = Center + MinExtent;
+		}
+		if (MaxY - MinY < MinExtent)
+		{
+			const float Center = (MinY + MaxY) * 0.5f;
+			MinY = Center - MinExtent;
+			MaxY = Center + MinExtent;
+		}
+		if (MaxZ - MinZ < MinExtent)
+		{
+			const float Center = (MinZ + MaxZ) * 0.5f;
+			MinZ = Center - MinExtent;
+			MaxZ = Center + MinExtent;
+		}
+
+		return FMatrix::MakeOrtho(MinX, MaxX, MinY, MaxY, MinZ, MaxZ);
+	}
+
+	void BuildPSMViewProjection(const FFrameContext& MainFrame, const FScene& Scene, const FVector& LightDirection,
+		FMatrix& OutVirtualCameraViewProjection, FMatrix& OutPSMLightView, FMatrix& OutPSMLightProj)
+	{
+		const FBoundingBox ReceiverBounds = BuildShadowReceiverBounds(Scene);
+		const float CameraFitNear = ComputeCameraFitNear(MainFrame, ReceiverBounds);
+		const float VirtualSlideBack = MainFrame.bIsOrtho ? 0.0f : ComputePSMVirtualSlideBack(MainFrame, CameraFitNear);
+
+		const float AspectRatio = (MainFrame.ViewportHeight > 1.0f)
+			? MainFrame.ViewportWidth / MainFrame.ViewportHeight
+			: 1.0f;
+		const float FovY = 2.0f * std::atan(1.0f / MainFrame.Proj.M[1][1]);
+		const float VirtualNear = std::max(0.001f, CameraFitNear + VirtualSlideBack);
+		const float VirtualFar = std::max(VirtualNear + 1.0f, MainFrame.FarClip + VirtualSlideBack);
+		const FVector VirtualCameraPosition = MainFrame.CameraPosition - MainFrame.CameraForward * VirtualSlideBack;
+
+		const FMatrix VirtualCameraView = MainFrame.bIsOrtho
+			? MainFrame.View
+			: FMatrix::MakeViewMatrix(MainFrame.CameraForward, MainFrame.CameraRight, MainFrame.CameraUp, VirtualCameraPosition);
+		const FMatrix VirtualCameraProj = MainFrame.bIsOrtho
+			? MainFrame.Proj
+			: FMatrix::MakeProjectionMatrix(FovY, VirtualNear, VirtualFar, AspectRatio);
+
+		OutVirtualCameraViewProjection = VirtualCameraView * VirtualCameraProj;
+
+		const TStaticArray<FVector, 8> WorldFrustumCorners = BuildWorldFrustumCornersFromViewProjection(OutVirtualCameraViewProjection);
+		TStaticArray<FVector4, 8> PostPerspectiveCorners = {};
+		for (int32 i = 0; i < static_cast<int32>(WorldFrustumCorners.size()); ++i)
+		{
+			FVector4 ProjectedCorner = OutVirtualCameraViewProjection.TransformVector4(FVector4(WorldFrustumCorners[i], 1.0f));
+			if (std::abs(ProjectedCorner.W) > 1e-6f)
+			{
+				const float InvW = 1.0f / ProjectedCorner.W;
+				ProjectedCorner.X *= InvW;
+				ProjectedCorner.Y *= InvW;
+				ProjectedCorner.Z *= InvW;
+				ProjectedCorner.W = 1.0f;
+			}
+
+			PostPerspectiveCorners[i] = ProjectedCorner;
+		}
+
+		const FVector PPCenter = ComputeCenter(PostPerspectiveCorners);
+		const float PPRadius = ComputeBoundingSphereRadius(PostPerspectiveCorners, PPCenter);
+
+		const FVector NormalizedLightDirection = LightDirection.Normalized();
+		const FVector4 EyeLightDirection = VirtualCameraView.TransformVector4(FVector4(NormalizedLightDirection, 0.0f));
+		const FVector4 LightPP = VirtualCameraProj.TransformVector4(EyeLightDirection);
+		const bool bLightAtInfinity = std::abs(LightPP.W) <= 0.001f;
+		const bool bLightBehindEye = LightPP.W < 0.0f;
+
+		if (bLightAtInfinity)
+		{
+			FVector LightDirectionPP(LightPP.X, LightPP.Y, LightPP.Z);
+			if (LightDirectionPP.Length() <= 1e-4f)
+			{
+				LightDirectionPP = FVector(0.0f, 0.0f, 1.0f);
+			}
+			LightDirectionPP.Normalize();
+
+			const FVector LightPositionPP = PPCenter - LightDirectionPP * (PPRadius * 2.0f);
+			OutPSMLightView = MakeViewFromLocationAndTarget(LightPositionPP, PPCenter);
+			OutPSMLightProj = MakeOrthoFitToPoints(OutPSMLightView, PostPerspectiveCorners);
+			return;
+		}
+
+		const float InvLightW = 1.0f / LightPP.W;
+		const FVector LightPositionPP(LightPP.X * InvLightW, LightPP.Y * InvLightW, LightPP.Z * InvLightW);
+		const float DistanceToCenter = FVector::Distance(LightPositionPP, PPCenter);
+
+		OutPSMLightView = MakeViewFromLocationAndTarget(LightPositionPP, PPCenter);
+
+		if (bLightBehindEye || DistanceToCenter <= PPRadius * 1.05f)
+		{
+			OutPSMLightProj = MakeOrthoFitToPoints(OutPSMLightView, PostPerspectiveCorners);
+			return;
+		}
+
+		const float FovPP = std::min(2.8f, 2.0f * std::atan(PPRadius / DistanceToCenter));
+		const float NearPP = std::max(0.001f, DistanceToCenter - PPRadius);
+		const float FarPP = std::max(NearPP + 0.001f, DistanceToCenter + PPRadius);
+		OutPSMLightProj = FMatrix::MakeProjectionMatrix(FovPP, NearPP, FarPP, 1.0f);
 	}
 
 	void UpdateCacades(FDirectionalShadowData& ShadowData, const FVector& LightDirection, const FFrameContext& MainFrame)
@@ -207,65 +466,13 @@ void FShadowRenderer::RenderShadows(FD3DDevice& Device, FSystemResources& Resour
 
 void FShadowRenderer::RenderDirectionalShadow(FD3DDevice& Device, FSystemResources& Resources, FGlobalDirectionalLightParams& Light, FScene& Scene, const FFrameContext MainFrame)
 {
-	// Construct main-camera frustum corners in PSM space (post-projective/NDC space).
-	const TStaticArray<FVector, 8> WorldFrustumCorners = MainFrame.FrustumVolume.GetFrustumCorners();
-	const FMatrix MainViewProjection = MainFrame.View * MainFrame.Proj;
-	TStaticArray<FVector4, 8> PSMFrustumCorners = {};
+	FMatrix PSMMainViewProjection = FMatrix::Identity;
+	FMatrix PSMLightView = FMatrix::Identity;
+	FMatrix PSMLightProj = FMatrix::Identity;
+	BuildPSMViewProjection(MainFrame, Scene, Light.Direction, PSMMainViewProjection, PSMLightView, PSMLightProj);
 
-	for (int32 i = 0; i < static_cast<int32>(WorldFrustumCorners.size()); ++i)
-	{
-		FVector4 ProjectedCorner = MainViewProjection.TransformVector4(FVector4(WorldFrustumCorners[i], 1.0f));
-		if (std::abs(ProjectedCorner.W) > 1e-6f)
-		{
-			ProjectedCorner.X /= ProjectedCorner.W;
-			ProjectedCorner.Y /= ProjectedCorner.W;
-			ProjectedCorner.Z /= ProjectedCorner.W;
-			ProjectedCorner.W = 1.0f;
-		}
-
-		PSMFrustumCorners[i] = ProjectedCorner;
-	}
-
-	// Construct the light direction in PSM space.
-	const FVector WorldFrustumCenter = MainFrame.FrustumVolume.GetFrustumCenter();
-	const FVector PSMFrustumCenter = MainViewProjection.TransformPositionWithW(WorldFrustumCenter);
-	const FVector PSMLightTarget = MainViewProjection.TransformPositionWithW(WorldFrustumCenter + Light.Direction);
-
-	FVector PSMLightDirection(
-		PSMLightTarget.X - PSMFrustumCenter.X,
-		PSMLightTarget.Y - PSMFrustumCenter.Y,
-		PSMLightTarget.Z - PSMFrustumCenter.Z);
-	PSMLightDirection.Normalize();
-
-	FVector PSMUpCandidate(0.0f, 0.0f, 1.0f);
-	if (std::abs(PSMLightDirection.Dot(PSMUpCandidate)) > 0.99f)
-	{
-		PSMUpCandidate = FVector(0.0f, 1.0f, 0.0f);
-	}
-
-	// Build a light view matrix in PSM space.
-	const FVector PSMRight = PSMUpCandidate.Cross(PSMLightDirection).Normalized();
-	const FVector PSMUp = PSMLightDirection.Cross(PSMRight).Normalized();
-	const FVector PSMViewLocation = PSMFrustumCenter;
-	const FMatrix PSMLightView = FMatrix::MakeViewMatrix(PSMLightDirection, PSMRight, PSMUp, PSMViewLocation);
-
-	float PSMMinX = FLT_MAX, PSMMaxX = -FLT_MAX;
-	float PSMMinY = FLT_MAX, PSMMaxY = -FLT_MAX;
-	float PSMMinZ = FLT_MAX, PSMMaxZ = -FLT_MAX;
-
-	// Compute the main-camera frustum bounds in PSM light-view space.
-	for (const FVector4& PSMCorner : PSMFrustumCorners)
-	{
-		const FVector4 PSMLightCorner = PSMLightView.TransformVector4(PSMCorner);
-		PSMMinX = std::min(PSMMinX, PSMLightCorner.X); PSMMaxX = std::max(PSMMaxX, PSMLightCorner.X);
-		PSMMinY = std::min(PSMMinY, PSMLightCorner.Y); PSMMaxY = std::max(PSMMaxY, PSMLightCorner.Y);
-		PSMMinZ = std::min(PSMMinZ, PSMLightCorner.Z); PSMMaxZ = std::max(PSMMaxZ, PSMLightCorner.Z);
-	}
-
-	// Build an orthographic projection that encloses the PSM-space frustum from the PSM light view.
-	const FMatrix PSMLightProj = FMatrix::MakeOrtho(PSMMinX, PSMMaxX, PSMMinY, PSMMaxY, PSMMinZ, PSMMaxZ);
 	const FMatrix PSMLightViewProj = PSMLightView * PSMLightProj;
-	Light.ShadowData.MainViewProjection = MainViewProjection;
+	Light.ShadowData.MainViewProjection = PSMMainViewProjection;
 	Light.ShadowData.PSMView.LightView = PSMLightView;
 	Light.ShadowData.PSMView.LightProj = PSMLightProj;
 	Light.ShadowData.PSMView.LightViewProj = PSMLightViewProj;

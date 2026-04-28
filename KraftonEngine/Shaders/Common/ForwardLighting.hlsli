@@ -363,7 +363,7 @@ int GetCascadeIndex(float4 screenPos)
 
 float CalcDirectionalPSMShadow(float3 worldPos, float3 worldNormal)
 {
-    float NdotL = saturate(dot(worldNormal, DirectionalLight.Direction));
+    float NdotL = saturate(dot(worldNormal, -DirectionalLight.Direction));
     float slopeFactor = 1.0f - NdotL;
 
     uint width, height, element;
@@ -473,7 +473,7 @@ float CalcDirectionalShadow(float3 worldPos, float3 worldNormal, float4 screenPo
     }
 
     int cascadeIndex = GetCascadeIndex(screenPos);
-    float NdotL = saturate(dot(worldNormal, DirectionalLight.Direction));
+    float NdotL = saturate(dot(worldNormal, -DirectionalLight.Direction));
     float slopeFactor = 1.0f - NdotL;
 
     uint width, height, element;
