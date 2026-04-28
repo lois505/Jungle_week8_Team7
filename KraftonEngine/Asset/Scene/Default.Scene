@@ -12,7 +12,7 @@
           },
           "Location" : [0.000000, -2.463227, 0.353965],
           "Rotation" : [0.000000, 0.000000, 0.000000],
-          "Scale" : [3.642592, 3.569467, 1.000000],
+          "Scale" : [100.000000, 10.000000, 1.000000],
           "Static Mesh" : "Data/BasicShape/Cube.OBJ",
           "Visible" : true,
           "bEditorOnly" : false,
@@ -86,48 +86,6 @@
       },
       "bVisible" : true
     }, {
-      "ClassName" : "AStaticMeshActor",
-      "NonSceneComponents" : [],
-      "PrimitiveKey" : "85",
-      "RootComponent" : {
-        "Children" : [],
-        "ClassName" : "UStaticMeshComponent",
-        "Properties" : {
-          "Element 0" : {
-            "Path" : "Asset/Materials/Auto/BasicShapeMaterial.mat"
-          },
-          "Location" : [4.869311, -5.369391, 0.000000],
-          "Rotation" : [0.000000, 0.000000, 0.000000],
-          "Scale" : [1.185823, 6.202666, 7.989859],
-          "Static Mesh" : "Data/BasicShape/Cube.OBJ",
-          "Visible" : true,
-          "bEditorOnly" : false,
-          "bTickEnable" : true
-        }
-      },
-      "bVisible" : true
-    }, {
-      "ClassName" : "AStaticMeshActor",
-      "NonSceneComponents" : [],
-      "PrimitiveKey" : "87",
-      "RootComponent" : {
-        "Children" : [],
-        "ClassName" : "UStaticMeshComponent",
-        "Properties" : {
-          "Element 0" : {
-            "Path" : "Asset/Materials/Auto/BasicShapeMaterial.mat"
-          },
-          "Location" : [4.869311, -6.427794, 0.000000],
-          "Rotation" : [0.000000, -80.129379, 0.000000],
-          "Scale" : [1.185823, 6.202666, 7.989859],
-          "Static Mesh" : "Data/BasicShape/Cube.OBJ",
-          "Visible" : true,
-          "bEditorOnly" : false,
-          "bTickEnable" : true
-        }
-      },
-      "bVisible" : true
-    }, {
       "ClassName" : "ADirectionalLightActor",
       "NonSceneComponents" : [],
       "RootComponent" : {
@@ -139,12 +97,12 @@
               "Color" : [1.000000, 1.000000, 1.000000, 1.000000],
               "Intensity" : 1.000000,
               "Location" : [0.000000, 0.000000, 0.000000],
-              "Rotation" : [-0.000000, 0.000000, 0.000000],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
               "Scale" : [1.000000, 1.000000, 1.000000],
-              "Shadow Bias" : 0.000000,
-              "Shadow Resolution Scale" : 1.000000,
+              "Shadow Bias" : 2.000000,
+              "Shadow Resolution Scale" : 4.000000,
               "Shadow Sharpen" : 1.000000,
-              "Shadow Slope Bias" : 0.000000,
+              "Shadow Slope Bias" : 2.000000,
               "Visible" : true,
               "bEditorOnly" : false,
               "bTickEnable" : true
@@ -153,11 +111,11 @@
         "ClassName" : "UBillboardComponent",
         "Properties" : {
           "Height" : 1.000000,
-          "Location" : [0.000000, 0.000000, 0.000000],
+          "Location" : [0.000000, 0.000000, 5.706043],
           "Material" : {
             "Path" : "Asset/Materials/Editor/DirectionalLight.mat"
           },
-          "Rotation" : [-0.000000, 0.000000, 0.000000],
+          "Rotation" : [25.795135, 0.000000, -32.257843],
           "Scale" : [1.000000, 1.000000, 1.000000],
           "Visible" : true,
           "Width" : 1.000000,
@@ -183,7 +141,7 @@
       "Location" : [0.000000, -2.463227, 0.353965],
       "ObjStaticMeshAsset" : "Data/BasicShape/Cube.OBJ",
       "Rotation" : [0.000000, -0.000000, 0.000000],
-      "Scale" : [3.642592, 3.569467, 1.000000],
+      "Scale" : [100.000000, 10.000000, 1.000000],
       "Type" : "StaticMeshComp"
     },
     "66" : {
@@ -191,20 +149,6 @@
       "ObjStaticMeshAsset" : "Data/Lumine/LumineModel.obj",
       "Rotation" : [0.000000, -0.000000, 89.999992],
       "Scale" : [3.000000, 3.000000, 3.000000],
-      "Type" : "StaticMeshComp"
-    },
-    "85" : {
-      "Location" : [4.869311, -5.369391, 0.000000],
-      "ObjStaticMeshAsset" : "Data/BasicShape/Cube.OBJ",
-      "Rotation" : [0.000000, -0.000000, 0.000000],
-      "Scale" : [1.185823, 6.202666, 7.989859],
-      "Type" : "StaticMeshComp"
-    },
-    "87" : {
-      "Location" : [4.869311, -6.427794, 0.000000],
-      "ObjStaticMeshAsset" : "Data/BasicShape/Cube.OBJ",
-      "Rotation" : [0.000000, -0.000000, -80.129379],
-      "Scale" : [1.185823, 6.202666, 7.989859],
       "Type" : "StaticMeshComp"
     }
   },
