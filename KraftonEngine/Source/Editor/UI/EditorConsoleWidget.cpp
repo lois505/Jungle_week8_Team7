@@ -1,9 +1,13 @@
 ﻿#include "Editor/UI/EditorConsoleWidget.h"
 #include "Editor/EditorEngine.h"
+#include "Editor/Settings/EditorSettings.h"
 #include "Editor/Subsystem/OverlayStatSystem.h"
+#include "Editor/Viewport/LevelEditorViewportClient.h"
+#include "Engine/Runtime/Engine.h"
 #include "Object/Object.h"
 
 #include <algorithm>
+#include <cstdlib>
 
 // ============================================================
 // FConsoleLogOutputDevice
@@ -31,6 +35,49 @@ void FEditorConsoleWidget::AddLog(const char* fmt, ...) {
 	va_start(args, fmt);
 	FLogManager::Get().LogV(fmt, args);
 	va_end(args);
+}
+
+bool FEditorConsoleWidget::TryParseShadowFilterMode(const FString& Value, EShadowFilterMode& OutMode) const
+{
+	FString Lower = Value;
+	std::transform(Lower.begin(), Lower.end(), Lower.begin(), ::tolower);
+
+	if (Lower == "none")
+	{
+		OutMode = EShadowFilterMode::None;
+		return true;
+	}
+	if (Lower == "pcf_box" || Lower == "pcf")
+	{
+		OutMode = EShadowFilterMode::PCF_BOX;
+		return true;
+	}
+	if (Lower == "vsm")
+	{
+		OutMode = EShadowFilterMode::VSM;
+		return true;
+	}
+	if (Lower == "esm")
+	{
+		OutMode = EShadowFilterMode::ESM;
+		return true;
+	}
+	if (Lower == "pcf_poi" || Lower == "pcf_poisson")
+	{
+		OutMode = EShadowFilterMode::PCF_POISSON;
+		return true;
+	}
+
+	return false;
+}
+
+void FEditorConsoleWidget::ApplyShadowFilterMode(EShadowFilterMode NewMode)
+{
+	FEditorSettings::Get().ShadowFilterMode = NewMode;
+	if (GEngine)
+	{
+		GEngine->GetRenderer().SetShadowFilterMode(NewMode);
+	}
 }
 
 void FEditorConsoleWidget::Initialize(UEditorEngine* InEditorEngine)
@@ -132,7 +179,7 @@ void FEditorConsoleWidget::Initialize(UEditorEngine* InEditorEngine)
 
 			if (Args.size() < 2)
 			{
-				AddLog("Usage: stat fps | stat memory | stat none\n");
+				AddLog("Usage: stat fps | stat memory | stat shadow | stat csm | stat none\n");
 				return;
 			}
 
@@ -149,6 +196,16 @@ void FEditorConsoleWidget::Initialize(UEditorEngine* InEditorEngine)
 				StatSystem.ShowMemory(true);
 				AddLog("Overlay stat enabled: memory\n");
 			}
+			else if (SubCommand == "shadow")
+			{
+				StatSystem.ShowShadow(true);
+				AddLog("Overlay stat enabled: shadow\n");
+			}
+			else if (SubCommand == "csm" || SubCommand == "shadow_csm")
+			{
+				StatSystem.ShowCascadeShadow(true);
+				AddLog("Overlay stat enabled: csm\n");
+			}
 			else if (SubCommand == "none")
 			{
 				StatSystem.HideAll();
@@ -157,8 +214,246 @@ void FEditorConsoleWidget::Initialize(UEditorEngine* InEditorEngine)
 			else
 			{
 				AddLog("[ERROR] Unknown stat command: '%s'\n", SubCommand.c_str());
-				AddLog("Usage: stat fps | stat memory | stat none\n");
+				AddLog("Usage: stat fps | stat memory | stat shadow | stat csm | stat none\n");
 			}
+		});
+
+	RegisterCommand("shadow_filter", [this](const TArray<FString>& Args)
+		{
+			if (Args.size() < 2)
+			{
+				AddLog("Usage: shadow_filter <VSM|ESM|PCF_BOX|PCF_POI|NONE>\n");
+				return;
+			}
+
+			EShadowFilterMode NewMode = EShadowFilterMode::None;
+			if (!TryParseShadowFilterMode(Args[1], NewMode))
+			{
+				AddLog("[ERROR] Unknown shadow filter: %s\n", Args[1].c_str());
+				AddLog("Usage: shadow_filter <VSM|ESM|PCF_BOX|PCF_POI|NONE>\n");
+				return;
+			}
+
+			ApplyShadowFilterMode(NewMode);
+			AddLog("Shadow filter set: %d\n", static_cast<int32>(NewMode));
+		});
+
+	RegisterCommand("showflag", [this](const TArray<FString>& Args)
+		{
+			if (EditorEngine == nullptr)
+			{
+				AddLog("[ERROR] EditorEngine is null.\n");
+				return;
+			}
+
+			if (Args.size() < 3)
+			{
+				AddLog("Usage: showflag shadow <0|1>\n");
+				return;
+			}
+
+			FString Name = Args[1];
+			std::transform(Name.begin(), Name.end(), Name.begin(), ::tolower);
+			if (Name != "shadow")
+			{
+				AddLog("[ERROR] Unknown showflag: %s\n", Args[1].c_str());
+				AddLog("Usage: showflag shadow <0|1>\n");
+				return;
+			}
+
+			const bool bEnable = (std::atoi(Args[2].c_str()) != 0);
+			for (FLevelEditorViewportClient* Client : EditorEngine->GetLevelViewportClients())
+			{
+				if (Client)
+				{
+					Client->GetRenderOptions().ShowFlags.bShadow = bEnable;
+				}
+			}
+
+			FEditorSettings& Settings = FEditorSettings::Get();
+			for (FViewportRenderOptions& Options : Settings.SlotOptions)
+			{
+				Options.ShowFlags.bShadow = bEnable;
+			}
+
+			AddLog("ShowFlag.Shadow set globally: %d\n", bEnable ? 1 : 0);
+		});
+
+	RegisterCommand("shadow", [this](const TArray<FString>& Args)
+		{
+			if (GEngine == nullptr)
+			{
+				AddLog("[ERROR] Engine is null.\n");
+				return;
+			}
+
+			FRenderer& Renderer = GEngine->GetRenderer();
+			FEditorSettings& Settings = FEditorSettings::Get();
+
+			if (Args.size() < 2)
+			{
+				AddLog("Usage: shadow show | shadow filter <none|pcf_box|vsm|esm|pcf_poi> | shadow dirmode <single|csm> | shadow debug_cascades <0|1> | shadow skip_unlit <0|1> | shadow max_views <N> | shadow max_area <Pixels> | shadow align <N>\n");
+				return;
+			}
+
+			FString Sub = Args[1];
+			std::transform(Sub.begin(), Sub.end(), Sub.begin(), ::tolower);
+
+			if (Sub == "show")
+			{
+				const FShadowRuntimeOptions& Opt = Renderer.GetRuntimeOptions();
+				AddLog("shadow.filter=%d shadow.dirmode=%d shadow.skip_unlit=%d shadow.debug_cascades=%d shadow.max_views=%u shadow.max_area=%llu shadow.align=%u\n",
+					static_cast<int32>(Opt.ShadowFilterMode),
+					static_cast<int32>(Opt.DirectionalShadowMode),
+					Opt.bSkipShadowPassInUnlit ? 1 : 0,
+					Opt.bDebugCascades ? 1 : 0,
+					Renderer.GetMaxLocalShadowViewsPerFrame(),
+					static_cast<unsigned long long>(Renderer.GetMaxLocalShadowAtlasAreaPerFrame()),
+					Renderer.GetLocalShadowAlignment());
+				return;
+			}
+
+			if (Sub == "filter")
+			{
+				if (Args.size() < 3)
+				{
+					AddLog("[ERROR] Usage: shadow filter <none|pcf_box|vsm|esm|pcf_poi>\n");
+					return;
+				}
+
+				FString Value = Args[2];
+
+				EShadowFilterMode NewMode = Settings.ShadowFilterMode;
+				if (!TryParseShadowFilterMode(Value, NewMode))
+				{
+					AddLog("[ERROR] Unknown filter: %s\n", Args[2].c_str());
+					return;
+				}
+
+				ApplyShadowFilterMode(NewMode);
+				AddLog("Shadow filter set: %d\n", static_cast<int32>(NewMode));
+				return;
+			}
+
+			if (Sub == "dirmode")
+			{
+				if (Args.size() < 3)
+				{
+					AddLog("[ERROR] Usage: shadow dirmode <single|csm>\n");
+					return;
+				}
+
+				FString Value = Args[2];
+				std::transform(Value.begin(), Value.end(), Value.begin(), ::tolower);
+
+				EDirectionalShadowMode NewMode = Settings.DirectionalShadowMode;
+				if (Value == "single") NewMode = EDirectionalShadowMode::Single;
+				else if (Value == "csm") NewMode = EDirectionalShadowMode::CSM;
+				else
+				{
+					AddLog("[ERROR] Unknown dirmode: %s\n", Args[2].c_str());
+					return;
+				}
+
+				Settings.DirectionalShadowMode = NewMode;
+				Renderer.SetDirectionalShadowMode(NewMode);
+				AddLog("Directional shadow mode set: %d\n", static_cast<int32>(NewMode));
+				return;
+			}
+
+			if (Sub == "debug_cascades")
+			{
+				if (Args.size() < 3)
+				{
+					AddLog("[ERROR] Usage: shadow debug_cascades <0|1>\n");
+					return;
+				}
+
+				const bool bEnable = (std::atoi(Args[2].c_str()) != 0);
+				Settings.bDebugCascades = bEnable;
+				Renderer.SetDebugCascades(bEnable);
+				AddLog("Shadow cascade debug visualization set: %d\n", bEnable ? 1 : 0);
+				return;
+			}
+
+			if (Sub == "skip_unlit")
+			{
+				if (Args.size() < 3)
+				{
+					AddLog("[ERROR] Usage: shadow skip_unlit <0|1>\n");
+					return;
+				}
+
+				const int32 Value = std::atoi(Args[2].c_str());
+				const bool bSkip = (Value != 0);
+				Settings.bSkipShadowPassInUnlit = bSkip;
+				Renderer.SetSkipShadowPassInUnlit(bSkip);
+				AddLog("Shadow skip in unlit set: %d\n", bSkip ? 1 : 0);
+				return;
+			}
+
+			if (Sub == "max_views")
+			{
+				if (Args.size() < 3)
+				{
+					AddLog("[ERROR] Usage: shadow max_views <N>\n");
+					return;
+				}
+
+				int32 Value = std::atoi(Args[2].c_str());
+				if (Value < 0)
+				{
+					Value = 0;
+				}
+
+				Settings.MaxLocalShadowViewsPerFrame = Value;
+				Renderer.SetMaxLocalShadowViewsPerFrame(static_cast<uint32>(Value));
+				AddLog("Shadow max local views per frame set: %d\n", Value);
+				return;
+			}
+
+			if (Sub == "max_area")
+			{
+				if (Args.size() < 3)
+				{
+					AddLog("[ERROR] Usage: shadow max_area <Pixels>\n");
+					return;
+				}
+
+				long long Parsed = _strtoi64(Args[2].c_str(), nullptr, 10);
+				if (Parsed < 0)
+				{
+					Parsed = 0;
+				}
+
+				const uint64 Value = static_cast<uint64>(Parsed);
+				Settings.MaxLocalShadowAtlasAreaPerFrame = Value;
+				Renderer.SetMaxLocalShadowAtlasAreaPerFrame(Value);
+				AddLog("Shadow max local atlas area per frame set: %llu\n", static_cast<unsigned long long>(Value));
+				return;
+			}
+
+			if (Sub == "align")
+			{
+				if (Args.size() < 3)
+				{
+					AddLog("[ERROR] Usage: shadow align <N>\n");
+					return;
+				}
+
+				int32 Value = std::atoi(Args[2].c_str());
+				if (Value < 1)
+				{
+					Value = 1;
+				}
+
+				Settings.LocalShadowAlignment = Value;
+				Renderer.SetLocalShadowAlignment(static_cast<uint32>(Value));
+				AddLog("Shadow local alignment set: %d\n", Value);
+				return;
+			}
+
+			AddLog("[ERROR] Unknown shadow subcommand: %s\n", Args[1].c_str());
 		});
 }
 

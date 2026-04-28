@@ -109,6 +109,9 @@ cbuffer LightingBuffer : register(b4)
     uint VisualizeLightCulling;
     float HeatMapMax;
     uint ShadowFilterMode;
+    uint DebugCascades;
+    uint EnableShadows;
+    uint2 _Pad0;
 };
 
 cbuffer DirectionalShadowBuffer : register(b5)

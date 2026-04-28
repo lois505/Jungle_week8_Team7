@@ -2,11 +2,13 @@
 
 #include "DrawCommand.h"
 #include "Render/Device/D3DDevice.h"
+#include "Render/Culling/ConvexVolume.h"
 
 class FConstantBuffer;
 class FPrimitiveSceneProxy;
 class FScene;
 class FPassRenderStateTable;
+struct FMatrix;
 
 /*
  *	기존의 DrawCommandBuilder와 다르게 Shadow를 위한 DrawCommand만을 생성합니다.
@@ -26,6 +28,7 @@ public:
 	void Release();
 	
 	void BeginBuild(uint32 MaxProxyCount = 0);
+	void SetCullingViewProjection(const FMatrix& ViewProjection, bool bEnable);
 	void BuildCommands(const FScene & Scene);
 	
 	const TArray<FShadowDrawCommand> & GetCommands() const { return Commands; }
@@ -43,5 +46,8 @@ private:
 	
 	ID3D11Device * CachedDevice = nullptr;
 	ID3D11DeviceContext * CachedContext = nullptr;
+
+	bool bUseCullingVolume = false;
+	FConvexVolume CullingVolume = {};
 	
 };

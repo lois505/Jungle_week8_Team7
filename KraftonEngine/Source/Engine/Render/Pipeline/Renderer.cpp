@@ -100,17 +100,43 @@ void FRenderer::Render(const FFrameContext& Frame, FScene& Scene)
 	}
 
 	/*	Shadow Pass	*/
+	FShadowRuntimeOptions EffectiveShadowOptions = ShadowRenderer.GetRuntimeOptions();
+	if (!Frame.RenderOptions.ShowFlags.bShadow)
+	{
+		EffectiveShadowOptions.ShadowFilterMode = EShadowFilterMode::None;
+		EffectiveShadowOptions.bDebugCascades = false;
+	}
 	{
 		SCOPE_STAT_CAT("Shadow Pass", "4_ExecutePass");
-		const FShadowRuntimeOptions& ShadowOptions = ShadowRenderer.GetRuntimeOptions();
+		const bool bSkipByShowFlag = !Frame.RenderOptions.ShowFlags.bShadow;
+		const bool bSkipShadowPassInUnlit = (Frame.RenderOptions.ViewMode == EViewMode::Unlit) && EffectiveShadowOptions.bSkipShadowPassInUnlit;
 
-		Resources.UnbindSystemTextures(Device);
-		Resources.UpdateShadowResources(Scene, ShadowOptions);
-		Resources.ShadowResourceManager.ClearAtlas(ShadowOptions);
-		ShadowRenderer.RenderShadows(Device, Resources, Scene, Frame);
+		if (!bSkipByShowFlag && !bSkipShadowPassInUnlit)
+		{
+			{
+				SCOPE_STAT_CAT("Shadow.UnbindSystemTextures", "4_ExecutePass");
+				Resources.UnbindSystemTextures(Device);
+			}
+			{
+				SCOPE_STAT_CAT("Shadow.UpdateResources", "4_ExecutePass");
+				Resources.UpdateShadowResources(Scene, EffectiveShadowOptions, Frame);
+			}
+			{
+				SCOPE_STAT_CAT("Shadow.ClearAtlasTextures", "4_ExecutePass");
+				Resources.ShadowResourceManager.ClearAtlasTexturesOnly(EffectiveShadowOptions);
+			}
+			{
+				SCOPE_STAT_CAT("Shadow.ResetAtlasAllocState", "4_ExecutePass");
+				Resources.ShadowResourceManager.ResetAtlasAllocationStateForFrame();
+			}
+			{
+				SCOPE_STAT_CAT("Shadow.RenderViews", "4_ExecutePass");
+				ShadowRenderer.RenderShadows(Device, Resources, Scene, Frame);
+			}
 
-		//	Restore
-		Resources.UpdateFrameBuffer(Device, Frame);
+			//	Restore
+			Resources.UpdateFrameBuffer(Device, Frame);
+		}
 	}
 
 	{
@@ -122,7 +148,7 @@ void FRenderer::Render(const FFrameContext& Frame, FScene& Scene)
 		ClusterState.ScreenWidth = static_cast<uint32>(Frame.ViewportWidth);
 		ClusterState.ScreenHeight = static_cast<uint32>(Frame.ViewportHeight);
 
-		Resources.UpdateLightAndShadowBuffer(Device, Scene, Frame, ShadowRenderer.GetRuntimeOptions(), &ClusterState);
+		Resources.UpdateLightAndShadowBuffer(Device, Scene, Frame, EffectiveShadowOptions, &ClusterState);
 	}
 
 	// 시스템 샘플러 영구 바인딩 (s0-s2)

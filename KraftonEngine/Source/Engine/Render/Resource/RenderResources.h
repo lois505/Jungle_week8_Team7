@@ -178,7 +178,7 @@ struct FSystemResources
 	void SetRasterizerState(FD3DDevice& Device, ERasterizerState InState);
 
 	//	Shadow Map Update - Wrapper
-	void UpdateShadowResources(FScene& Scene, const FShadowRuntimeOptions& ShadowOptions);
+	void UpdateShadowResources(FScene& Scene, const FShadowRuntimeOptions& ShadowOptions, const FFrameContext& Frame);
 
 	// 리사이즈 시 렌더 상태 캐시 무효화
 	void ResetRenderStateCache();

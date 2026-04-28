@@ -83,6 +83,7 @@ private:
 	void EnsureViewportSlots(int32 RequiredCount);
 	void ShrinkViewportSlots(int32 RequiredCount);
 	void RenderPaneToolbar(int32 SlotIndex);
+	void RenderLocalShadowAtlasPanel();
 
 	// 아이콘 텍스처
 	void LoadLayoutIcons(ID3D11Device* Device);
@@ -111,6 +112,7 @@ private:
 
 	// 뷰포트 상단 Play/Stop 툴바
 	FEditorPlayToolbarWidget PlayToolbar;
+	bool bShowLocalShadowAtlasPanel = false;
 	bool bHasSavedWorldAxisVisibility = false;
 	bool SavedWorldAxisVisibility[MaxViewportSlots] = {};
 	bool SavedGridVisibility[MaxViewportSlots] = {};

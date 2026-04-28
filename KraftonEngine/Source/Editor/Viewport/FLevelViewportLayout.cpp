@@ -16,6 +16,7 @@
 #include "Component/GizmoComponent.h"
 
 #include "GameFramework/StaticMeshActor.h"
+#include <algorithm>
 
 // ─── 레이아웃별 슬롯 수 ─────────────────────────────────────
 
@@ -692,9 +693,121 @@ void FLevelViewportLayout::RenderViewportUI(float DeltaTime)
 
 	ImGui::End();
 	ImGui::PopStyleVar();
+
+	RenderLocalShadowAtlasPanel();
 }
 
 // ─── 각 뷰포트 패인 툴바 오버레이 ──────────────────────────
+
+void FLevelViewportLayout::RenderLocalShadowAtlasPanel()
+{
+	if (!bShowLocalShadowAtlasPanel)
+	{
+		return;
+	}
+
+	ImGui::SetNextWindowSize(ImVec2(560.0f, 620.0f), ImGuiCond_FirstUseEver);
+	if (!ImGui::Begin("Local Shadow Atlas", &bShowLocalShadowAtlasPanel))
+	{
+		ImGui::End();
+		return;
+	}
+
+	if (!GEngine)
+	{
+		ImGui::TextUnformatted("Engine is not ready.");
+		ImGui::End();
+		return;
+	}
+
+	const FRenderer& Renderer = GEngine->GetRenderer();
+	const FShadowAtlasResource& Atlas = Renderer.GetShadowAtlas();
+	const TArray<FLocalShadowRequest>& Requests = Renderer.GetLocalShadowRequests();
+
+	uint32 RequestedCount = 0;
+	uint32 AllocatedCount = 0;
+	for (const FLocalShadowRequest& Request : Requests)
+	{
+		if (!Request.bNeedsRender)
+		{
+			continue;
+		}
+		++RequestedCount;
+		if (Request.bAllocated)
+		{
+			++AllocatedCount;
+		}
+	}
+
+	ImGui::Text("Atlas Size : %u x %u", Atlas.Map.Width, Atlas.Map.Height);
+	ImGui::Text("Allocated/Requested Views : %u / %u",
+		AllocatedCount,
+		RequestedCount);
+	ImGui::Separator();
+
+	if (!Atlas.Map.SRV || Atlas.Map.Width == 0 || Atlas.Map.Height == 0)
+	{
+		ImGui::TextUnformatted("Atlas SRV is not available yet.");
+		ImGui::End();
+		return;
+	}
+
+	const float AtlasWidth = static_cast<float>(Atlas.Map.Width);
+	const float AtlasHeight = static_cast<float>(Atlas.Map.Height);
+	const float MaxPanelWidth = (std::min)(ImGui::GetContentRegionAvail().x, 900.0f);
+	float DisplayWidth = MaxPanelWidth;
+	float DisplayHeight = DisplayWidth * (AtlasHeight / (std::max)(AtlasWidth, 1.0f));
+	const float MaxPanelHeight = 900.0f;
+	if (DisplayHeight > MaxPanelHeight)
+	{
+		const float Scale = MaxPanelHeight / DisplayHeight;
+		DisplayHeight *= Scale;
+		DisplayWidth *= Scale;
+	}
+
+	const ImVec2 ImageMin = ImGui::GetCursorScreenPos();
+	const ImVec2 ImageSize(DisplayWidth, DisplayHeight);
+	ImGui::Image(reinterpret_cast<ImTextureID>(Atlas.Map.SRV), ImageSize, ImVec2(0, 0), ImVec2(1, 1));
+
+	ImDrawList* DrawList = ImGui::GetWindowDrawList();
+	const ImVec2 ImageMax(ImageMin.x + DisplayWidth, ImageMin.y + DisplayHeight);
+	DrawList->AddRect(ImageMin, ImageMax, IM_COL32(220, 220, 220, 255), 0.0f, 0, 1.0f);
+
+	const float ScaleX = DisplayWidth / (std::max)(AtlasWidth, 1.0f);
+	const float ScaleY = DisplayHeight / (std::max)(AtlasHeight, 1.0f);
+	for (const FLocalShadowRequest& Request : Requests)
+	{
+		if (!Request.bAllocated || Request.AtlasSizeX == 0 || Request.AtlasSizeY == 0)
+		{
+			continue;
+		}
+
+		const float X0 = ImageMin.x + static_cast<float>(Request.AtlasOffsetX) * ScaleX;
+		const float Y0 = ImageMin.y + static_cast<float>(Request.AtlasOffsetY) * ScaleY;
+		const float X1 = ImageMin.x + static_cast<float>(Request.AtlasOffsetX + Request.AtlasSizeX) * ScaleX;
+		const float Y1 = ImageMin.y + static_cast<float>(Request.AtlasOffsetY + Request.AtlasSizeY) * ScaleY;
+
+		const ImU32 Color = (Request.RequestType == ELocalShadowRequestType::Spot)
+			? IM_COL32(80, 220, 120, 255)
+			: IM_COL32(255, 170, 60, 255);
+		DrawList->AddRect(ImVec2(X0, Y0), ImVec2(X1, Y1), Color, 0.0f, 0, 2.0f);
+
+		char Label[48] = {};
+		if (Request.RequestType == ELocalShadowRequestType::Spot)
+		{
+			snprintf(Label, sizeof(Label), "S%u", Request.LightIndex);
+		}
+		else
+		{
+			snprintf(Label, sizeof(Label), "P%uF%u", Request.LightIndex, Request.FaceIndex);
+		}
+		DrawList->AddText(ImVec2(X0 + 3.0f, Y0 + 2.0f), Color, Label);
+	}
+
+	ImGui::Separator();
+	ImGui::TextUnformatted("Legend: Green=Spot, Orange=PointFace");
+	ImGui::End();
+}
 
 void FLevelViewportLayout::RenderPaneToolbar(int32 SlotIndex)
 {
@@ -928,6 +1041,7 @@ void FLevelViewportLayout::RenderPaneToolbar(int32 SlotIndex)
 				ImGui::Checkbox("Octree", &Opts.ShowFlags.bOctree);
 				ImGui::Checkbox("Fog", &Opts.ShowFlags.bFog);
 				ImGui::Checkbox("FXAA", &Opts.ShowFlags.bFXAA);
+				ImGui::Checkbox("Shadow", &Opts.ShowFlags.bShadow);
 
 				ImGui::Separator();
 
@@ -982,6 +1096,8 @@ void FLevelViewportLayout::RenderPaneToolbar(int32 SlotIndex)
 				{
 					ShadowOptions.ShadowFilterMode = Settings.ShadowFilterMode;
 					ShadowOptions.DirectionalShadowMode = Settings.DirectionalShadowMode;
+					ShadowOptions.bSkipShadowPassInUnlit = Settings.bSkipShadowPassInUnlit;
+					ShadowOptions.bDebugCascades = Settings.bDebugCascades;
 				}
 
 				int32 ShadowFilterMode = static_cast<int32>(ShadowOptions.ShadowFilterMode);
@@ -1018,6 +1134,62 @@ void FLevelViewportLayout::RenderPaneToolbar(int32 SlotIndex)
 						GEngine->GetRenderer().SetDirectionalShadowMode(Settings.DirectionalShadowMode);
 					}
 				}
+
+				bool bSkipShadowPassInUnlit = ShadowOptions.bSkipShadowPassInUnlit;
+				if (ImGui::Checkbox("Skip Shadow Pass In Unlit", &bSkipShadowPassInUnlit))
+				{
+					Settings.bSkipShadowPassInUnlit = bSkipShadowPassInUnlit;
+					if (GEngine)
+					{
+						GEngine->GetRenderer().SetSkipShadowPassInUnlit(Settings.bSkipShadowPassInUnlit);
+					}
+				}
+
+				bool bDebugCascades = ShadowOptions.bDebugCascades;
+				if (ImGui::Checkbox("Debug Cascades", &bDebugCascades))
+				{
+					Settings.bDebugCascades = bDebugCascades;
+					if (GEngine)
+					{
+						GEngine->GetRenderer().SetDebugCascades(Settings.bDebugCascades);
+					}
+				}
+
+				int32 MaxLocalShadowViewsPerFrame = Settings.MaxLocalShadowViewsPerFrame;
+				if (GEngine)
+				{
+					MaxLocalShadowViewsPerFrame = static_cast<int32>(GEngine->GetRenderer().GetMaxLocalShadowViewsPerFrame());
+				}
+				if (ImGui::DragInt("Max Local Shadow Views Per Frame (0=NoLimit)", &MaxLocalShadowViewsPerFrame, 1.0f, 0, 4096))
+				{
+					if (MaxLocalShadowViewsPerFrame < 0)
+					{
+						MaxLocalShadowViewsPerFrame = 0;
+					}
+					Settings.MaxLocalShadowViewsPerFrame = MaxLocalShadowViewsPerFrame;
+					if (GEngine)
+					{
+						GEngine->GetRenderer().SetMaxLocalShadowViewsPerFrame(static_cast<uint32>(Settings.MaxLocalShadowViewsPerFrame));
+					}
+				}
+
+				uint64 MaxLocalShadowAtlasAreaPerFrame = Settings.MaxLocalShadowAtlasAreaPerFrame;
+				if (GEngine)
+				{
+					MaxLocalShadowAtlasAreaPerFrame = GEngine->GetRenderer().GetMaxLocalShadowAtlasAreaPerFrame();
+				}
+				const double MaxAreaDragSpeed = 1024.0;
+				if (ImGui::DragScalar("Max Local Shadow Atlas Area Per Frame (0=NoLimit, Pixels)",
+					ImGuiDataType_U64, &MaxLocalShadowAtlasAreaPerFrame, MaxAreaDragSpeed, nullptr, nullptr, "%llu"))
+				{
+					Settings.MaxLocalShadowAtlasAreaPerFrame = MaxLocalShadowAtlasAreaPerFrame;
+					if (GEngine)
+					{
+						GEngine->GetRenderer().SetMaxLocalShadowAtlasAreaPerFrame(Settings.MaxLocalShadowAtlasAreaPerFrame);
+					}
+				}
+
+				ImGui::Checkbox("Show Local Shadow Atlas Panel", &bShowLocalShadowAtlasPanel);
 
 				ImGui::EndPopup();
 			}
@@ -1079,6 +1251,11 @@ void FLevelViewportLayout::SaveToSettings()
 		const FShadowRuntimeOptions& ShadowOptions = GEngine->GetRenderer().GetRuntimeOptions();
 		S.ShadowFilterMode = ShadowOptions.ShadowFilterMode;
 		S.DirectionalShadowMode = ShadowOptions.DirectionalShadowMode;
+		S.bSkipShadowPassInUnlit = ShadowOptions.bSkipShadowPassInUnlit;
+		S.bDebugCascades = ShadowOptions.bDebugCascades;
+		S.MaxLocalShadowViewsPerFrame = static_cast<int32>(GEngine->GetRenderer().GetMaxLocalShadowViewsPerFrame());
+		S.MaxLocalShadowAtlasAreaPerFrame = GEngine->GetRenderer().GetMaxLocalShadowAtlasAreaPerFrame();
+		S.LocalShadowAlignment = static_cast<int32>(GEngine->GetRenderer().GetLocalShadowAlignment());
 	}
 }
 
@@ -1121,6 +1298,11 @@ void FLevelViewportLayout::LoadFromSettings()
 	{
 		GEngine->GetRenderer().SetShadowFilterMode(S.ShadowFilterMode);
 		GEngine->GetRenderer().SetDirectionalShadowMode(S.DirectionalShadowMode);
+		GEngine->GetRenderer().SetSkipShadowPassInUnlit(S.bSkipShadowPassInUnlit);
+		GEngine->GetRenderer().SetDebugCascades(S.bDebugCascades);
+		GEngine->GetRenderer().SetMaxLocalShadowViewsPerFrame(static_cast<uint32>((std::max)(S.MaxLocalShadowViewsPerFrame, 0)));
+		GEngine->GetRenderer().SetMaxLocalShadowAtlasAreaPerFrame(S.MaxLocalShadowAtlasAreaPerFrame);
+		GEngine->GetRenderer().SetLocalShadowAlignment(static_cast<uint32>((std::max)(S.LocalShadowAlignment, 1)));
 	}
 
 	// Splitter 비율 복원

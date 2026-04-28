@@ -41,6 +41,7 @@ void FShaderManager::Initialize(ID3D11Device* InDevice)
 	GetOrCreate(EShaderPath::Outline);
 	GetOrCreate(EShaderPath::SceneDepth);
 	GetOrCreate(EShaderPath::SceneNormal);
+	GetOrCreate(EShaderPath::ShadowMomentBlur);
 	GetOrCreate(EShaderPath::FXAA);
 	GetOrCreate(EShaderPath::Font);
 	GetOrCreate(EShaderPath::OverlayFont);

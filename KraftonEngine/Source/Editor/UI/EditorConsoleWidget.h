@@ -10,6 +10,7 @@
 #include "ImGui/imgui_impl_win32.h"
 
 #include "Editor/UI/EditorWidget.h"
+#include "Render/Types/RenderTypes.h"
 
 // ============================================================
 // FConsoleLogOutputDevice — ImGui 콘솔에 로그를 출력하는 디바이스
@@ -49,6 +50,9 @@ public:
 	}
 
 private:
+	bool TryParseShadowFilterMode(const FString& Value, EShadowFilterMode& OutMode) const;
+	void ApplyShadowFilterMode(EShadowFilterMode NewMode);
+
 	char InputBuf[256]{};
 	static ImVector<char*> History;
 	int32 HistoryPos = -1;

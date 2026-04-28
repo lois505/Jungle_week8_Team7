@@ -596,6 +596,12 @@
     <ClCompile Include="Source\Engine\Render\Resource\DepthStencilStateManager.cpp">
       <Filter>Source\Engine\Render\Resource</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Engine\Render\Resource\LocalShadowAllocationExecutor.cpp">
+      <Filter>Source\Engine\Render\Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Engine\Render\Resource\LocalShadowRequestPlanner.cpp">
+      <Filter>Source\Engine\Render\Resource</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Engine\Render\Resource\MeshBufferManager.cpp">
       <Filter>Source\Engine\Render\Resource</Filter>
     </ClCompile>
@@ -1122,6 +1128,18 @@
       <Filter>Source\Engine\Render\Resource</Filter>
     </ClInclude>
     <ClInclude Include="Source\Engine\Render\Resource\DepthStencilStateManager.h">
+      <Filter>Source\Engine\Render\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\Render\Resource\LocalShadowAllocationExecutor.h">
+      <Filter>Source\Engine\Render\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\Render\Resource\LocalShadowAtlasAllocator.h">
+      <Filter>Source\Engine\Render\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\Render\Resource\LocalShadowRequestPlanner.h">
+      <Filter>Source\Engine\Render\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\Render\Resource\LocalShadowTypes.h">
       <Filter>Source\Engine\Render\Resource</Filter>
     </ClInclude>
     <ClInclude Include="Source\Engine\Render\Resource\MeshBufferManager.h">
