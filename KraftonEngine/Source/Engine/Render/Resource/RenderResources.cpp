@@ -7,7 +7,6 @@
 #include "Engine/Runtime/Engine.h"
 #include "Profiling/Timer.h"
 
-
 void FTileCullingResource::Create(ID3D11Device* Dev, uint32 InTileCountX, uint32 InTileCountY)
 {
 	Release();
@@ -130,7 +129,7 @@ void FSystemResources::UpdateFrameBuffer(FD3DDevice& Device, const FFrameContext
 	Ctx->CSSetConstantBuffers(ECBSlot::Frame, 1, &b0);
 }
 
-void FSystemResources::UpdateLightAndShadowBuffer(FD3DDevice& Device, const FScene& Scene, const FFrameContext& Frame, const FClusterCullingState* ClusterState)
+void FSystemResources::UpdateLightAndShadowBuffer(FD3DDevice& Device, const FScene& Scene, const FFrameContext& Frame, const FShadowRuntimeOptions& ShadowOptions, const FClusterCullingState* ClusterState)
 {
 	ID3D11Device* Dev = Device.GetDevice();
 	ID3D11DeviceContext* Ctx = Device.GetDeviceContext();
@@ -180,14 +179,19 @@ void FSystemResources::UpdateLightAndShadowBuffer(FD3DDevice& Device, const FSce
 			// 현재 Resolution이 2048이라면, 셰이더는 이 값을 받아 PCF 필터링 보폭을 정하게 됩니다.
 			//DirectionalCB.ShadowResolution = (float)ShadowResourceManager.GetShadowArray().CurrentWidth;
 
-			ID3D11ShaderResourceView* DirShadowSRV = ShadowResourceManager.GetShadowArray().SRV;
-			Ctx->PSSetShaderResources(22, 1, &DirShadowSRV);
+			const FDirectionalShadowArray& DirectionalArray = ShadowResourceManager.GetShadowArray();
+			const bool bUseMomentDirectional = (ShadowOptions.ShadowFilterMode == EShadowFilterMode::VSM
+				|| ShadowOptions.ShadowFilterMode == EShadowFilterMode::ESM);
+			ID3D11ShaderResourceView* DirShadowSRV = bUseMomentDirectional
+				? DirectionalArray.MomentSRV
+				: DirectionalArray.SRV;
+			Ctx->PSSetShaderResources(ESystemTexSlot::DirectionalShadowArray, 1, &DirShadowSRV);
 
 			DirectionalShadowBuffer.Update(Ctx, &DirectionalCB, sizeof(FDirectionalConstants));
 			ID3D11Buffer* buf = DirectionalShadowBuffer.GetBuffer();
 			Ctx->PSSetConstantBuffers(ECBSlot::DirectionalShadow, 1, &buf);
 		}
-		
+
 	}
 
 	const uint32 NumPointLights = Env.GetNumPointLights();
@@ -220,6 +224,8 @@ void FSystemResources::UpdateLightAndShadowBuffer(FD3DDevice& Device, const FSce
 	GlobalLightingData.LightCullingMode = static_cast<uint32>(Frame.RenderOptions.LightCullingMode);
 	GlobalLightingData.VisualizeLightCulling = Frame.RenderOptions.ViewMode == EViewMode::LightCulling ? 1u : 0u;
 	GlobalLightingData.HeatMapMax = Frame.RenderOptions.HeatMapMax;
+	GlobalLightingData.ShadowFilterMode = static_cast<uint32>(ShadowOptions.ShadowFilterMode);
+	
 	if (ClusterState)
 	{
 		GlobalLightingData.ClusterCullingState = *ClusterState;
@@ -243,7 +249,7 @@ void FSystemResources::UpdateLightAndShadowBuffer(FD3DDevice& Device, const FSce
 	Ctx->VSSetShaderResources(ELightTexSlot::LocalLights, 1, &LocalShadows.ShadowBufferSRV);
 	Ctx->PSSetShaderResources(ELightTexSlot::LocalLights, 1, &LocalShadows.ShadowBufferSRV);
 
-	ID3D11ShaderResourceView* ShadowAtlasSRV = ShadowAtlas.SRV;
+	ID3D11ShaderResourceView* ShadowAtlasSRV = ShadowAtlas.Map.SRV;
 	Ctx->PSSetShaderResources(ESystemTexSlot::ShadowMapAtlas, 1, &ShadowAtlasSRV);
 
 	if (Frame.RenderOptions.LightCullingMode == ELightCullingMode::Tile)
@@ -318,4 +324,5 @@ void FSystemResources::UnbindSystemTextures(FD3DDevice& Device)
 	Ctx->PSSetShaderResources(ESystemTexSlot::Stencil, 1, &nullSRV);
 	Ctx->PSSetShaderResources(ESystemTexSlot::CullingHeatmap, 1, &nullSRV);
 	Ctx->PSSetShaderResources(ESystemTexSlot::ShadowMapAtlas, 1, &nullSRV);
+	Ctx->PSSetShaderResources(ESystemTexSlot::DirectionalShadowArray, 1, &nullSRV);
 }

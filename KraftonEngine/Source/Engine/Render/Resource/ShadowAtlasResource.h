@@ -2,16 +2,27 @@
 #include "Core/CoreTypes.h"
 class ID3D11Texture2D;
 class ID3D11DepthStencilView;
+class ID3D11RenderTargetView;
 class ID3D11ShaderResourceView;
 
-struct FShadowAtlasResource
+struct FShadowMapResource
 {
+	//	R32G32 Format의 VSM, ESM 전용 Texture
 	ID3D11Texture2D* Texture = nullptr;
-	ID3D11DepthStencilView* DSV = nullptr;
+	ID3D11RenderTargetView* RTV = nullptr;
 	ID3D11ShaderResourceView* SRV = nullptr;
+
+	//	R24G8 Format의 DSV 전용 Depth Texture
+	ID3D11Texture2D* DepthTexture = nullptr;
+	ID3D11DepthStencilView* DSV = nullptr;
 
 	uint32 Width = 0;
 	uint32 Height = 0;
+};
+
+struct FShadowAtlasResource
+{
+	FShadowMapResource Map;
 
 	uint32 CursorX = 0;
 	uint32 CursorY = 0;

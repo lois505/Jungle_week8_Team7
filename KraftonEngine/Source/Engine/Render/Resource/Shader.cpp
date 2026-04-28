@@ -5,41 +5,246 @@
 #include "Core/Log.h"
 #include "Core/Notification.h"
 #include <iostream>
+#include <filesystem>
+#include <fstream>
+#include <set>
+#include <sstream>
 #pragma comment(lib, "dxguid.lib")
 #pragma comment(lib, "d3dcompiler.lib")
+
+namespace
+{
+	uint64 ComputeShaderTreeStamp()
+	{
+		uint64 Stamp = 1469598103934665603ULL;
+		const std::filesystem::path ShaderRoot(FPaths::ShaderDir());
+		if (!std::filesystem::exists(ShaderRoot))
+		{
+			return Stamp;
+		}
+
+		for (const auto& Entry : std::filesystem::recursive_directory_iterator(ShaderRoot))
+		{
+			if (!Entry.is_regular_file())
+			{
+				continue;
+			}
+
+			const auto Ext = Entry.path().extension().wstring();
+			if (Ext != L".hlsl" && Ext != L".hlsli")
+			{
+				continue;
+			}
+
+			const uint64 PathHash = static_cast<uint64>(std::hash<std::wstring>{}(Entry.path().wstring()));
+			uint64 TimeHash = 0;
+			try
+			{
+				const auto Time = std::filesystem::last_write_time(Entry.path()).time_since_epoch().count();
+				TimeHash = static_cast<uint64>(Time);
+			}
+			catch (...)
+			{
+				TimeHash = 0;
+			}
+
+			Stamp ^= PathHash + 0x9e3779b97f4a7c15ULL + (Stamp << 6) + (Stamp >> 2);
+			Stamp ^= TimeHash + 0x9e3779b97f4a7c15ULL + (Stamp << 6) + (Stamp >> 2);
+		}
+		return Stamp;
+	}
+
+	uint64 GetShaderTreeStamp()
+	{
+		static uint64 CachedStamp = ComputeShaderTreeStamp();
+		return CachedStamp;
+	}
+
+	FString BuildDefinesString(const D3D_SHADER_MACRO* Defines)
+	{
+		if (!Defines)
+		{
+			return "NoDefines";
+		}
+
+		std::ostringstream OSS;
+		for (const D3D_SHADER_MACRO* D = Defines; D && D->Name; ++D)
+		{
+			OSS << D->Name << "=" << (D->Definition ? D->Definition : "") << ";";
+		}
+		return OSS.str();
+	}
+
+	std::wstring GetShaderCacheDir()
+	{
+		const std::filesystem::path CacheDir = std::filesystem::path(FPaths::SaveDir()) / L"ShaderCache";
+		std::filesystem::create_directories(CacheDir);
+		return CacheDir.wstring();
+	}
+
+	std::wstring BuildCacheBasePath(const wchar_t* FilePath, const char* EntryPoint, const char* Profile, const D3D_SHADER_MACRO* Defines)
+	{
+		const std::filesystem::path ShaderPath(FilePath);
+		const std::wstring FileName = ShaderPath.filename().wstring();
+		const FString DefinesString = BuildDefinesString(Defines);
+		const uint64 DefinesHash = static_cast<uint64>(std::hash<FString>{}(DefinesString));
+		const uint64 PathHash = static_cast<uint64>(std::hash<std::wstring>{}(ShaderPath.wstring()));
+		const uint64 EntryHash = static_cast<uint64>(std::hash<std::string>{}(EntryPoint ? EntryPoint : ""));
+		const uint64 ProfileHash = static_cast<uint64>(std::hash<std::string>{}(Profile ? Profile : ""));
+		const uint64 VersionHash = GetShaderTreeStamp();
+
+		wchar_t Buffer[512] = {};
+		swprintf_s(Buffer, L"%s_%016llX_%016llX_%016llX_%016llX_%016llX",
+			FileName.c_str(),
+			PathHash, EntryHash, ProfileHash, DefinesHash, VersionHash);
+
+		const std::filesystem::path FullPath = std::filesystem::path(GetShaderCacheDir()) / Buffer;
+		return FullPath.wstring();
+	}
+
+	std::wstring BuildCacheBlobPath(const wchar_t* FilePath, const char* EntryPoint, const char* Profile, const D3D_SHADER_MACRO* Defines)
+	{
+		return BuildCacheBasePath(FilePath, EntryPoint, Profile, Defines) + L".cso";
+	}
+
+	std::wstring BuildCacheIncludePath(const wchar_t* FilePath, const char* EntryPoint, const char* Profile, const D3D_SHADER_MACRO* Defines)
+	{
+		return BuildCacheBasePath(FilePath, EntryPoint, Profile, Defines) + L".includes";
+	}
+
+	void DeduplicateIncludes(TArray<FString>& Includes)
+	{
+		std::set<FString> Seen;
+		TArray<FString> Unique;
+		Unique.reserve(Includes.size());
+		for (const FString& Inc : Includes)
+		{
+			if (Seen.insert(Inc).second)
+			{
+				Unique.push_back(Inc);
+			}
+		}
+		Includes = std::move(Unique);
+	}
+
+	void SaveIncludes(const std::wstring& IncludePath, const TArray<FString>& Includes)
+	{
+		std::ofstream File(std::filesystem::path(IncludePath), std::ios::out | std::ios::trunc);
+		if (!File.is_open())
+		{
+			return;
+		}
+
+		for (const FString& Inc : Includes)
+		{
+			File << Inc << '\n';
+		}
+	}
+
+	void LoadIncludes(const std::wstring& IncludePath, TArray<FString>& OutIncludes)
+	{
+		std::ifstream File(std::filesystem::path(IncludePath), std::ios::in);
+		if (!File.is_open())
+		{
+			return;
+		}
+
+		FString Line;
+		while (std::getline(File, Line))
+		{
+			if (!Line.empty())
+			{
+				OutIncludes.push_back(Line);
+			}
+		}
+		DeduplicateIncludes(OutIncludes);
+	}
+
+	bool LoadBlobFromCache(const std::wstring& CachePath, ID3DBlob** OutBlob)
+	{
+		if (!OutBlob)
+		{
+			return false;
+		}
+
+		*OutBlob = nullptr;
+		if (!std::filesystem::exists(std::filesystem::path(CachePath)))
+		{
+			return false;
+		}
+
+		return SUCCEEDED(D3DReadFileToBlob(CachePath.c_str(), OutBlob)) && *OutBlob != nullptr;
+	}
+
+	void SaveBlobToCache(ID3DBlob* Blob, const std::wstring& CachePath)
+	{
+		if (!Blob)
+		{
+			return;
+		}
+
+		D3DWriteBlobToFile(Blob, CachePath.c_str(), TRUE);
+	}
+}
 
 // ============================================================
 // FComputeShader
 // ============================================================
 
 bool FComputeShader::Create(ID3D11Device* InDevice, const wchar_t* Path, const char* EntryPoint,
-	TArray<FString>* OutIncludes)
+	TArray<FString>* OutIncludes, bool bAllowCacheRead, bool bAllowCacheWrite)
 {
 	Release();
 
 	ID3DBlob* CSBlob = nullptr;
 	ID3DBlob* ErrBlob = nullptr;
 	FShaderInclude IncludeHandler;
-	if (OutIncludes)
-	{
-		IncludeHandler.OutIncludes = OutIncludes;
-	}
+	TArray<FString> LocalIncludes;
+	IncludeHandler.OutIncludes = &LocalIncludes;
 
-	HRESULT hr = D3DCompileFromFile(Path, nullptr, &IncludeHandler,
-		EntryPoint, "cs_5_0", 0, 0, &CSBlob, &ErrBlob);
+	const std::wstring CachePath = BuildCacheBlobPath(Path, EntryPoint, "cs_5_0", nullptr);
+	const std::wstring IncludePath = BuildCacheIncludePath(Path, EntryPoint, "cs_5_0", nullptr);
 
-	if (FAILED(hr))
+	const bool bLoadedFromCache = bAllowCacheRead && LoadBlobFromCache(CachePath, &CSBlob);
+	if (!bLoadedFromCache)
 	{
+		HRESULT hr = D3DCompileFromFile(Path, nullptr, &IncludeHandler,
+			EntryPoint, "cs_5_0", 0, 0, &CSBlob, &ErrBlob);
+
+		if (FAILED(hr))
+		{
+			if (ErrBlob)
+			{
+				UE_LOG("[Shader] CS Compile Error: %s", (const char*)ErrBlob->GetBufferPointer());
+				FNotificationManager::Get().AddNotification("CS Compile Error (see log)", ENotificationType::Error, 5.0f);
+				ErrBlob->Release();
+			}
+			return false;
+		}
 		if (ErrBlob)
 		{
-			UE_LOG("[Shader] CS Compile Error: %s", (const char*)ErrBlob->GetBufferPointer());
-			FNotificationManager::Get().AddNotification("CS Compile Error (see log)", ENotificationType::Error, 5.0f);
 			ErrBlob->Release();
+			ErrBlob = nullptr;
 		}
-		return false;
+
+		DeduplicateIncludes(LocalIncludes);
+		if (bAllowCacheWrite)
+		{
+			SaveBlobToCache(CSBlob, CachePath);
+			SaveIncludes(IncludePath, LocalIncludes);
+		}
+	}
+	else
+	{
+		LoadIncludes(IncludePath, LocalIncludes);
 	}
 
-	hr = InDevice->CreateComputeShader(CSBlob->GetBufferPointer(), CSBlob->GetBufferSize(), nullptr, &CS);
+	if (OutIncludes)
+	{
+		*OutIncludes = LocalIncludes;
+	}
+
+	HRESULT hr = InDevice->CreateComputeShader(CSBlob->GetBufferPointer(), CSBlob->GetBufferSize(), nullptr, &CS);
 	CSBlob->Release();
 
 	return SUCCEEDED(hr) && CS != nullptr;
@@ -90,7 +295,7 @@ FShader& FShader::operator=(FShader&& Other) noexcept
 }
 
 void FShader::Create(ID3D11Device* InDevice, const wchar_t* InFilePath, const char* InVSEntryPoint, const char* InPSEntryPoint,
-	const D3D_SHADER_MACRO* InDefines, TArray<FString>* OutIncludes)
+	const D3D_SHADER_MACRO* InDefines, TArray<FString>* OutIncludes, bool bAllowCacheRead, bool bAllowCacheWrite)
 {
 	Release();
 
@@ -98,39 +303,81 @@ void FShader::Create(ID3D11Device* InDevice, const wchar_t* InFilePath, const ch
 	ID3DBlob* pixelShaderCSO = nullptr;
 	ID3DBlob* errorBlob = nullptr;
 	FShaderInclude IncludeHandler;
-	IncludeHandler.OutIncludes = OutIncludes;
+	TArray<FString> LocalIncludes;
+	IncludeHandler.OutIncludes = &LocalIncludes;
 
-	// Vertex Shader 컴파일
-	HRESULT hr = D3DCompileFromFile(InFilePath, InDefines, &IncludeHandler, InVSEntryPoint, "vs_5_0", 0, 0, &vertexShaderCSO, &errorBlob);
-	if (FAILED(hr))
+	const std::wstring VSCachePath = BuildCacheBlobPath(InFilePath, InVSEntryPoint, "vs_5_0", InDefines);
+	const std::wstring PSCachePath = BuildCacheBlobPath(InFilePath, InPSEntryPoint, "ps_5_0", InDefines);
+	const std::wstring IncludePath = BuildCacheIncludePath(InFilePath, InVSEntryPoint, "vsps", InDefines);
+
+	const bool bVSCached = bAllowCacheRead && LoadBlobFromCache(VSCachePath, &vertexShaderCSO);
+	const bool bPSCached = bAllowCacheRead && LoadBlobFromCache(PSCachePath, &pixelShaderCSO);
+	const bool bLoadedFromCache = bVSCached && bPSCached;
+
+	if (!bLoadedFromCache)
 	{
+		if (vertexShaderCSO) { vertexShaderCSO->Release(); vertexShaderCSO = nullptr; }
+		if (pixelShaderCSO) { pixelShaderCSO->Release(); pixelShaderCSO = nullptr; }
+
+		// Vertex Shader 컴파일
+		HRESULT hrCompileVS = D3DCompileFromFile(InFilePath, InDefines, &IncludeHandler, InVSEntryPoint, "vs_5_0", 0, 0, &vertexShaderCSO, &errorBlob);
+		if (FAILED(hrCompileVS))
+		{
+			if (errorBlob)
+			{
+				const char* Msg = (const char*)errorBlob->GetBufferPointer();
+				UE_LOG("[Shader] VS Compile Error: %s", Msg);
+				FNotificationManager::Get().AddNotification("VS Compile Error (see log)", ENotificationType::Error, 5.0f);
+				errorBlob->Release();
+			}
+			return;
+		}
 		if (errorBlob)
 		{
-			const char* Msg = (const char*)errorBlob->GetBufferPointer();
-			UE_LOG("[Shader] VS Compile Error: %s", Msg);
-			FNotificationManager::Get().AddNotification("VS Compile Error (see log)", ENotificationType::Error, 5.0f);
 			errorBlob->Release();
+			errorBlob = nullptr;
 		}
-		return;
+
+		// Pixel Shader 컴파일
+		HRESULT hrCompilePS = D3DCompileFromFile(InFilePath, InDefines, &IncludeHandler, InPSEntryPoint, "ps_5_0", 0, 0, &pixelShaderCSO, &errorBlob);
+		if (FAILED(hrCompilePS))
+		{
+			if (errorBlob)
+			{
+				const char* Msg = (const char*)errorBlob->GetBufferPointer();
+				UE_LOG("[Shader] PS Compile Error: %s", Msg);
+				FNotificationManager::Get().AddNotification("PS Compile Error (see log)", ENotificationType::Error, 5.0f);
+				errorBlob->Release();
+			}
+			vertexShaderCSO->Release();
+			return;
+		}
+		if (errorBlob)
+		{
+			errorBlob->Release();
+			errorBlob = nullptr;
+		}
+
+		DeduplicateIncludes(LocalIncludes);
+		if (bAllowCacheWrite)
+		{
+			SaveBlobToCache(vertexShaderCSO, VSCachePath);
+			SaveBlobToCache(pixelShaderCSO, PSCachePath);
+			SaveIncludes(IncludePath, LocalIncludes);
+		}
+	}
+	else
+	{
+		LoadIncludes(IncludePath, LocalIncludes);
 	}
 
-	// Pixel Shader 컴파일
-	hr = D3DCompileFromFile(InFilePath, InDefines, &IncludeHandler, InPSEntryPoint, "ps_5_0", 0, 0, &pixelShaderCSO, &errorBlob);
-	if (FAILED(hr))
+	if (OutIncludes)
 	{
-		if (errorBlob)
-		{
-			const char* Msg = (const char*)errorBlob->GetBufferPointer();
-			UE_LOG("[Shader] PS Compile Error: %s", Msg);
-			FNotificationManager::Get().AddNotification("PS Compile Error (see log)", ENotificationType::Error, 5.0f);
-			errorBlob->Release();
-		}
-		vertexShaderCSO->Release();
-		return;
+		*OutIncludes = LocalIncludes;
 	}
 
 	// Vertex Shader 생성
-	hr = InDevice->CreateVertexShader(vertexShaderCSO->GetBufferPointer(), vertexShaderCSO->GetBufferSize(), nullptr, &VertexShader);
+	HRESULT hr = InDevice->CreateVertexShader(vertexShaderCSO->GetBufferPointer(), vertexShaderCSO->GetBufferSize(), nullptr, &VertexShader);
 	if (FAILED(hr))
 	{
 		std::cerr << "Failed to create Vertex Shader (HRESULT: " << hr << ")" << std::endl;

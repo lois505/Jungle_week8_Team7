@@ -5,14 +5,234 @@
 #include "Common/SystemSamplers.hlsli"
 #include "Common/SystemResources.hlsli"
 
+#define SHADOW_FILTER_NONE 0
+#define SHADOW_FILTER_PCF_BOX 1
+#define SHADOW_FILTER_VSM 2
+#define SHADOW_FILTER_ESM 3
+#define SHADOW_FILTER_PCF_POISSON 4
+
+//  Shadow Sharpening
+float ApplyShadowSharpen(float visibility, float sharpen)
+{
+    float width = lerp(0.5f, 0.05f, saturate(sharpen));
+
+    float edge0 = 0.5f - width * 0.5f;
+    float edge1 = 0.5f + width * 0.5f;
+
+    return smoothstep(edge0, edge1, saturate(visibility));
+}
+
 float SampleShadowAtlas(float2 uv)
 {
     return ShadowMapAtlasTexture.SampleLevel(PointClampSampler, uv, 0).r;
 }
 
+float2 SampleShadowAtlasGaussian3x3(float4 rect, float2 localUV, float2 atlasTileSize)
+{
+    float2 texelInTile = 1.0f / atlasTileSize;
+    float2 output = float2(0.0f, 0.0f);
+
+    [unroll]
+    for (int y = -1; y <= 1; y++)
+    {
+        [unroll]
+        for (int x = -1; x <= 1; x++)
+        {
+            float weight = ((x == 0) ? 2.0f : 1.0f) * ((y == 0) ? 2.0f : 1.0f);
+            float2 sampleLocalUV = localUV + float2(x, y) * texelInTile;
+            sampleLocalUV = clamp(sampleLocalUV, texelInTile * 0.5f, 1.0f - texelInTile * 0.5f);
+
+            float2 uv = rect.xy + sampleLocalUV * rect.zw;
+            output += ShadowMapAtlasTexture.SampleLevel(PointClampSampler, uv, 0).rg * weight;
+        }
+    }
+
+    return output / 16.0f;
+}
+
+float SampleShadowAtlasVSM(float4 rect, float2 localUV, float currentDepth, float bias, float2 atlasTileSize)
+{
+    float2 moments = SampleShadowAtlasGaussian3x3(rect, localUV, atlasTileSize);
+    float mean = moments.x;
+    float meanSq = moments.y;
+    float receiverDepth = currentDepth + bias;
+
+    if (receiverDepth >= mean)
+    {
+        return 1.0f;
+    }
+
+    float variance = max(meanSq - mean * mean, 0.00002f);
+    float depthDelta = mean - receiverDepth;
+    float visibility = variance / (variance + depthDelta * depthDelta);
+
+    return saturate(visibility);
+}
+
+float SampleShadowAtlasESM(float4 rect, float2 localUV, float currentDepth, float bias, float2 atlasTileSize)
+{
+    const float exponent = 40.0f;
+    float avgExpDepth = SampleShadowAtlasGaussian3x3(rect, localUV, atlasTileSize).x;
+    float receiverExpDepth = exp(exponent * saturate(currentDepth + bias));
+
+    return saturate(receiverExpDepth / max(avgExpDepth, 0.000001f));
+}
+
+//  PCF (주변 픽셀을 다 더하고 평균내어 결정)
+//  rect : xy(top-left), zw(width-height)
+float SampleShadowAtlasPCFBox(float4 rect, float2 localUV, float currentDepth, float bias, float2 atlasTileSize)
+{
+    //  output means visibility
+    float output = 0.0f;
+
+    float2 texelInTile = 1.0f / atlasTileSize;
+
+    [unroll]
+    for (int y = -1; y <= 1; y++)
+    {
+        [unroll]
+        for (int x = -1; x <= 1; x++)
+        {
+            float2 sampleLocalUV = localUV + float2(x, y) * texelInTile;
+
+            sampleLocalUV = clamp(sampleLocalUV, texelInTile * 0.5f, 1.0f - texelInTile * 0.5f);
+
+            float2 uv = rect.xy + sampleLocalUV * rect.zw;
+
+            float storedDepth = ShadowMapAtlasTexture.SampleLevel(PointClampSampler, uv, 0).r;
+
+            output += (currentDepth + bias >= storedDepth) ? 1.0f : 0.0f;
+        }
+    }
+
+    //  Average
+    return output / 9.0f;
+}
+
+//  Fixed Poisson
+static const float2 PoissonDisk16[16] =
+{
+    float2(-0.94201624f, -0.39906216f),
+    float2(0.94558609f, -0.76890725f),
+    float2(-0.09418410f, -0.92938870f),
+    float2(0.34495938f, 0.29387760f),
+    float2(-0.91588581f, 0.45771432f),
+    float2(-0.81544232f, -0.87912464f),
+    float2(-0.38277543f, 0.27676845f),
+    float2(0.97484398f, 0.75648379f),
+    float2(0.44323325f, -0.97511554f),
+    float2(0.53742981f, -0.47373420f),
+    float2(-0.26496911f, -0.41893023f),
+    float2(0.79197514f, 0.19090188f),
+    float2(-0.24188840f, 0.99706507f),
+    float2(-0.81409955f, 0.91437590f),
+    float2(0.19984126f, 0.78641367f),
+    float2(0.14383161f, -0.14100790f)
+};
+
+//  Rotate PCF
+float Hash12(float2 p)
+{
+    float3 p3 = frac(float3(p.x, p.y, p.x) * 0.1031f);
+    p3 += dot(p3, p3.yzx + 33.33f);
+    return frac((p3.x +p3.y) * p3.z);
+}
+
+float2 Rotate2D(float2 v, float angle)
+{
+    float s = sin(angle);
+    float c = cos(angle);
+    return float2(
+        c * v.x - s * v.y,
+        s * v.x + c * v.y
+        );
+}
+
+float SampleShadowAtlasPCFPoisson(float4 rect, float2 localUV, float currentDepth, float bias, float2 atlasTileSize)
+{
+    float output = 0.0f;
+
+    float2 texelInTile = 1.0f / atlasTileSize;
+
+    const float radius = 2.5f;
+    
+    //  LocalUV를 tile pixel 좌표처럼 변환해서 고정 random  생성 (Frame마다 변하게 하지 않도록 일관된 Seed 부여)
+    float2 tilePixel = floor(localUV * atlasTileSize);
+    float angle = Hash12(tilePixel) * 6.2831853f;   //  2 * pi 곱함
+
+    [unroll]
+    for (int i = 0; i < 16; i++)
+    {
+        float2 rotatedOffset = Rotate2D(PoissonDisk16[i], angle);
+        // float2 sampleLocalUV = localUV + PoissonDisk16[i] * radius * texelInTile;
+        float2 sampleLocalUV = localUV + rotatedOffset * radius * texelInTile;
+    
+        sampleLocalUV = clamp(sampleLocalUV, texelInTile * 0.5f, 1.0f - texelInTile * 0.5f);
+
+        float2 uv = rect.xy + sampleLocalUV * rect.zw;
+
+        float storedDepth = ShadowMapAtlasTexture.SampleLevel(PointClampSampler, uv, 0).r;
+
+        output += (currentDepth + bias >= storedDepth) ? 1.0f : 0.0f;
+    }
+
+    return output / 16.0f;
+}
+
 float SampleDirectionalShadow(int indx, float2 uv)
 {
     return DirectionalShadowArray.SampleLevel(PointClampSampler, float3(uv, (float)indx), 0).r;
+}
+
+float2 SampleDirectionalMoments(int indx, float2 uv)
+{
+    return DirectionalShadowArray.SampleLevel(PointClampSampler, float3(uv, (float)indx), 0).rg;
+}
+
+float2 SampleDirectionalGaussian3x3(int indx, float2 uv, float2 shadowMapSize)
+{
+    float2 texel = 1.0f / shadowMapSize;
+    float2 output = float2(0.0f, 0.0f);
+
+    [unroll]
+    for (int y = -1; y <= 1; ++y)
+    {
+        [unroll]
+        for (int x = -1; x <= 1; ++x)
+        {
+            float weight = ((x == 0) ? 2.0f : 1.0f) * ((y == 0) ? 2.0f : 1.0f);
+            float2 sampleUV = clamp(uv + float2(x, y) * texel, texel * 0.5f, 1.0f - texel * 0.5f);
+            output += SampleDirectionalMoments(indx, sampleUV) * weight;
+        }
+    }
+
+    return output / 16.0f;
+}
+
+float SampleDirectionalVSM(int indx, float2 uv, float currentDepth, float bias, float2 shadowMapSize)
+{
+    float2 moments = SampleDirectionalGaussian3x3(indx, uv, shadowMapSize);
+    float mean = moments.x;
+    float meanSq = moments.y;
+    float receiverDepth = currentDepth + bias;
+
+    if (receiverDepth >= mean)
+    {
+        return 1.0f;
+    }
+
+    float variance = max(meanSq - mean * mean, 0.00002f);
+    float depthDelta = mean - receiverDepth;
+    float visibility = variance / (variance + depthDelta * depthDelta);
+    return saturate(visibility);
+}
+
+float SampleDirectionalESM(int indx, float2 uv, float currentDepth, float bias, float2 shadowMapSize)
+{
+    const float exponent = 40.0f;
+    float avgExpDepth = SampleDirectionalGaussian3x3(indx, uv, shadowMapSize).x;
+    float receiverExpDepth = exp(exponent * saturate(currentDepth + bias));
+    return saturate(receiverExpDepth / max(avgExpDepth, 0.000001f));
 }
 
 float2 ProjectToShadowUV(float4 lightClip)
@@ -26,7 +246,8 @@ bool IsValidShadowRect(float4 rect)
     return rect.z > 0.0f && rect.w > 0.0f;
 }
 
-float CalcShadowFromView(FLocalShadowInfo shadow, uint viewIndex, float3 worldPos)
+
+float CalcAtlasShadowFromView(FLocalShadowInfo shadow, uint viewIndex, float3 worldPos, float3 N, float3 L)
 {
     float4 rect = shadow.AtlasRect[viewIndex];
     if (!IsValidShadowRect(rect))
@@ -55,10 +276,36 @@ float CalcShadowFromView(FLocalShadowInfo shadow, uint viewIndex, float3 worldPo
     localUV = clamp(localUV, halfTexelInTile, 1.0f - halfTexelInTile);
 
     float2 atlasUV = rect.xy + localUV * rect.zw;
-    float storedDepth = SampleShadowAtlas(atlasUV);
 
-    // This renderer uses reversed depth for shadow maps: clear 0, DepthGreaterEqual.
-    return (ndc.z + shadow.Bias >= storedDepth) ? 1.0f : 0.0f;
+    //  Bias Calculate
+    float slope = 1.0f - saturate(dot(normalize(N), normalize(L)));
+    float bias = shadow.Bias + shadow.SlopeBias * slope;
+
+    float shadowVisibility = 0.0f;
+    if (ShadowFilterMode == SHADOW_FILTER_VSM)
+    {
+        shadowVisibility = SampleShadowAtlasVSM(rect, localUV, ndc.z, bias, tileSize);
+    }
+    else if (ShadowFilterMode == SHADOW_FILTER_ESM)
+    {
+        shadowVisibility = SampleShadowAtlasESM(rect, localUV, ndc.z, bias, tileSize);
+    }
+    else if (ShadowFilterMode == SHADOW_FILTER_PCF_BOX)
+    {
+        shadowVisibility = SampleShadowAtlasPCFBox(rect, localUV, ndc.z, bias, tileSize);
+    }
+    else if (ShadowFilterMode == SHADOW_FILTER_PCF_POISSON)
+    {
+        shadowVisibility = SampleShadowAtlasPCFPoisson(rect, localUV, ndc.z, bias, tileSize);
+    }
+    else
+    {
+        float storedDepth = SampleShadowAtlas(atlasUV);
+
+        shadowVisibility = (ndc.z + bias >= storedDepth) ? 1.0f : 0.0f;
+    }
+
+    return ApplyShadowSharpen(shadowVisibility, shadow.Sharpen);
 }
 
 uint SelectPointShadowFace(float3 lightToPixel)
@@ -75,7 +322,7 @@ uint SelectPointShadowFace(float3 lightToPixel)
     return lightToPixel.z >= 0.0f ? 4 : 5;
 }
 
-float CalcLocalShadow(uint lightIndex, FLightInfo light, float3 worldPos)
+float CalcLocalShadow(uint lightIndex, FLightInfo light, float3 worldPos, float3 N)
 {
     FLocalShadowInfo shadow = LocalLights[lightIndex];
     if (shadow.CastShadow == 0)
@@ -83,15 +330,17 @@ float CalcLocalShadow(uint lightIndex, FLightInfo light, float3 worldPos)
         return 1.0f;
     }
 
+    float3 L = normalize(light.Position - worldPos);
+
     if (shadow.ShadowType == LIGHT_TYPE_SPOT)
     {
-        return CalcShadowFromView(shadow, 0, worldPos);
+        return CalcAtlasShadowFromView(shadow, 0, worldPos, N, L);
     }
 
     if (shadow.ShadowType == LIGHT_TYPE_POINT)
     {
         uint faceIndex = SelectPointShadowFace(worldPos - light.Position);
-        return CalcShadowFromView(shadow, faceIndex, worldPos);
+        return CalcAtlasShadowFromView(shadow, faceIndex, worldPos, N, L);
     }
 
     return 1.0f;
@@ -115,49 +364,113 @@ int GetCascadeIndex(float4 screenPos)
 float CalcDirectionalShadow(float3 worldPos, float3 worldNormal, float4 screenPos)
 {
     if (NumCascades <= 0)
+    {
         return 1.0f;
+    }
 
     int cascadeIndex = GetCascadeIndex(screenPos);
-    
     float NdotL = saturate(dot(worldNormal, DirectionalLight.Direction));
     float slopeFactor = 1.0f - NdotL;
-    
+
     uint width, height, element;
     DirectionalShadowArray.GetDimensions(width, height, element);
-    
     float texelSize = 1.0f / (float)width;
-    
     float finalBias = (ShadowBias + (ShadowSlopeBias * slopeFactor)) * texelSize;
 
     float4 lightClip = mul(float4(worldPos, 1.0f), DirLightViewProj[cascadeIndex]);
-    if(lightClip.w <= 0.0f)
+    if (lightClip.w <= 0.0f)
+    {
         return 1.0f;
+    }
 
     float3 ndc = lightClip.xyz / lightClip.w;
     if (ndc.x < -1.0f || ndc.x > 1.0f ||
         ndc.y < -1.0f || ndc.y > 1.0f ||
         ndc.z < 0.0f || ndc.z > 1.0f)
+    {
         return 1.0f;
-    
+    }
+
     float2 localUV = float2(ndc.x * 0.5f + 0.5f, -ndc.y * 0.5f + 0.5f);
-    float storedDepth = SampleDirectionalShadow(cascadeIndex + 1, localUV); // slot 0 reserved for PSM
-    
-    float shadowFactor = (ndc.z + finalBias >= storedDepth) ? 1.0f : 0.0f;
-    shadowFactor = saturate((shadowFactor - 0.5f) * ShadowSharpen + 0.5f);
-    
-    return shadowFactor;
+    float2 shadowMapSize = max(float2((float)width, (float)height), float2(1.0f, 1.0f));
+    float2 halfTexel = 0.5f / shadowMapSize;
+    localUV = clamp(localUV, halfTexel, 1.0f - halfTexel);
+
+    const int directionalSlice = cascadeIndex + 1;
+
+    float directionalShadowPCFBox = 0.0f;
+    {
+        float2 texel = 1.0f / shadowMapSize;
+        [unroll]
+        for (int y = -1; y <= 1; ++y)
+        {
+            [unroll]
+            for (int x = -1; x <= 1; ++x)
+            {
+                float2 sampleUV = clamp(localUV + float2(x, y) * texel, halfTexel, 1.0f - halfTexel);
+                float storedDepth = SampleDirectionalShadow(directionalSlice, sampleUV);
+                directionalShadowPCFBox += (ndc.z + finalBias >= storedDepth) ? 1.0f : 0.0f;
+            }
+        }
+        directionalShadowPCFBox /= 9.0f;
+    }
+
+    float directionalShadowPCFPoisson = 0.0f;
+    {
+        float2 texel = 1.0f / shadowMapSize;
+        const float radius = 2.5f;
+        float2 pixel = floor(localUV * shadowMapSize);
+        float angle = Hash12(pixel) * 6.2831853f;
+
+        [unroll]
+        for (int i = 0; i < 16; ++i)
+        {
+            float2 sampleUV = localUV + Rotate2D(PoissonDisk16[i], angle) * radius * texel;
+            sampleUV = clamp(sampleUV, halfTexel, 1.0f - halfTexel);
+            float storedDepth = SampleDirectionalShadow(directionalSlice, sampleUV);
+            directionalShadowPCFPoisson += (ndc.z + finalBias >= storedDepth) ? 1.0f : 0.0f;
+        }
+        directionalShadowPCFPoisson /= 16.0f;
+    }
+
+    float shadowVisibility = 1.0f;
+    if (ShadowFilterMode == SHADOW_FILTER_VSM)
+    {
+        shadowVisibility = SampleDirectionalVSM(directionalSlice, localUV, ndc.z, finalBias, shadowMapSize);
+    }
+    else if (ShadowFilterMode == SHADOW_FILTER_ESM)
+    {
+        shadowVisibility = SampleDirectionalESM(directionalSlice, localUV, ndc.z, finalBias, shadowMapSize);
+    }
+    else if (ShadowFilterMode == SHADOW_FILTER_PCF_BOX)
+    {
+        shadowVisibility = directionalShadowPCFBox;
+    }
+    else if (ShadowFilterMode == SHADOW_FILTER_PCF_POISSON)
+    {
+        shadowVisibility = directionalShadowPCFPoisson;
+    }
+    else
+    {
+        float storedDepth = SampleDirectionalShadow(directionalSlice, localUV);
+        shadowVisibility = (ndc.z + finalBias >= storedDepth) ? 1.0f : 0.0f;
+    }
+
+    return ApplyShadowSharpen(shadowVisibility, ShadowSharpen);
 }
 
 float3 GetCascadeDebugColor(float4 screenPos)
 {
     if (NumCascades <= 0)
+    {
         return float3(1, 0, 1);
+    }
 
     int idx = GetCascadeIndex(screenPos);
-    if (idx == 0) return float3(1.0, 0.2, 0.2); // 빨강
-    if (idx == 1) return float3(0.2, 1.0, 0.2); // 초록
-    if (idx == 2) return float3(0.2, 0.4, 1.0); // 파랑
-    return             float3(1.0, 1.0, 0.2);   // 노랑
+    if (idx == 0) return float3(1.0, 0.2, 0.2);
+    if (idx == 1) return float3(0.2, 1.0, 0.2);
+    if (idx == 2) return float3(0.2, 0.4, 1.0);
+    return             float3(1.0, 1.0, 0.2);
 }
 
 float CalcAttenuation(float dist, float radius, float falloff)
@@ -198,14 +511,14 @@ uint DepthToClusterSlice(float viewDepth)
 {
     float safeDepth = clamp(viewDepth, CullState.NearZ, CullState.FarZ);
     float logDepth = log(safeDepth / CullState.NearZ) / log(CullState.FarZ / CullState.NearZ);
-    return min((uint) floor(logDepth * CullState.ClusterZ), CullState.ClusterZ - 1);
+    return min((uint)floor(logDepth * CullState.ClusterZ), CullState.ClusterZ - 1);
 }
 
 uint ComputeClusterIndex(float4 screenPos, float3 worldPos)
 {
     float4 viewPos = mul(float4(worldPos, 1.0f), View);
-    uint tileX = min((uint) (screenPos.x / CullState.ScreenWidth * CullState.ClusterX), CullState.ClusterX - 1);
-    uint tileY = min((uint) (screenPos.y / CullState.ScreenHeight * CullState.ClusterY), CullState.ClusterY - 1);
+    uint tileX = min((uint)(screenPos.x / CullState.ScreenWidth * CullState.ClusterX), CullState.ClusterX - 1);
+    uint tileY = min((uint)(screenPos.y / CullState.ScreenHeight * CullState.ClusterY), CullState.ClusterY - 1);
     uint sliceZ = DepthToClusterSlice(abs(viewPos.z));
 
     return sliceZ * CullState.ClusterX * CullState.ClusterY
@@ -261,7 +574,7 @@ void AccumulatePointSpotDiffuse(float3 worldPos, float3 N, float4 screenPos, ino
         {
             uint lightIndex = TileLightIndices[gridData.x + t];
             FLightInfo light = AllLights[lightIndex];
-            result += CalcLightDiffuse(light, worldPos, N) * CalcLocalShadow(lightIndex, light, worldPos);
+            result += CalcLightDiffuse(light, worldPos, N) * CalcLocalShadow(lightIndex, light, worldPos, N);
         }
     }
     else if (LightCullingMode == LIGHT_CULLING_CLUSTER)
@@ -272,7 +585,7 @@ void AccumulatePointSpotDiffuse(float3 worldPos, float3 N, float4 screenPos, ino
         {
             uint lightIndex = g_ClusterLightIndices[gridData.x + t];
             FLightInfo light = AllLights[lightIndex];
-            result += CalcLightDiffuse(light, worldPos, N) * CalcLocalShadow(lightIndex, light, worldPos);
+            result += CalcLightDiffuse(light, worldPos, N) * CalcLocalShadow(lightIndex, light, worldPos, N);
         }
     }
     else
@@ -280,12 +593,13 @@ void AccumulatePointSpotDiffuse(float3 worldPos, float3 N, float4 screenPos, ino
         for (uint i = 0; i < NumActivePointLights + NumActiveSpotLights; ++i)
         {
             FLightInfo light = AllLights[i];
-            result += CalcLightDiffuse(light, worldPos, N) * CalcLocalShadow(i, light, worldPos);
+            result += CalcLightDiffuse(light, worldPos, N) * CalcLocalShadow(i, light, worldPos, N);
         }
     }
 }
 
-void AccumulatePointSpotSpecular(float3 worldPos, float3 N, float3 V, float shininess, float4 screenPos, inout float3 result)
+void AccumulatePointSpotSpecular(float3 worldPos, float3 N, float3 V, float shininess, float4 screenPos,
+                                 inout float3 result)
 {
     if (LightCullingMode == LIGHT_CULLING_TILE && NumTilesX > 0 && NumTilesY > 0)
     {
@@ -296,7 +610,8 @@ void AccumulatePointSpotSpecular(float3 worldPos, float3 N, float3 V, float shin
         {
             uint lightIndex = TileLightIndices[gridData.x + t];
             FLightInfo light = AllLights[lightIndex];
-            result += CalcLightSpecular(light, worldPos, N, V, shininess) * CalcLocalShadow(lightIndex, light, worldPos);
+            result += CalcLightSpecular(light, worldPos, N, V, shininess) * CalcLocalShadow(
+                lightIndex, light, worldPos, N);
         }
     }
     else if (LightCullingMode == LIGHT_CULLING_CLUSTER)
@@ -307,7 +622,8 @@ void AccumulatePointSpotSpecular(float3 worldPos, float3 N, float3 V, float shin
         {
             uint lightIndex = g_ClusterLightIndices[gridData.x + t];
             FLightInfo light = AllLights[lightIndex];
-            result += CalcLightSpecular(light, worldPos, N, V, shininess) * CalcLocalShadow(lightIndex, light, worldPos);
+            result += CalcLightSpecular(light, worldPos, N, V, shininess) * CalcLocalShadow(
+                lightIndex, light, worldPos, N);
         }
     }
     else
@@ -315,7 +631,7 @@ void AccumulatePointSpotSpecular(float3 worldPos, float3 N, float3 V, float shin
         for (uint i = 0; i < NumActivePointLights + NumActiveSpotLights; ++i)
         {
             FLightInfo light = AllLights[i];
-            result += CalcLightSpecular(light, worldPos, N, V, shininess) * CalcLocalShadow(i, light, worldPos);
+            result += CalcLightSpecular(light, worldPos, N, V, shininess) * CalcLocalShadow(i, light, worldPos, N);
         }
     }
 }
@@ -371,7 +687,7 @@ void AccumulateToonPointSpotDiffuse(float3 worldPos, float3 N, float4 screenPos,
         {
             uint lightIndex = TileLightIndices[gridData.x + t];
             FLightInfo light = AllLights[lightIndex];
-            result += CalcToonPointSpotDiffuse(light, worldPos, N) * CalcLocalShadow(lightIndex, light, worldPos);
+            result += CalcToonPointSpotDiffuse(light, worldPos, N) * CalcLocalShadow(lightIndex, light, worldPos, N);
         }
     }
     else if (LightCullingMode == LIGHT_CULLING_CLUSTER)
@@ -382,7 +698,7 @@ void AccumulateToonPointSpotDiffuse(float3 worldPos, float3 N, float4 screenPos,
         {
             uint lightIndex = g_ClusterLightIndices[gridData.x + t];
             FLightInfo light = AllLights[lightIndex];
-            result += CalcToonPointSpotDiffuse(light, worldPos, N) * CalcLocalShadow(lightIndex, light, worldPos);
+            result += CalcToonPointSpotDiffuse(light, worldPos, N) * CalcLocalShadow(lightIndex, light, worldPos, N);
         }
     }
     else
@@ -390,7 +706,7 @@ void AccumulateToonPointSpotDiffuse(float3 worldPos, float3 N, float4 screenPos,
         for (uint i = 0; i < NumActivePointLights + NumActiveSpotLights; ++i)
         {
             FLightInfo light = AllLights[i];
-            result += CalcToonPointSpotDiffuse(light, worldPos, N) * CalcLocalShadow(i, light, worldPos);
+            result += CalcToonPointSpotDiffuse(light, worldPos, N) * CalcLocalShadow(i, light, worldPos, N);
         }
     }
 }
@@ -431,7 +747,7 @@ float3 AccumulateDiffuse(float3 worldPos, float3 N, float4 screenPos)
 float3 AccumulateSpecular(float3 worldPos, float3 N, float3 V, float shininess, float4 screenPos)
 {
     float3 result = float3(0, 0, 0);
-    
+
     float dirShadow = CalcDirectionalShadow(worldPos, N, screenPos);
     result += CalcDirectionalSpecular(DirectionalLight.Color.rgb, DirectionalLight.Direction,
                                       DirectionalLight.Intensity, N, V, shininess) * dirShadow;

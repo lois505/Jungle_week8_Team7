@@ -60,6 +60,7 @@ namespace ESystemTexSlot
 	constexpr uint32 Stencil = 19; // t19: CopyResource된 Stencil (X24_G8_UINT)
 	constexpr uint32 CullingHeatmap = 20; // t20: Tile Culling Heatmap (R8G8B8A8_UNORM)
 	constexpr uint32 ShadowMapAtlas = 21; // t21 : Shadow Map Atlas
+	constexpr uint32 DirectionalShadowArray = 22; // t22 : Directional Shadow Array
 }
 
 // HLSL 시스템 샘플러 슬롯 — Renderer가 프레임 시작 시 영구 바인딩

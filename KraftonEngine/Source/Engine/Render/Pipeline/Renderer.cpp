@@ -7,31 +7,60 @@
 #include "Profiling/Stats.h"
 #include "Profiling/GPUProfiler.h"
 #include "Materials/MaterialManager.h"
+#include "Profiling/StartupTrace.h"
 
 
 void FRenderer::Create(HWND hWindow)
 {
-	Device.Create(hWindow);
+	STARTUP_TRACE_SCOPE("FRenderer::Create");
+	{
+		STARTUP_TRACE_SCOPE("D3DDevice.Create");
+		Device.Create(hWindow);
+	}
 
 	if (Device.GetDevice() == nullptr)
 	{
 		UE_LOG("Failed to create D3D Device.");
 	}
 
-	FShaderManager::Get().Initialize(Device.GetDevice());
-	Resources.Create(Device.GetDevice(), Device.GetDeviceContext());
+	{
+		STARTUP_TRACE_SCOPE("ShaderManager.Initialize");
+		FShaderManager::Get().Initialize(Device.GetDevice());
+	}
+	{
+		STARTUP_TRACE_SCOPE("SystemResources.Create");
+		Resources.Create(Device.GetDevice(), Device.GetDeviceContext());
+	}
 
-	TileBasedCulling.Initialize(Device.GetDevice());
-	ClusteredLightCuller.Initialize(Device.GetDevice(), Device.GetDeviceContext());
+	{
+		STARTUP_TRACE_SCOPE("TileBasedCulling.Initialize");
+		TileBasedCulling.Initialize(Device.GetDevice());
+	}
+	{
+		STARTUP_TRACE_SCOPE("ClusteredLightCuller.Initialize");
+		ClusteredLightCuller.Initialize(Device.GetDevice(), Device.GetDeviceContext());
+	}
 
-	PassRenderStateTable.Initialize();
+	{
+		STARTUP_TRACE_SCOPE("PassRenderStateTable.Initialize");
+		PassRenderStateTable.Initialize();
+	}
 
-	Builder.Create(Device.GetDevice(), Device.GetDeviceContext(), &PassRenderStateTable);
+	{
+		STARTUP_TRACE_SCOPE("DrawCommandBuilder.Create");
+		Builder.Create(Device.GetDevice(), Device.GetDeviceContext(), &PassRenderStateTable);
+	}
 
-	ShadowRenderer.Create(Device.GetDevice(), Device.GetDeviceContext());
+	{
+		STARTUP_TRACE_SCOPE("ShadowRenderer.Create");
+		ShadowRenderer.Create(Device.GetDevice(), Device.GetDeviceContext());
+	}
 
 	// GPU Profiler 초기화
-	FGPUProfiler::Get().Initialize(Device.GetDevice(), Device.GetDeviceContext());
+	{
+		STARTUP_TRACE_SCOPE("GPUProfiler.Initialize");
+		FGPUProfiler::Get().Initialize(Device.GetDevice(), Device.GetDeviceContext());
+	}
 }
 
 void FRenderer::Release()
@@ -75,8 +104,9 @@ void FRenderer::Render(const FFrameContext& Frame, FScene& Scene)
 		SCOPE_STAT_CAT("Shadow Pass", "4_ExecutePass");
 		const FShadowRuntimeOptions& ShadowOptions = ShadowRenderer.GetRuntimeOptions();
 
+		Resources.UnbindSystemTextures(Device);
 		Resources.UpdateShadowResources(Scene, ShadowOptions);
-		Resources.ShadowResourceManager.ClearAtlas();
+		Resources.ShadowResourceManager.ClearAtlas(ShadowOptions);
 		ShadowRenderer.RenderShadows(Device, Resources, Scene, Frame);
 
 		//	Restore
@@ -92,7 +122,7 @@ void FRenderer::Render(const FFrameContext& Frame, FScene& Scene)
 		ClusterState.ScreenWidth = static_cast<uint32>(Frame.ViewportWidth);
 		ClusterState.ScreenHeight = static_cast<uint32>(Frame.ViewportHeight);
 
-		Resources.UpdateLightAndShadowBuffer(Device, Scene, Frame, &ClusterState);
+		Resources.UpdateLightAndShadowBuffer(Device, Scene, Frame, ShadowRenderer.GetRuntimeOptions(), &ClusterState);
 	}
 
 	// 시스템 샘플러 영구 바인딩 (s0-s2)

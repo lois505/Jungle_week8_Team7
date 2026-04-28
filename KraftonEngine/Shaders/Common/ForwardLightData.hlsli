@@ -85,7 +85,9 @@ struct FLocalShadowInfo
     uint CastShadow;
     uint ShadowType;
     float Bias;
-    float Padding;
+    float SlopeBias;
+    float Sharpen;
+    float3 _pad3;
 };
 
 // =============================================================================
@@ -106,7 +108,7 @@ cbuffer LightingBuffer : register(b4)
     uint LightCullingMode;
     uint VisualizeLightCulling;
     float HeatMapMax;
-    uint Pad;
+    uint ShadowFilterMode;
 };
 
 cbuffer DirectionalShadowBuffer : register(b5)

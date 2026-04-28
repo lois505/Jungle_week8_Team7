@@ -2,6 +2,7 @@
 #include "Platform/Paths.h"
 #include "Core/Log.h"
 #include "Core/Notification.h"
+#include "Profiling/StartupTrace.h"
 #include <algorithm>
 
 // ============================================================
@@ -25,11 +26,15 @@ TArray<D3D_SHADER_MACRO> FShaderManager::CopyDefines(const D3D_SHADER_MACRO* Def
 // ============================================================
 void FShaderManager::Initialize(ID3D11Device* InDevice)
 {
+	STARTUP_TRACE_SCOPE("FShaderManager::Initialize");
+
 	if (bIsInitialized) return;
 	CachedDevice = InDevice;
 
 	// 단순 셰이더 (매크로 없음)
-	GetOrCreate(EShaderPath::Primitive);
+	{
+		STARTUP_TRACE_SCOPE("Compile.BaseShaders");
+		GetOrCreate(EShaderPath::Primitive);
 	GetOrCreate(EShaderPath::Gizmo);
 	GetOrCreate(EShaderPath::Editor);
 	GetOrCreate(EShaderPath::Decal);
@@ -41,25 +46,35 @@ void FShaderManager::Initialize(ID3D11Device* InDevice)
 	GetOrCreate(EShaderPath::OverlayFont);
 	GetOrCreate(EShaderPath::SubUV);
 	GetOrCreate(EShaderPath::Billboard);
-	GetOrCreate(EShaderPath::HeightFog);
+		GetOrCreate(EShaderPath::HeightFog);
+	}
 
 	// UberLit 기본은 Phong + Cluster Culling으로 컴파일한다.
-	GetOrCreate(EShaderPath::UberLit);
+	{
+		STARTUP_TRACE_SCOPE("Compile.UberLitVariants");
+		GetOrCreate(EShaderPath::UberLit);
 	PreCompile(FShaderKey(EShaderPath::UberLit, EUberLitDefines::Unlit),   EUberLitDefines::Unlit);
 	PreCompile(FShaderKey(EShaderPath::UberLit, EUberLitDefines::Gouraud), EUberLitDefines::Gouraud);
 	PreCompile(FShaderKey(EShaderPath::UberLit, EUberLitDefines::Lambert), EUberLitDefines::Lambert);
 	PreCompile(FShaderKey(EShaderPath::UberLit, EUberLitDefines::Phong),   EUberLitDefines::Phong);
-	PreCompile(FShaderKey(EShaderPath::UberLit, EUberLitDefines::Toon),    EUberLitDefines::Toon);
+		PreCompile(FShaderKey(EShaderPath::UberLit, EUberLitDefines::Toon),    EUberLitDefines::Toon);
+	}
 
 	// include 역매핑 구축
-	RebuildIncludeDependents();
+	{
+		STARTUP_TRACE_SCOPE("RebuildIncludeDependents");
+		RebuildIncludeDependents();
+	}
 
 	// 셰이더 디렉토리 감시 등록
-	FWatchID WatchID = FDirectoryWatcher::Get().Watch(FPaths::ShaderDir(), "Shaders/");
-	if (WatchID != 0)
 	{
-		WatchSub = FDirectoryWatcher::Get().Subscribe(WatchID,
-			[this](const TSet<FString>& Files) { OnShadersChanged(Files); });
+		STARTUP_TRACE_SCOPE("ShaderDirectoryWatcher.WatchAndSubscribe");
+		FWatchID WatchID = FDirectoryWatcher::Get().Watch(FPaths::ShaderDir(), "Shaders/");
+		if (WatchID != 0)
+		{
+			WatchSub = FDirectoryWatcher::Get().Subscribe(WatchID,
+				[this](const TSet<FString>& Files) { OnShadersChanged(Files); });
+		}
 	}
 
 	bIsInitialized = true;
@@ -277,7 +292,8 @@ void FShaderManager::OnShadersChanged(const TSet<FString>& ChangedFiles)
 		auto NewShader = std::make_unique<FShader>();
 		TArray<FString> NewIncludes;
 		const D3D_SHADER_MACRO* Defines = Entry.StoredDefines.empty() ? nullptr : Entry.StoredDefines.data();
-		NewShader->Create(CachedDevice, WidePath.c_str(), "VS", "PS", Defines, &NewIncludes);
+		// Hot reload: bypass cache read, but keep cache write enabled to refresh on-disk CSO.
+		NewShader->Create(CachedDevice, WidePath.c_str(), "VS", "PS", Defines, &NewIncludes, false, true);
 
 		if (NewShader->IsValid())
 		{
@@ -304,7 +320,8 @@ void FShaderManager::OnShadersChanged(const TSet<FString>& ChangedFiles)
 
 		auto NewCS = std::make_unique<FComputeShader>();
 		TArray<FString> NewIncludes;
-		NewCS->Create(CachedDevice, WidePath.c_str(), Key.EntryPoint.c_str(), &NewIncludes);
+		// Hot reload: bypass cache read, but keep cache write enabled to refresh on-disk CSO.
+		NewCS->Create(CachedDevice, WidePath.c_str(), Key.EntryPoint.c_str(), &NewIncludes, false, true);
 
 		if (NewCS->IsValid())
 		{

@@ -8,6 +8,7 @@
 #include "DDSTextureLoader.h"
 #include "WICTextureLoader.h"
 #include "Core/Log.h"
+#include "Profiling/StartupTrace.h"
 #include "Profiling/MemoryStats.h"
 #include "Engine/Texture/Texture2D.h"
 
@@ -24,89 +25,103 @@ namespace ResourceKey
 
 void FResourceManager::LoadFromFile(const FString& Path, ID3D11Device* InDevice)
 {
+	STARTUP_TRACE_SCOPE("FResourceManager::LoadFromFile");
+
 	using namespace json;
 
-	std::ifstream File(std::filesystem::path(FPaths::ToWide(Path)));
-	if (!File.is_open())
 	{
-		return;
-	}
-
-	FString Content((std::istreambuf_iterator<char>(File)),
-		std::istreambuf_iterator<char>());
-
-	JSON Root = JSON::Load(Content);
-
-	// Font — { "Name": { "Path": "...", "Columns": 16, "Rows": 16 } }
-	if (Root.hasKey(ResourceKey::Font))
-	{
-		JSON FontSection = Root[ResourceKey::Font];
-		for (auto& Pair : FontSection.ObjectRange())
+		STARTUP_TRACE_SCOPE("OpenAndParseResourceIni");
+		std::ifstream File(std::filesystem::path(FPaths::ToWide(Path)));
+		if (!File.is_open())
 		{
-			JSON Entry = Pair.second;
-			FFontResource Resource;
-			Resource.Name    = FName(Pair.first.c_str());
-			Resource.Path    = Entry[ResourceKey::Path].ToString();
-			Resource.Columns = static_cast<uint32>(Entry[ResourceKey::Columns].ToInt());
-			Resource.Rows    = static_cast<uint32>(Entry[ResourceKey::Rows].ToInt());
-			Resource.SRV     = nullptr;
-			FontResources[Pair.first] = Resource;
+			return;
+		}
+
+		FString Content((std::istreambuf_iterator<char>(File)),
+			std::istreambuf_iterator<char>());
+
+		JSON Root = JSON::Load(Content);
+
+		// Font — { "Name": { "Path": "...", "Columns": 16, "Rows": 16 } }
+		if (Root.hasKey(ResourceKey::Font))
+		{
+			JSON FontSection = Root[ResourceKey::Font];
+			for (auto& Pair : FontSection.ObjectRange())
+			{
+				JSON Entry = Pair.second;
+				FFontResource Resource;
+				Resource.Name    = FName(Pair.first.c_str());
+				Resource.Path    = Entry[ResourceKey::Path].ToString();
+				Resource.Columns = static_cast<uint32>(Entry[ResourceKey::Columns].ToInt());
+				Resource.Rows    = static_cast<uint32>(Entry[ResourceKey::Rows].ToInt());
+				Resource.SRV     = nullptr;
+				FontResources[Pair.first] = Resource;
+			}
+		}
+
+		// Particle — { "Name": { "Path": "...", "Columns": 6, "Rows": 6 } }
+		if (Root.hasKey(ResourceKey::Particle))
+		{
+			JSON ParticleSection = Root[ResourceKey::Particle];
+			for (auto& Pair : ParticleSection.ObjectRange())
+			{
+				JSON Entry = Pair.second;
+				FParticleResource Resource;
+				Resource.Name    = FName(Pair.first.c_str());
+				Resource.Path    = Entry[ResourceKey::Path].ToString();
+				Resource.Columns = static_cast<uint32>(Entry[ResourceKey::Columns].ToInt());
+				Resource.Rows    = static_cast<uint32>(Entry[ResourceKey::Rows].ToInt());
+				Resource.SRV     = nullptr;
+				ParticleResources[Pair.first] = Resource;
+			}
+		}
+
+		// Texture — { "Name": { "Path": "..." } }  (Columns/Rows는 항상 1)
+		if (Root.hasKey(ResourceKey::Texture))
+		{
+			JSON TextureSection = Root[ResourceKey::Texture];
+			for (auto& Pair : TextureSection.ObjectRange())
+			{
+				JSON Entry = Pair.second;
+				FTextureResource Resource;
+				Resource.Name    = FName(Pair.first.c_str());
+				Resource.Path    = Entry[ResourceKey::Path].ToString();
+				Resource.Columns = 1;
+				Resource.Rows    = 1;
+				Resource.SRV     = nullptr;
+				TextureResources[Pair.first] = Resource;
+			}
 		}
 	}
 
-	// Particle — { "Name": { "Path": "...", "Columns": 6, "Rows": 6 } }
-	if (Root.hasKey(ResourceKey::Particle))
 	{
-		JSON ParticleSection = Root[ResourceKey::Particle];
-		for (auto& Pair : ParticleSection.ObjectRange())
+		STARTUP_TRACE_SCOPE("LoadGPUResourcesFromResourceIni");
+		if (LoadGPUResources(InDevice))
 		{
-			JSON Entry = Pair.second;
-			FParticleResource Resource;
-			Resource.Name    = FName(Pair.first.c_str());
-			Resource.Path    = Entry[ResourceKey::Path].ToString();
-			Resource.Columns = static_cast<uint32>(Entry[ResourceKey::Columns].ToInt());
-			Resource.Rows    = static_cast<uint32>(Entry[ResourceKey::Rows].ToInt());
-			Resource.SRV     = nullptr;
-			ParticleResources[Pair.first] = Resource;
+			UE_LOG("Complete Load Resources!");
 		}
-	}
-
-	// Texture — { "Name": { "Path": "..." } }  (Columns/Rows는 항상 1)
-	if (Root.hasKey(ResourceKey::Texture))
-	{
-		JSON TextureSection = Root[ResourceKey::Texture];
-		for (auto& Pair : TextureSection.ObjectRange())
+		else
 		{
-			JSON Entry = Pair.second;
-			FTextureResource Resource;
-			Resource.Name    = FName(Pair.first.c_str());
-			Resource.Path    = Entry[ResourceKey::Path].ToString();
-			Resource.Columns = 1;
-			Resource.Rows    = 1;
-			Resource.SRV     = nullptr;
-			TextureResources[Pair.first] = Resource;
+			UE_LOG("Failed to Load Resources...");
 		}
-	}
-
-	if (LoadGPUResources(InDevice))
-	{
-		UE_LOG("Complete Load Resources!");
-	}
-	else
-	{
-		UE_LOG("Failed to Load Resources...");
 	}
 }
 
 void FResourceManager::LoadFromDirectory(const FString& Path, ID3D11Device* InDevice)
 {
+	STARTUP_TRACE_SCOPE("FResourceManager::LoadFromDirectory");
+	STARTUP_TRACE_LOG("Directory scan root: %s", Path.c_str());
 
 	std::wstring RootPath = FPaths::RootDir();
+	uint32 TotalEntries = 0;
+	uint32 PngEntries = 0;
 
 	for (const auto& Entry : std::filesystem::recursive_directory_iterator(FPaths::ToWide(Path)))
 	{
+		++TotalEntries;
 		if (Entry.path().extension() != ".png")
 			continue;
+		++PngEntries;
 
 		UTexture2D::LoadFromFile(FPaths::ToUtf8(Entry.path()), InDevice);
 
@@ -114,10 +129,14 @@ void FResourceManager::LoadFromDirectory(const FString& Path, ID3D11Device* InDe
 			InDevice, (Entry.path()).c_str(),
 			nullptr, LoadedResource[FPaths::ToUtf8(Entry.path().lexically_relative(RootPath).generic_wstring())].GetAddressOf());
 	}
+
+	STARTUP_TRACE_LOG("Directory scan done. entries=%u png=%u", TotalEntries, PngEntries);
 }
 
 bool FResourceManager::LoadGPUResources(ID3D11Device* Device)
 {
+	STARTUP_TRACE_SCOPE("FResourceManager::LoadGPUResources");
+
 	if (!Device)
 	{
 		return false;
@@ -196,20 +215,32 @@ bool FResourceManager::LoadGPUResources(ID3D11Device* Device)
 		return true;
 	};
 
-	for (auto& [Key, Resource] : FontResources)
 	{
-		if (!LoadSRV(Resource)) return false;
+		STARTUP_TRACE_SCOPE("LoadGPUResources.Font");
+		for (auto& [Key, Resource] : FontResources)
+		{
+			if (!LoadSRV(Resource)) return false;
+		}
 	}
 
-	for (auto& [Key, Resource] : ParticleResources)
 	{
-		if (!LoadSRV(Resource)) return false;
+		STARTUP_TRACE_SCOPE("LoadGPUResources.Particle");
+		for (auto& [Key, Resource] : ParticleResources)
+		{
+			if (!LoadSRV(Resource)) return false;
+		}
 	}
 
-	for (auto& [Key, Resource] : TextureResources)
 	{
-		if (!LoadSRV(Resource)) return false;
+		STARTUP_TRACE_SCOPE("LoadGPUResources.Texture");
+		for (auto& [Key, Resource] : TextureResources)
+		{
+			if (!LoadSRV(Resource)) return false;
+		}
 	}
+
+	STARTUP_TRACE_LOG("LoadGPUResources count font=%zu particle=%zu texture=%zu",
+		FontResources.size(), ParticleResources.size(), TextureResources.size());
 
 	return true;
 }

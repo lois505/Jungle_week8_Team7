@@ -6,11 +6,6 @@
 #include "Render/Resource/LocalShadowInfo.h"
 #include "Render/Pipeline/ForwardLightData.h"
 
-struct ID3D11DepthStencilView;
-struct ID3D11RenderTargetView;
-struct ID3D11ShaderResourceView;
-struct ID3D11Texture2D;
-
 struct FLightShadowSettings
 {
 	bool bCastShadows = false;
@@ -18,18 +13,6 @@ struct FLightShadowSettings
 	float ShadowBias = 0.0f;
 	float ShadowSlopeBias = 0.0f;
 	float ShadowSharpen = 1.0f;
-};
-
-struct FShadowMapResource
-{
-	ID3D11Texture2D* Texture = nullptr;
-	//	RTV, DSV 중 뭘 쓸지 고민해보아야 함 -> 아마 RTV 쓸 듯?
-	ID3D11RenderTargetView* RTV = nullptr;
-	ID3D11DepthStencilView* DSV = nullptr;
-	ID3D11ShaderResourceView* SRV = nullptr;
-
-	uint32 Width = 0;
-	uint32 Height = 0;
 };
 
 struct FShadowViewData
@@ -54,10 +37,13 @@ struct FDirectionalShadowArray
 	ID3D11DepthStencilView* DSVs[5] = {};
 	ID3D11ShaderResourceView* SRV = nullptr;
 	ID3D11ShaderResourceView* PreviewSRVs[5] = {};
+	ID3D11Texture2D* MomentTexture = nullptr;
+	ID3D11RenderTargetView* MomentRTVs[5] = {};
+	ID3D11ShaderResourceView* MomentSRV = nullptr;
 
-	float Width;
-	float Height;
-	uint32 NumElements;
+	float Width = 0.0f;
+	float Height = 0.0f;
+	uint32 NumElements = 0;
 };
 
 struct FShadowCommonData
@@ -70,16 +56,16 @@ public:
 public:
 	FVector4 MakeAtlasRect(const FShadowViewData& View, const FShadowAtlasResource& Atlas) const
 	{
-		if (!View.bAtlasAllocated || Atlas.Width == 0 || Atlas.Height == 0)
+		if (!View.bAtlasAllocated || Atlas.Map.Width == 0 || Atlas.Map.Height == 0)
 		{
 			return FVector4(0.0f, 0.0f, 0.0f, 0.0f);
 		}
 
 		return FVector4(
-			static_cast<float>(View.AtlasOffsetX) / static_cast<float>(Atlas.Width),
-			static_cast<float>(View.AtlasOffsetY) / static_cast<float>(Atlas.Height),
-			static_cast<float>(View.AtlasSizeX) / static_cast<float>(Atlas.Width),
-			static_cast<float>(View.AtlasSizeY) / static_cast<float>(Atlas.Height));
+			static_cast<float>(View.AtlasOffsetX) / static_cast<float>(Atlas.Map.Width),
+			static_cast<float>(View.AtlasOffsetY) / static_cast<float>(Atlas.Map.Height),
+			static_cast<float>(View.AtlasSizeX) / static_cast<float>(Atlas.Map.Width),
+			static_cast<float>(View.AtlasSizeY) / static_cast<float>(Atlas.Map.Height));
 	}
 	virtual FLocalShadowInfo ConvertToLocalShadowInfo(const FShadowAtlasResource& Atlas) const { return FLocalShadowInfo(); }
 };
@@ -101,8 +87,6 @@ public:
 	FShadowViewData View[6];
 	int32 PreviewViewIndex = 0;
 
-
-
 public:
 
 	virtual FLocalShadowInfo ConvertToLocalShadowInfo(const FShadowAtlasResource& Atlas) const override
@@ -111,6 +95,8 @@ public:
 		Info.CastShadow = Settings.bCastShadows ? 1u : 0u;
 		Info.ShadowType = ELightType::Point;
 		Info.Bias = Settings.ShadowBias;
+		Info.SlopeBias = Settings.ShadowSlopeBias;
+		Info.Sharpen = Settings.ShadowSharpen;
 
 		for (int32 FaceIndex = 0; FaceIndex < 6; ++FaceIndex)
 		{
@@ -138,6 +124,8 @@ public:
 		Info.CastShadow = (Settings.bCastShadows && View.bAtlasAllocated) ? 1u : 0u;
 		Info.ShadowType = ELightType::Spot;
 		Info.Bias = Settings.ShadowBias;
+		Info.SlopeBias = Settings.ShadowSlopeBias;
+		Info.Sharpen = Settings.ShadowSharpen;
 		Info.LightViewProj[0] = View.LightViewProj.ConvertToPOD();
 		Info.AtlasRect[0] = MakeAtlasRect(View, Atlas);
 		return Info;
