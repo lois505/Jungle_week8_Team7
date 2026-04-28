@@ -373,13 +373,7 @@ float CalcDirectionalPSMShadow(float3 worldPos, float3 worldNormal)
     float finalBias = (ShadowBias + (ShadowSlopeBias * slopeFactor)) * texelSize;
 
     float4 mainClip = mul(float4(worldPos, 1.0f), PSMMainViewProjection);
-    if (abs(mainClip.w) <= 0.0001f)
-    {
-        return 1.0f;
-    }
-
-    float4 psmPosition = float4(mainClip.xyz / mainClip.w, 1.0f);
-    float4 lightClip = mul(psmPosition, PSMLightViewProjection);
+    float4 lightClip = mul(mainClip, PSMLightViewProjection);
     if (abs(lightClip.w) <= 0.0001f)
     {
         return 1.0f;

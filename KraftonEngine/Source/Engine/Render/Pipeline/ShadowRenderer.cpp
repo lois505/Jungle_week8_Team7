@@ -140,13 +140,6 @@ namespace
 		return MainFrame.NearClip;
 	}
 
-	float ComputePSMVirtualSlideBack(const FFrameContext& MainFrame, float CameraFitNear)
-	{
-		const float DepthRange = std::max(MainFrame.FarClip - CameraFitNear, 1.0f);
-		const float SceneScaledSlide = DepthRange * 0.01f;
-		return std::min(std::max(SceneScaledSlide, 1.0f), 25.0f);
-	}
-
 	TStaticArray<FVector, 8> BuildWorldFrustumCornersFromViewProjection(const FMatrix& ViewProjection)
 	{
 		const FMatrix InvViewProjection = ViewProjection.GetInverse();
@@ -242,24 +235,61 @@ namespace
 		return FMatrix::MakeOrtho(MinX, MaxX, MinY, MaxY, MinZ, MaxZ);
 	}
 
+	FMatrix MakeReversedInversePerspectiveFitToPoints(const FMatrix& View, const TStaticArray<FVector4, 8>& Points)
+	{
+		float MaxAbsXOverZ = 0.0f;
+		float MaxAbsYOverZ = 0.0f;
+		float MinAbsZ = FLT_MAX;
+
+		for (const FVector4& Point : Points)
+		{
+			const FVector4 ViewPoint = View.TransformVector4(Point);
+			const float AbsZ = std::abs(ViewPoint.Z);
+			if (AbsZ <= 1e-4f)
+			{
+				continue;
+			}
+
+			MaxAbsXOverZ = std::max(MaxAbsXOverZ, std::abs(ViewPoint.X / ViewPoint.Z));
+			MaxAbsYOverZ = std::max(MaxAbsYOverZ, std::abs(ViewPoint.Y / ViewPoint.Z));
+			MinAbsZ = std::min(MinAbsZ, AbsZ);
+		}
+
+		if (MaxAbsXOverZ <= 1e-6f || MaxAbsYOverZ <= 1e-6f || MinAbsZ == FLT_MAX)
+		{
+			return MakeOrthoFitToPoints(View, Points);
+		}
+
+		const float ScaleX = 1.0f / MaxAbsXOverZ;
+		const float ScaleY = 1.0f / MaxAbsYOverZ;
+		const float A = std::max(0.001f, MinAbsZ * 0.3f);
+
+		// Reversed-Z variant of the PracticalPSM inverse projection.
+		// z = -A maps to 1, both infinities map to 0.5, and z = +A maps to 0.
+		return FMatrix(
+			ScaleX, 0.0f,   0.0f,      0.0f,
+			0.0f,   ScaleY, 0.0f,      0.0f,
+			0.0f,   0.0f,   0.5f,      1.0f,
+			0.0f,   0.0f,  -0.5f * A,  0.0f
+		);
+	}
+
 	void BuildPSMViewProjection(const FFrameContext& MainFrame, const FScene& Scene, const FVector& LightDirection,
 		FMatrix& OutVirtualCameraViewProjection, FMatrix& OutPSMLightView, FMatrix& OutPSMLightProj)
 	{
 		const FBoundingBox ReceiverBounds = BuildShadowReceiverBounds(Scene);
 		const float CameraFitNear = ComputeCameraFitNear(MainFrame, ReceiverBounds);
-		const float VirtualSlideBack = MainFrame.bIsOrtho ? 0.0f : ComputePSMVirtualSlideBack(MainFrame, CameraFitNear);
 
 		const float AspectRatio = (MainFrame.ViewportHeight > 1.0f)
 			? MainFrame.ViewportWidth / MainFrame.ViewportHeight
 			: 1.0f;
 		const float FovY = 2.0f * std::atan(1.0f / MainFrame.Proj.M[1][1]);
-		const float VirtualNear = std::max(0.001f, CameraFitNear + VirtualSlideBack);
-		const float VirtualFar = std::max(VirtualNear + 1.0f, MainFrame.FarClip + VirtualSlideBack);
-		const FVector VirtualCameraPosition = MainFrame.CameraPosition - MainFrame.CameraForward * VirtualSlideBack;
+		const float VirtualNear = std::max(0.001f, CameraFitNear);
+		const float VirtualFar = std::max(VirtualNear + 1.0f, MainFrame.FarClip);
 
 		const FMatrix VirtualCameraView = MainFrame.bIsOrtho
 			? MainFrame.View
-			: FMatrix::MakeViewMatrix(MainFrame.CameraForward, MainFrame.CameraRight, MainFrame.CameraUp, VirtualCameraPosition);
+			: MainFrame.View;
 		const FMatrix VirtualCameraProj = MainFrame.bIsOrtho
 			? MainFrame.Proj
 			: FMatrix::MakeProjectionMatrix(FovY, VirtualNear, VirtualFar, AspectRatio);
@@ -286,8 +316,9 @@ namespace
 		const FVector PPCenter = ComputeCenter(PostPerspectiveCorners);
 		const float PPRadius = ComputeBoundingSphereRadius(PostPerspectiveCorners, PPCenter);
 
-		const FVector NormalizedLightDirection = LightDirection.Normalized();
-		const FVector4 EyeLightDirection = VirtualCameraView.TransformVector4(FVector4(NormalizedLightDirection, 0.0f));
+		const FVector LightToSceneDirection = LightDirection.Normalized();
+		const FVector SceneToLightDirection = -LightToSceneDirection;
+		const FVector4 EyeLightDirection = VirtualCameraView.TransformVector4(FVector4(SceneToLightDirection, 0.0f));
 		const FVector4 LightPP = VirtualCameraProj.TransformVector4(EyeLightDirection);
 		const bool bLightAtInfinity = std::abs(LightPP.W) <= 0.001f;
 		const bool bLightBehindEye = LightPP.W < 0.0f;
@@ -301,7 +332,7 @@ namespace
 			}
 			LightDirectionPP.Normalize();
 
-			const FVector LightPositionPP = PPCenter - LightDirectionPP * (PPRadius * 2.0f);
+			const FVector LightPositionPP = PPCenter + LightDirectionPP * (PPRadius * 2.0f);
 			OutPSMLightView = MakeViewFromLocationAndTarget(LightPositionPP, PPCenter);
 			OutPSMLightProj = MakeOrthoFitToPoints(OutPSMLightView, PostPerspectiveCorners);
 			return;
@@ -315,7 +346,9 @@ namespace
 
 		if (bLightBehindEye || DistanceToCenter <= PPRadius * 1.05f)
 		{
-			OutPSMLightProj = MakeOrthoFitToPoints(OutPSMLightView, PostPerspectiveCorners);
+			OutPSMLightProj = bLightBehindEye
+				? MakeReversedInversePerspectiveFitToPoints(OutPSMLightView, PostPerspectiveCorners)
+				: MakeOrthoFitToPoints(OutPSMLightView, PostPerspectiveCorners);
 			return;
 		}
 
@@ -635,7 +668,7 @@ void FShadowRenderer::RenderShadowView(FD3DDevice& Device, FSystemResources& Res
 	}
 
 	Resources.SetBlendState(Device, EBlendState::Opaque);
-	Resources.SetRasterizerState(Device, ERasterizerState::SolidBackCull);
+	Resources.SetRasterizerState(Device, bUsePSMShader ? ERasterizerState::SolidNoCull : ERasterizerState::SolidBackCull);
 
 	Builder.BeginBuild(Scene.GetProxyCount());
 	Builder.BuildCommands(Scene);
