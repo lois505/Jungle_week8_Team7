@@ -335,6 +335,38 @@ void FShadowResourceManager::CreateDirectionalShadowArray(uint32 Resolution, int
 	SRVDesc.Texture2DArray.FirstArraySlice = 0;
 	SRVDesc.Texture2DArray.ArraySize = static_cast<UINT>(NumCascades + 1);
 	CachedDevice->CreateShaderResourceView(DirShadowArray.Texture, &SRVDesc, &DirShadowArray.SRV);
+
+	D3D11_TEXTURE2D_DESC MomentDesc = {};
+	MomentDesc.Width = Resolution;
+	MomentDesc.Height = Resolution;
+	MomentDesc.ArraySize = NumCascades + 1;
+	MomentDesc.MipLevels = 1;
+	MomentDesc.Format = DXGI_FORMAT_R32G32_FLOAT;
+	MomentDesc.SampleDesc = { 1, 0 };
+	MomentDesc.Usage = D3D11_USAGE_DEFAULT;
+	MomentDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+
+	CachedDevice->CreateTexture2D(&MomentDesc, nullptr, &DirShadowArray.MomentTexture);
+
+	for (int i = 1; i <= NumCascades; ++i)
+	{
+		D3D11_RENDER_TARGET_VIEW_DESC RTVDesc = {};
+		RTVDesc.Format = DXGI_FORMAT_R32G32_FLOAT;
+		RTVDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
+		RTVDesc.Texture2DArray.MipSlice = 0;
+		RTVDesc.Texture2DArray.FirstArraySlice = static_cast<UINT>(i);
+		RTVDesc.Texture2DArray.ArraySize = 1;
+		CachedDevice->CreateRenderTargetView(DirShadowArray.MomentTexture, &RTVDesc, &DirShadowArray.MomentRTVs[i]);
+	}
+
+	D3D11_SHADER_RESOURCE_VIEW_DESC MomentSRVDesc = {};
+	MomentSRVDesc.Format = DXGI_FORMAT_R32G32_FLOAT;
+	MomentSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
+	MomentSRVDesc.Texture2DArray.MostDetailedMip = 0;
+	MomentSRVDesc.Texture2DArray.MipLevels = 1;
+	MomentSRVDesc.Texture2DArray.FirstArraySlice = 0;
+	MomentSRVDesc.Texture2DArray.ArraySize = static_cast<UINT>(NumCascades + 1);
+	CachedDevice->CreateShaderResourceView(DirShadowArray.MomentTexture, &MomentSRVDesc, &DirShadowArray.MomentSRV);
 }
 
 void FShadowResourceManager::ResizeDepthShadowMapResource(FShadowMapResource& OutMap, uint32 Resolution)
@@ -419,12 +451,30 @@ void FShadowResourceManager::ReleaseDirectionalShadowArray()
 		DirShadowArray.SRV = nullptr;
 	}
 
+	if (DirShadowArray.MomentTexture)
+	{
+		DirShadowArray.MomentTexture->Release();
+		DirShadowArray.MomentTexture = nullptr;
+	}
+
+	if (DirShadowArray.MomentSRV)
+	{
+		DirShadowArray.MomentSRV->Release();
+		DirShadowArray.MomentSRV = nullptr;
+	}
+
 	for (int i = 0; i < 5; ++i)
 	{
 		if (DirShadowArray.DSVs[i])
 		{
 			DirShadowArray.DSVs[i]->Release();
 			DirShadowArray.DSVs[i] = nullptr;
+		}
+
+		if (DirShadowArray.MomentRTVs[i])
+		{
+			DirShadowArray.MomentRTVs[i]->Release();
+			DirShadowArray.MomentRTVs[i] = nullptr;
 		}
 
 		if (DirShadowArray.PreviewSRVs[i])

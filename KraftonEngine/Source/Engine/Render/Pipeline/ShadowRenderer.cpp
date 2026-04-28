@@ -40,7 +40,7 @@ namespace
 				&& View.DepthMap.Width > 0 && View.DepthMap.Height > 0;
 		}
 
-		return View.DepthMap.DepthTexture && View.DepthMap.DSV && View.DepthMap.SRV
+		return (View.DepthMap.DepthTexture || View.DepthMap.Texture) && View.DepthMap.DSV && View.DepthMap.SRV
 			&& View.DepthMap.Width > 0 && View.DepthMap.Height > 0;
 	}
 
@@ -208,18 +208,29 @@ void FShadowRenderer::RenderShadows(FD3DDevice& Device, FSystemResources& Resour
 void FShadowRenderer::RenderDirectionalShadow(FD3DDevice& Device, FSystemResources& Resources, FGlobalDirectionalLightParams& Light, FScene& Scene, const FFrameContext MainFrame)
 {
 	UpdateCacades(Light.ShadowData, Light.Direction, MainFrame);
+	const FDirectionalShadowArray& DirectionalArray = Resources.ShadowResourceManager.GetShadowArray();
 
 	for (int i = 0; i < Light.ShadowData.NUM_CASCADES; i++)
 	{
-		auto* dsv = Resources.ShadowResourceManager.GetShadowArray().DSVs[i + 1]; // slices 1~4, slot 0 reserved for PSM
+		FShadowMapResource& DepthMap = Light.ShadowData.View[i].DepthMap;
+		DepthMap.DSV = DirectionalArray.DSVs[i + 1]; // slices 1~4, slot 0 reserved for PSM
+		DepthMap.DepthTexture = DirectionalArray.Texture;
 
-		Light.ShadowData.View[i].DepthMap.DSV = dsv;
-		Light.ShadowData.View[i].DepthMap.Texture = Resources.ShadowResourceManager.GetShadowArray().Texture;
-		Light.ShadowData.View[i].DepthMap.SRV = Resources.ShadowResourceManager.GetShadowArray().SRV;
+		if (ShadowOptions.ShadowFilterMode == EShadowFilterMode::VSM || ShadowOptions.ShadowFilterMode == EShadowFilterMode::ESM)
+		{
+			DepthMap.Texture = DirectionalArray.MomentTexture;
+			DepthMap.RTV = DirectionalArray.MomentRTVs[i + 1];
+			DepthMap.SRV = DirectionalArray.MomentSRV;
+		}
+		else
+		{
+			DepthMap.Texture = DirectionalArray.Texture;
+			DepthMap.RTV = nullptr;
+			DepthMap.SRV = DirectionalArray.SRV;
+		}
 
-		float Resolution = Light.ShadowData.Settings.ShadowResolutionScale * 1024.0f;
-		Light.ShadowData.View[i].DepthMap.Width = (uint32)Resolution;
-		Light.ShadowData.View[i].DepthMap.Height = (uint32)Resolution;
+		DepthMap.Width = static_cast<uint32>(DirectionalArray.Width);
+		DepthMap.Height = static_cast<uint32>(DirectionalArray.Height);
 
 		RenderShadowView(Device, Resources, Light.ShadowData.View[i], Scene);
 	}

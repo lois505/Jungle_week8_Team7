@@ -37,10 +37,13 @@ struct FDirectionalShadowArray
 	ID3D11DepthStencilView* DSVs[5] = {};
 	ID3D11ShaderResourceView* SRV = nullptr;
 	ID3D11ShaderResourceView* PreviewSRVs[5] = {};
+	ID3D11Texture2D* MomentTexture = nullptr;
+	ID3D11RenderTargetView* MomentRTVs[5] = {};
+	ID3D11ShaderResourceView* MomentSRV = nullptr;
 
-	float Width;
-	float Height;
-	uint32 NumElements;
+	float Width = 0.0f;
+	float Height = 0.0f;
+	uint32 NumElements = 0;
 };
 
 struct FShadowCommonData

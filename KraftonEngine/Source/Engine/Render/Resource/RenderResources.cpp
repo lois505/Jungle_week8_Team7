@@ -179,7 +179,12 @@ void FSystemResources::UpdateLightAndShadowBuffer(FD3DDevice& Device, const FSce
 			// 현재 Resolution이 2048이라면, 셰이더는 이 값을 받아 PCF 필터링 보폭을 정하게 됩니다.
 			//DirectionalCB.ShadowResolution = (float)ShadowResourceManager.GetShadowArray().CurrentWidth;
 
-			ID3D11ShaderResourceView* DirShadowSRV = ShadowResourceManager.GetShadowArray().SRV;
+			const FDirectionalShadowArray& DirectionalArray = ShadowResourceManager.GetShadowArray();
+			const bool bUseMomentDirectional = (ShadowOptions.ShadowFilterMode == EShadowFilterMode::VSM
+				|| ShadowOptions.ShadowFilterMode == EShadowFilterMode::ESM);
+			ID3D11ShaderResourceView* DirShadowSRV = bUseMomentDirectional
+				? DirectionalArray.MomentSRV
+				: DirectionalArray.SRV;
 			Ctx->PSSetShaderResources(ESystemTexSlot::DirectionalShadowArray, 1, &DirShadowSRV);
 
 			DirectionalShadowBuffer.Update(Ctx, &DirectionalCB, sizeof(FDirectionalConstants));

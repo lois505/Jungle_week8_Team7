@@ -184,6 +184,57 @@ float SampleDirectionalShadow(int indx, float2 uv)
     return DirectionalShadowArray.SampleLevel(PointClampSampler, float3(uv, (float)indx), 0).r;
 }
 
+float2 SampleDirectionalMoments(int indx, float2 uv)
+{
+    return DirectionalShadowArray.SampleLevel(PointClampSampler, float3(uv, (float)indx), 0).rg;
+}
+
+float2 SampleDirectionalGaussian3x3(int indx, float2 uv, float2 shadowMapSize)
+{
+    float2 texel = 1.0f / shadowMapSize;
+    float2 output = float2(0.0f, 0.0f);
+
+    [unroll]
+    for (int y = -1; y <= 1; ++y)
+    {
+        [unroll]
+        for (int x = -1; x <= 1; ++x)
+        {
+            float weight = ((x == 0) ? 2.0f : 1.0f) * ((y == 0) ? 2.0f : 1.0f);
+            float2 sampleUV = clamp(uv + float2(x, y) * texel, texel * 0.5f, 1.0f - texel * 0.5f);
+            output += SampleDirectionalMoments(indx, sampleUV) * weight;
+        }
+    }
+
+    return output / 16.0f;
+}
+
+float SampleDirectionalVSM(int indx, float2 uv, float currentDepth, float bias, float2 shadowMapSize)
+{
+    float2 moments = SampleDirectionalGaussian3x3(indx, uv, shadowMapSize);
+    float mean = moments.x;
+    float meanSq = moments.y;
+    float receiverDepth = currentDepth + bias;
+
+    if (receiverDepth >= mean)
+    {
+        return 1.0f;
+    }
+
+    float variance = max(meanSq - mean * mean, 0.00002f);
+    float depthDelta = mean - receiverDepth;
+    float visibility = variance / (variance + depthDelta * depthDelta);
+    return saturate(visibility);
+}
+
+float SampleDirectionalESM(int indx, float2 uv, float currentDepth, float bias, float2 shadowMapSize)
+{
+    const float exponent = 40.0f;
+    float avgExpDepth = SampleDirectionalGaussian3x3(indx, uv, shadowMapSize).x;
+    float receiverExpDepth = exp(exponent * saturate(currentDepth + bias));
+    return saturate(receiverExpDepth / max(avgExpDepth, 0.000001f));
+}
+
 float2 ProjectToShadowUV(float4 lightClip)
 {
     float3 ndc = lightClip.xyz / max(lightClip.w, 0.0001f);
@@ -196,7 +247,7 @@ bool IsValidShadowRect(float4 rect)
 }
 
 
-float CalcShadowFromView(FLocalShadowInfo shadow, uint viewIndex, float3 worldPos, float3 N, float3 L)
+float CalcAtlasShadowFromView(FLocalShadowInfo shadow, uint viewIndex, float3 worldPos, float3 N, float3 L)
 {
     float4 rect = shadow.AtlasRect[viewIndex];
     if (!IsValidShadowRect(rect))
@@ -283,13 +334,13 @@ float CalcLocalShadow(uint lightIndex, FLightInfo light, float3 worldPos, float3
 
     if (shadow.ShadowType == LIGHT_TYPE_SPOT)
     {
-        return CalcShadowFromView(shadow, 0, worldPos, N, L);
+        return CalcAtlasShadowFromView(shadow, 0, worldPos, N, L);
     }
 
     if (shadow.ShadowType == LIGHT_TYPE_POINT)
     {
         uint faceIndex = SelectPointShadowFace(worldPos - light.Position);
-        return CalcShadowFromView(shadow, faceIndex, worldPos, N, L);
+        return CalcAtlasShadowFromView(shadow, faceIndex, worldPos, N, L);
     }
 
     return 1.0f;
@@ -341,11 +392,71 @@ float CalcDirectionalShadow(float3 worldPos, float3 worldNormal, float4 screenPo
     }
 
     float2 localUV = float2(ndc.x * 0.5f + 0.5f, -ndc.y * 0.5f + 0.5f);
-    float storedDepth = SampleDirectionalShadow(cascadeIndex + 1, localUV);
+    float2 shadowMapSize = max(float2((float)width, (float)height), float2(1.0f, 1.0f));
+    float2 halfTexel = 0.5f / shadowMapSize;
+    localUV = clamp(localUV, halfTexel, 1.0f - halfTexel);
 
-    float shadowFactor = (ndc.z + finalBias >= storedDepth) ? 1.0f : 0.0f;
-    shadowFactor = saturate((shadowFactor - 0.5f) * ShadowSharpen + 0.5f);
-    return shadowFactor;
+    const int directionalSlice = cascadeIndex + 1;
+
+    float directionalShadowPCFBox = 0.0f;
+    {
+        float2 texel = 1.0f / shadowMapSize;
+        [unroll]
+        for (int y = -1; y <= 1; ++y)
+        {
+            [unroll]
+            for (int x = -1; x <= 1; ++x)
+            {
+                float2 sampleUV = clamp(localUV + float2(x, y) * texel, halfTexel, 1.0f - halfTexel);
+                float storedDepth = SampleDirectionalShadow(directionalSlice, sampleUV);
+                directionalShadowPCFBox += (ndc.z + finalBias >= storedDepth) ? 1.0f : 0.0f;
+            }
+        }
+        directionalShadowPCFBox /= 9.0f;
+    }
+
+    float directionalShadowPCFPoisson = 0.0f;
+    {
+        float2 texel = 1.0f / shadowMapSize;
+        const float radius = 2.5f;
+        float2 pixel = floor(localUV * shadowMapSize);
+        float angle = Hash12(pixel) * 6.2831853f;
+
+        [unroll]
+        for (int i = 0; i < 16; ++i)
+        {
+            float2 sampleUV = localUV + Rotate2D(PoissonDisk16[i], angle) * radius * texel;
+            sampleUV = clamp(sampleUV, halfTexel, 1.0f - halfTexel);
+            float storedDepth = SampleDirectionalShadow(directionalSlice, sampleUV);
+            directionalShadowPCFPoisson += (ndc.z + finalBias >= storedDepth) ? 1.0f : 0.0f;
+        }
+        directionalShadowPCFPoisson /= 16.0f;
+    }
+
+    float shadowVisibility = 1.0f;
+    if (ShadowFilterMode == SHADOW_FILTER_VSM)
+    {
+        shadowVisibility = SampleDirectionalVSM(directionalSlice, localUV, ndc.z, finalBias, shadowMapSize);
+    }
+    else if (ShadowFilterMode == SHADOW_FILTER_ESM)
+    {
+        shadowVisibility = SampleDirectionalESM(directionalSlice, localUV, ndc.z, finalBias, shadowMapSize);
+    }
+    else if (ShadowFilterMode == SHADOW_FILTER_PCF_BOX)
+    {
+        shadowVisibility = directionalShadowPCFBox;
+    }
+    else if (ShadowFilterMode == SHADOW_FILTER_PCF_POISSON)
+    {
+        shadowVisibility = directionalShadowPCFPoisson;
+    }
+    else
+    {
+        float storedDepth = SampleDirectionalShadow(directionalSlice, localUV);
+        shadowVisibility = (ndc.z + finalBias >= storedDepth) ? 1.0f : 0.0f;
+    }
+
+    return ApplyShadowSharpen(shadowVisibility, ShadowSharpen);
 }
 
 float3 GetCascadeDebugColor(float4 screenPos)
