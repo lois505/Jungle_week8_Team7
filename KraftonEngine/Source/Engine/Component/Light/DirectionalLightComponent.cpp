@@ -60,6 +60,28 @@ void UDirectionalLightComponent::ContributeSelectedVisuals(FScene& Scene) const
 	AddDirectionalLightArrow(Scene, WorldPos, GetForwardVector());
 }
 
+
+FMatrix UDirectionalLightComponent::GetViewMatrix() const
+{
+	FVector F = GetForwardVector().Normalized();
+
+	FVector worldUp = FVector(0.0f, 0.0f, 1.0f);
+	if (std::abs(F.Z) > 0.99f)
+		worldUp = FVector(1.0f, 0.0f, 0.0f);
+
+	FVector R = worldUp.Cross(F).Normalized();
+	FVector U = F.Cross(R).Normalized();
+
+	return FMatrix::MakeViewMatrix(F, R, U, FVector(0.0f, 0.0f, 0.0f));
+}
+
+FMatrix UDirectionalLightComponent::GetProjMatrix() const
+{
+
+	return FMatrix();
+}
+
+
 void UDirectionalLightComponent::PushToScene()
 {
 	if (!Owner) return;
@@ -78,8 +100,6 @@ void UDirectionalLightComponent::PushToScene()
 	Params.ShadowData.Settings.ShadowSlopeBias = ShadowSlopeBias;
 	Params.ShadowData.Settings.ShadowSharpen = ShadowSharpen;
 	//	bOverrideCameraWithLight는 나중에 고려
-	
-	Params.ShadowData.View.DepthMap = {};
 	
 	//	TODO : View, Proj, ViewProj 넣기
 	

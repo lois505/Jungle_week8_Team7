@@ -4,6 +4,7 @@
 
 #include "ImGui/imgui.h"
 #include "Component/GizmoComponent.h"
+#include "Component/Light/DirectionalLightComponent.h"
 #include "Component/Light/PointLightComponent.h"
 #include "Component/Light/SpotLightComponent.h"
 #include "Component/PrimitiveComponent.h"
@@ -335,6 +336,11 @@ void FEditorPropertyWidget::RenderActorProperties(AActor* PrimaryActor, const TA
 
 	for (UActorComponent* Component : PrimaryActor->GetComponents())
 	{
+		if (Component && Component->IsA<UDirectionalLightComponent>())
+		{
+			RenderDirectionalLightShadowPreview(static_cast<UDirectionalLightComponent*>(Component));
+			break;
+		}
 		if (Component && Component->IsA<USpotLightComponent>())
 		{
 			RenderSpotLightShadowPreview(static_cast<USpotLightComponent*>(Component));
@@ -567,6 +573,79 @@ void FEditorPropertyWidget::RenderComponentProperties(AActor* Actor, const TArra
 	else if (SelectedComponent->IsA<UPointLightComponent>())
 	{
 		RenderPointLightShadowPreview(static_cast<UPointLightComponent*>(SelectedComponent));
+	}
+	else if (SelectedComponent->IsA<UDirectionalLightComponent>())
+	{
+		RenderDirectionalLightShadowPreview(static_cast<UDirectionalLightComponent*>(SelectedComponent));
+	}
+}
+
+void FEditorPropertyWidget::RenderDirectionalLightShadowPreview(UDirectionalLightComponent* DirLight)
+{
+	if (!DirLight || !DirLight->GetOwner() || !DirLight->GetOwner()->GetWorld())
+	{
+		return;
+	}
+
+	FSceneEnvironment& Env = DirLight->GetOwner()->GetWorld()->GetScene().GetEnvironment();
+	if (!Env.HasGlobalDirectionalLight())
+	{
+		return;
+	}
+
+	FGlobalDirectionalLightParams& Params = Env.GetGlobalDirectionalLightParams();
+
+	ImGui::Separator();
+	ImGui::Text("Directional Light Shadow Map (CSM)");
+
+	if (!Params.ShadowData.Settings.bCastShadows)
+	{
+		ImGui::TextDisabled("Cast Shadows is disabled.");
+		return;
+	}
+
+	static int PreviewCascadeIndex = 1;
+	const char* CascadeNames[FDirectionalShadowData::NUM_CASCADES] = {"Cascade 0", "Cascade 1", "Cascade 2", "Cascade 3"};
+	ImGui::Text("Cascade");
+	ImGui::SameLine(120);
+	ImGui::SetNextItemWidth(-1.0f);
+	if (ImGui::BeginCombo("##DirShadowCascade", CascadeNames[PreviewCascadeIndex - 1]))
+	{
+		for (int i = 1; i <= FDirectionalShadowData::NUM_CASCADES; ++i)
+		{
+			const bool bSelected = (PreviewCascadeIndex == i);
+			if (ImGui::Selectable(CascadeNames[i-1], bSelected))
+			{
+				PreviewCascadeIndex = i;
+			}
+			if (bSelected)
+			{
+				ImGui::SetItemDefaultFocus();
+			}
+		}
+		ImGui::EndCombo();
+	}
+
+	const FDirectionalShadowArray& DirShadowArray = GEngine->GetRenderer().GetDirShadowArray();
+
+	if (DirShadowArray.PreviewSRVs[PreviewCascadeIndex])
+	{
+		ImGui::TextDisabled("CSM Slice: %d | %ux%u",
+			PreviewCascadeIndex,
+			Params.ShadowData.Settings.ShadowResolutionScale * 1024.0f,
+			Params.ShadowData.Settings.ShadowResolutionScale * 1024.0f);
+
+		const float AvailableWidth = ImGui::GetContentRegionAvail().x;
+		const float PreviewSize = AvailableWidth < 256.0f ? AvailableWidth : 256.0f;
+
+		ImGui::Image(
+			reinterpret_cast<ImTextureID>(DirShadowArray.PreviewSRVs[PreviewCascadeIndex]),
+			ImVec2(PreviewSize, PreviewSize)
+		);
+	}
+	else
+	{
+		ImGui::TextColored(ImVec4(1, 0, 0, 1), "Shadow Preview SRV is NULL!");
 	}
 }
 

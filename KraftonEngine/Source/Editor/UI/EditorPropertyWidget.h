@@ -5,6 +5,7 @@
 
 class UActorComponent;
 class AActor;
+class UDirectionalLightComponent;
 class UPointLightComponent;
 class USpotLightComponent;
 struct FLightShadowSettings;
@@ -21,6 +22,7 @@ private:
 	void RenderDetails(AActor* PrimaryActor, const TArray<AActor*>& SelectedActors);
 	void RenderComponentProperties(AActor* Actor, const TArray<AActor*>& SelectedActors);
 	void RenderActorProperties(AActor* PrimaryActor, const TArray<AActor*>& SelectedActors);
+	void RenderDirectionalLightShadowPreview(UDirectionalLightComponent* DirLight);
 	void RenderPointLightShadowPreview(UPointLightComponent* PointLight);
 	void RenderSpotLightShadowPreview(USpotLightComponent* SpotLight);
 	void RenderShadowMapPreviewImage(const FLightShadowSettings& Settings, const FShadowViewData& View);

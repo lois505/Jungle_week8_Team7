@@ -9,7 +9,7 @@
 struct FLightShadowSettings
 {
 	bool bCastShadows = false;
-	float ShadowResolutionScale = 1.0f;
+	float ShadowResolutionScale = 1.f;
 	float ShadowBias = 0.0f;
 	float ShadowSlopeBias = 0.0f;
 	float ShadowSharpen = 1.0f;
@@ -29,6 +29,18 @@ struct FShadowViewData
 	uint32 AtlasSizeY = 0;
 	uint32 AtlasIndex = 0;
 	bool bAtlasAllocated = false;
+};
+
+struct FDirectionalShadowArray
+{
+	ID3D11Texture2D* Texture = nullptr;
+	ID3D11DepthStencilView* DSVs[5] = {};
+	ID3D11ShaderResourceView* SRV = nullptr;
+	ID3D11ShaderResourceView* PreviewSRVs[5] = {};
+
+	float Width;
+	float Height;
+	uint32 NumElements;
 };
 
 struct FShadowCommonData
@@ -57,9 +69,12 @@ public:
 
 struct FDirectionalShadowData : FShadowCommonData
 {
-	FShadowViewData View;
+	static constexpr  int NUM_CASCADES = 4;
 
-	//	TODO : CSM 관련은 이 곳에 작성하는게 맞지 않을까요?
+	float DistributeExponent = 0.95f;
+	FShadowViewData View[NUM_CASCADES];
+	float CasCadeEnds[NUM_CASCADES + 1];
+	float CascadeEndClipZ[NUM_CASCADES];
 };
 
 struct FPointShadowData : FShadowCommonData

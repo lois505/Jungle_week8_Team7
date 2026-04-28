@@ -179,6 +179,11 @@ float SampleShadowAtlasPCFPoisson(float4 rect, float2 localUV, float currentDept
     return output / 16.0f;
 }
 
+float SampleDirectionalShadow(int indx, float2 uv)
+{
+    return DirectionalShadowArray.SampleLevel(PointClampSampler, float3(uv, (float)indx), 0).r;
+}
+
 float2 ProjectToShadowUV(float4 lightClip)
 {
     float3 ndc = lightClip.xyz / max(lightClip.w, 0.0001f);
@@ -288,6 +293,73 @@ float CalcLocalShadow(uint lightIndex, FLightInfo light, float3 worldPos, float3
     }
 
     return 1.0f;
+}
+
+int GetCascadeIndex(float4 screenPos)
+{
+    float clipZ = screenPos.z;
+    int cascadeIndex = NumCascades - 1;
+    for (int i = 0; i < NumCascades; i++)
+    {
+        if (clipZ >= CascadesEndClip[i])
+        {
+            cascadeIndex = i;
+            break;
+        }
+    }
+    return cascadeIndex;
+}
+
+float CalcDirectionalShadow(float3 worldPos, float3 worldNormal, float4 screenPos)
+{
+    if (NumCascades <= 0)
+    {
+        return 1.0f;
+    }
+
+    int cascadeIndex = GetCascadeIndex(screenPos);
+    float NdotL = saturate(dot(worldNormal, DirectionalLight.Direction));
+    float slopeFactor = 1.0f - NdotL;
+
+    uint width, height, element;
+    DirectionalShadowArray.GetDimensions(width, height, element);
+    float texelSize = 1.0f / (float)width;
+    float finalBias = (ShadowBias + (ShadowSlopeBias * slopeFactor)) * texelSize;
+
+    float4 lightClip = mul(float4(worldPos, 1.0f), DirLightViewProj[cascadeIndex]);
+    if (lightClip.w <= 0.0f)
+    {
+        return 1.0f;
+    }
+
+    float3 ndc = lightClip.xyz / lightClip.w;
+    if (ndc.x < -1.0f || ndc.x > 1.0f ||
+        ndc.y < -1.0f || ndc.y > 1.0f ||
+        ndc.z < 0.0f || ndc.z > 1.0f)
+    {
+        return 1.0f;
+    }
+
+    float2 localUV = float2(ndc.x * 0.5f + 0.5f, -ndc.y * 0.5f + 0.5f);
+    float storedDepth = SampleDirectionalShadow(cascadeIndex + 1, localUV);
+
+    float shadowFactor = (ndc.z + finalBias >= storedDepth) ? 1.0f : 0.0f;
+    shadowFactor = saturate((shadowFactor - 0.5f) * ShadowSharpen + 0.5f);
+    return shadowFactor;
+}
+
+float3 GetCascadeDebugColor(float4 screenPos)
+{
+    if (NumCascades <= 0)
+    {
+        return float3(1, 0, 1);
+    }
+
+    int idx = GetCascadeIndex(screenPos);
+    if (idx == 0) return float3(1.0, 0.2, 0.2);
+    if (idx == 1) return float3(0.2, 1.0, 0.2);
+    if (idx == 2) return float3(0.2, 0.4, 1.0);
+    return             float3(1.0, 1.0, 0.2);
 }
 
 float CalcAttenuation(float dist, float radius, float falloff)
@@ -547,17 +619,27 @@ float3 AccumulateDiffuse(float3 worldPos, float3 N, float4 screenPos)
 {
     float3 result = float3(0, 0, 0);
     result += CalcAmbient(AmbientLight.Color.rgb, AmbientLight.Intensity);
+
+    float dirShadow = CalcDirectionalShadow(worldPos, N, screenPos);
     result += CalcDirectionalDiffuse(DirectionalLight.Color.rgb, DirectionalLight.Direction,
-                                     DirectionalLight.Intensity, N);
+                                     DirectionalLight.Intensity, N) * dirShadow;
     AccumulatePointSpotDiffuse(worldPos, N, screenPos, result);
+
+#if defined(DEBUG_CASCADES) && DEBUG_CASCADES
+    float3 cascadeColor = GetCascadeDebugColor(screenPos);
+    result = lerp(result, cascadeColor, 0.5f);
+#endif
+
     return result;
 }
 
 float3 AccumulateSpecular(float3 worldPos, float3 N, float3 V, float shininess, float4 screenPos)
 {
     float3 result = float3(0, 0, 0);
+
+    float dirShadow = CalcDirectionalShadow(worldPos, N, screenPos);
     result += CalcDirectionalSpecular(DirectionalLight.Color.rgb, DirectionalLight.Direction,
-                                      DirectionalLight.Intensity, N, V, shininess);
+                                      DirectionalLight.Intensity, N, V, shininess) * dirShadow;
     AccumulatePointSpotSpecular(worldPos, N, V, shininess, screenPos, result);
     return result;
 }

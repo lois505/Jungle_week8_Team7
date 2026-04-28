@@ -74,6 +74,7 @@ void FSystemResources::Create(ID3D11Device* InDevice, ID3D11DeviceContext* Conte
 {
 	FrameBuffer.Create(InDevice, sizeof(FFrameConstants));
 	LightingConstantBuffer.Create(InDevice, sizeof(FLightingCBData));
+	DirectionalShadowBuffer.Create(InDevice, sizeof(FDirectionalConstants));
 	ForwardLights.Create(InDevice, 32);
 	LocalShadows.Create(InDevice, 32);
 
@@ -147,12 +148,45 @@ void FSystemResources::UpdateLightAndShadowBuffer(FD3DDevice& Device, const FSce
 		GlobalLightingData.Ambient.Intensity = 0.15f;
 		GlobalLightingData.Ambient.Color = FVector4(1.0f, 1.0f, 1.0f, 1.0f);
 	}
+
+	const FShadowAtlasResource& ShadowAtlas = ShadowResourceManager.GetAtlas();
+
 	if (Env.HasGlobalDirectionalLight())
 	{
 		FGlobalDirectionalLightParams DirLightParams = Env.GetGlobalDirectionalLightParams();
 		GlobalLightingData.Directional.Intensity = DirLightParams.Intensity;
 		GlobalLightingData.Directional.Color = DirLightParams.LightColor;
 		GlobalLightingData.Directional.Direction = DirLightParams.Direction;
+
+		if (DirLightParams.ShadowData.Settings.bCastShadows)
+		{
+			const FDirectionalShadowData& ShadowData = DirLightParams.ShadowData;
+			FDirectionalConstants DirectionalCB = {};
+			DirectionalCB.NumcasCade = ShadowData.NUM_CASCADES;
+
+			for (int i = 0; i < ShadowData.NUM_CASCADES; i++)
+			{
+				const FShadowViewData& View = ShadowData.View[i];
+				DirectionalCB.DirLightViewProj[i] = View.LightViewProj.ConvertToPOD();
+				DirectionalCB.CascadeEndClip[i] = ShadowData.CascadeEndClipZ[i];
+			}
+
+			DirectionalCB.ShadowBias = DirLightParams.ShadowData.Settings.ShadowBias;
+			DirectionalCB.ShadowSlopeBias = DirLightParams.ShadowData.Settings.ShadowSlopeBias;
+			DirectionalCB.ShadowSharpen = DirLightParams.ShadowData.Settings.ShadowSharpen;
+
+			// 추가 팁: 셰이더에서 texelSize를 계산할 수 있도록 해상도 정보를 CB에 포함하세요.
+			// 현재 Resolution이 2048이라면, 셰이더는 이 값을 받아 PCF 필터링 보폭을 정하게 됩니다.
+			//DirectionalCB.ShadowResolution = (float)ShadowResourceManager.GetShadowArray().CurrentWidth;
+
+			ID3D11ShaderResourceView* DirShadowSRV = ShadowResourceManager.GetShadowArray().SRV;
+			Ctx->PSSetShaderResources(ESystemTexSlot::DirectionalShadowArray, 1, &DirShadowSRV);
+
+			DirectionalShadowBuffer.Update(Ctx, &DirectionalCB, sizeof(FDirectionalConstants));
+			ID3D11Buffer* buf = DirectionalShadowBuffer.GetBuffer();
+			Ctx->PSSetConstantBuffers(ECBSlot::DirectionalShadow, 1, &buf);
+		}
+
 	}
 
 	const uint32 NumPointLights = Env.GetNumPointLights();
@@ -165,7 +199,6 @@ void FSystemResources::UpdateLightAndShadowBuffer(FD3DDevice& Device, const FSce
 	LightInfos.reserve(NumPointLights + NumSpotLights);
 	ShadowInfos.reserve(NumPointLights + NumSpotLights);
 
-	const FShadowAtlasResource& ShadowAtlas = ShadowResourceManager.GetAtlas();
 	for (uint32 i = 0; i < NumPointLights; ++i)
 	{
 		const FPointLightParams& PointLight = Env.GetPointLight(i);
@@ -286,4 +319,5 @@ void FSystemResources::UnbindSystemTextures(FD3DDevice& Device)
 	Ctx->PSSetShaderResources(ESystemTexSlot::Stencil, 1, &nullSRV);
 	Ctx->PSSetShaderResources(ESystemTexSlot::CullingHeatmap, 1, &nullSRV);
 	Ctx->PSSetShaderResources(ESystemTexSlot::ShadowMapAtlas, 1, &nullSRV);
+	Ctx->PSSetShaderResources(ESystemTexSlot::DirectionalShadowArray, 1, &nullSRV);
 }

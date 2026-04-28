@@ -113,12 +113,14 @@ struct FMatrix {
 
 	static FMatrix MakeViewMatrix(FVector Front, FVector Right, FVector Up, FVector Location);
 	static FMatrix MakeProjectionMatrix(float FOV, float NearZ, float FarZ, float AspectRatio, bool Orthogonal = false, float OrthoWidth = 1.f);
+	static FMatrix MakeOrtho(float MinX, float MaxX, float MinY, float MaxY, float MinZ, float MaxZ);
 
 	static FMatrix GetCancelRotationMatrix(const FMatrix& InMatrix);
 	void Print() const;
 
 	FVector TransformVector(const FVector& vector) const;
 	FVector TransformPositionWithW(const FVector& V) const;
+	FVector4 TransformVector4(const FVector4& V) const;
 
 	FVector GetEuler() const;
 	FVector GetLocation() const;

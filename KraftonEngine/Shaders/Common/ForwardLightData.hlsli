@@ -111,6 +111,16 @@ cbuffer LightingBuffer : register(b4)
     uint ShadowFilterMode;
 };
 
+cbuffer DirectionalShadowBuffer : register(b5)
+{
+    float4x4 DirLightViewProj[4];
+    float4 CascadesEndClip;
+    int NumCascades;
+    float ShadowBias;
+    float ShadowSlopeBias;
+    float ShadowSharpen;
+}
+
 // ── Structured Buffers (t8~t10) ──
 StructuredBuffer<FLightInfo> AllLights : register(t8);
 StructuredBuffer<uint> TileLightIndices : register(t9);

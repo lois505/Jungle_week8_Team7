@@ -19,6 +19,9 @@ public:
 	const FShadowAtlasResource& GetAtlas() const { return Atlas; }
 	FAtlasResourceInfo AllocateFromAtlas();
 	bool ClearAtlas(const FShadowRuntimeOptions& ShadowOptions);
+
+	FDirectionalShadowArray& GetShadowArray() { return DirShadowArray; }
+	const FDirectionalShadowArray& GetShadowArray() const { return DirShadowArray; }
 private:
 	bool EnsureShadowMapAtlas(uint32 Width, uint32 Height, const FShadowRuntimeOptions& ShadowOptions);
 	bool CreateShadowMapAtlas(uint32 Width, uint32 Height, const FShadowRuntimeOptions& ShadowOptions);
@@ -28,16 +31,20 @@ private:
 
 	bool CreateDepthShadowMapResource(FShadowMapResource& OutMap, uint32 Width, uint32 Height, bool bCreateSRV);
 	bool CreateVSMESMShadowMapResource(FShadowMapResource& OutMap, uint32 Width, uint32 Height);
+	void CreateDirectionalShadowArray(uint32 Resolution, int NumCascades);
 
 	void ResizeDepthShadowMapResource(FShadowMapResource& OutMap, uint32 Resolution);
 	void ResizeVSMESMShadowMapResource(FShadowMapResource& OutMap, uint32 Resolution);
+	void ResizeDirectionalShadowArray(uint32 Resolution, int NumCascades);
 
 	void ReleaseShadowMapResource(FShadowMapResource& InMap);
+	void ReleaseDirectionalShadowArray();
 
 private:
 	ID3D11Device* CachedDevice = nullptr;
 	ID3D11DeviceContext* CachedContext = nullptr;
 
+	FDirectionalShadowArray DirShadowArray;
 	FShadowAtlasResource Atlas;
 	EShadowFilterMode CurrentAtlasFilterMode = EShadowFilterMode::None;
 	uint32 CurrentAtlasWidth = 0;

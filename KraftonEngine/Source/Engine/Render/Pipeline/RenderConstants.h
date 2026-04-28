@@ -24,6 +24,7 @@ namespace ECBSlot
 	constexpr uint32 PerShader0 = 2; // b2: 셰이더별 여분 슬롯 #0
 	constexpr uint32 PerShader1 = 3; // b3: 셰이더별 여분 슬롯 #1 (PerShader2 예약)
 	constexpr uint32 Lighting = 4;   // b4: LightingBuffer (Ambient + Directional + 메타)
+	constexpr uint32 DirectionalShadow = 5;
 }
 
 // HLSL 라이팅 SRV 슬롯 — 프레임에 1회 바인딩 (Forward Shading)
@@ -59,6 +60,7 @@ namespace ESystemTexSlot
 	constexpr uint32 Stencil = 19; // t19: CopyResource된 Stencil (X24_G8_UINT)
 	constexpr uint32 CullingHeatmap = 20; // t20: Tile Culling Heatmap (R8G8B8A8_UNORM)
 	constexpr uint32 ShadowMapAtlas = 21; // t21 : Shadow Map Atlas
+	constexpr uint32 DirectionalShadowArray = 22; // t22 : Directional Shadow Array
 }
 
 // HLSL 시스템 샘플러 슬롯 — Renderer가 프레임 시작 시 영구 바인딩
@@ -154,6 +156,16 @@ struct FFXAAConstants
 	float EdgeThreshold;
 	float EdgeThresholdMin;
 	float _pad[2];
+};
+
+struct FDirectionalConstants
+{
+	FMatrixPOD DirLightViewProj[4];
+	float CascadeEndClip[4];
+	int32 NumcasCade;
+	float ShadowBias;
+	float ShadowSlopeBias;
+	float ShadowSharpen;
 };
 
 // ============================================================

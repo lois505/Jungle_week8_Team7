@@ -1,9 +1,8 @@
-﻿#include "ShadowResourceManager.h"
+#include "ShadowResourceManager.h"
 
 #include "Render/Pipeline/RenderConstants.h"
 #include "Render/Proxy/SceneEnvironment.h"
 
-//	Resolution 관련 Helper
 namespace
 {
 	constexpr uint32 GBaseShadowResolution = 1024;
@@ -16,15 +15,12 @@ namespace
 		float Scale = Settings.ShadowResolutionScale;
 		if (Scale <= 1e-4f)
 		{
-			//	1로 고정
 			Scale = 1.0f;
 		}
 
 		uint32 Resolution = static_cast<uint32>(Scale * BaseResolution);
-
 		Resolution = std::max(Resolution, static_cast<uint32>(GMinShadowResolution));
 		Resolution = std::min(Resolution, static_cast<uint32>(GMaxShadowResolution));
-
 		return Resolution;
 	}
 
@@ -88,6 +84,8 @@ void FShadowResourceManager::Release()
 	CurrentAtlasWidth = 0;
 	CurrentAtlasHeight = 0;
 
+	ReleaseDirectionalShadowArray();
+
 	CachedDevice = nullptr;
 	CachedContext = nullptr;
 }
@@ -114,30 +112,25 @@ void FShadowResourceManager::UpdateShadowResources(FSceneEnvironment& Environmen
 	}
 }
 
-
 void FShadowResourceManager::EnsureDirectionalShadow(FDirectionalShadowData& Shadow, uint32 BaseResolution, const FShadowRuntimeOptions& ShadowOptions)
 {
+	(void)ShadowOptions;
+
 	if (!Shadow.Settings.bCastShadows)
 	{
-		ReleaseShadowMapResource(Shadow.View.DepthMap);
+		ReleaseDirectionalShadowArray();
 		return;
 	}
 
 	const uint32 Resolution = ComputeShadowResolution(Shadow.Settings, BaseResolution);
-
-	if (ShadowOptions.ShadowFilterMode == EShadowFilterMode::VSM)
-	{
-		ResizeVSMESMShadowMapResource(Shadow.View.DepthMap, Resolution);
-	}
-	else
-	{
-		ResizeDepthShadowMapResource(Shadow.View.DepthMap, Resolution);
-	}
+	ResizeDirectionalShadowArray(Resolution, Shadow.NUM_CASCADES);
 }
-
 
 void FShadowResourceManager::EnsureSpotShadow(FSpotShadowData& Shadow, uint32 BaseResolution, const FShadowRuntimeOptions& ShadowOptions)
 {
+	(void)BaseResolution;
+	(void)ShadowOptions;
+
 	if (!Shadow.Settings.bCastShadows)
 	{
 		ReleaseShadowMapResource(Shadow.View.DepthMap);
@@ -148,9 +141,11 @@ void FShadowResourceManager::EnsureSpotShadow(FSpotShadowData& Shadow, uint32 Ba
 	ReleaseShadowMapResource(Shadow.View.DepthMap);
 }
 
-
 void FShadowResourceManager::EnsurePointShadow(FPointShadowData& Shadow, uint32 BaseResolution, const FShadowRuntimeOptions& ShadowOptions)
 {
+	(void)BaseResolution;
+	(void)ShadowOptions;
+
 	if (!Shadow.Settings.bCastShadows)
 	{
 		for (int32 i = 0; i < 6; ++i)
@@ -231,8 +226,6 @@ bool FShadowResourceManager::CreateDepthShadowMapResource(FShadowMapResource& Ou
 	return true;
 }
 
-
-
 bool FShadowResourceManager::CreateVSMESMShadowMapResource(FShadowMapResource& OutMap, uint32 Width, uint32 Height)
 {
 	if (!CachedDevice || Width == 0 || Height == 0)
@@ -294,6 +287,56 @@ bool FShadowResourceManager::CreateVSMESMShadowMapResource(FShadowMapResource& O
 	return true;
 }
 
+void FShadowResourceManager::CreateDirectionalShadowArray(uint32 Resolution, int NumCascades)
+{
+	if (!CachedDevice || Resolution == 0)
+	{
+		return;
+	}
+
+	ReleaseDirectionalShadowArray();
+	DirShadowArray.Width = static_cast<float>(Resolution);
+	DirShadowArray.Height = static_cast<float>(Resolution);
+	DirShadowArray.NumElements = NumCascades;
+
+	D3D11_TEXTURE2D_DESC Desc = {};
+	Desc.Width = Resolution;
+	Desc.Height = Resolution;
+	Desc.ArraySize = NumCascades + 1;
+	Desc.Format = DXGI_FORMAT_R24G8_TYPELESS;
+	Desc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
+	Desc.MipLevels = 1;
+	Desc.SampleDesc = { 1, 0 };
+	CachedDevice->CreateTexture2D(&Desc, nullptr, &DirShadowArray.Texture);
+
+	for (int i = 1; i <= NumCascades; ++i)
+	{
+		D3D11_DEPTH_STENCIL_VIEW_DESC DSVDesc = {};
+		DSVDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+		DSVDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DARRAY;
+		DSVDesc.Texture2DArray = { 0, static_cast<UINT>(i), 1 };
+		CachedDevice->CreateDepthStencilView(DirShadowArray.Texture, &DSVDesc, &DirShadowArray.DSVs[i]);
+
+		D3D11_SHADER_RESOURCE_VIEW_DESC PreviewSRVDesc = {};
+		PreviewSRVDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+		PreviewSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
+		PreviewSRVDesc.Texture2DArray.MostDetailedMip = 0;
+		PreviewSRVDesc.Texture2DArray.MipLevels = 1;
+		PreviewSRVDesc.Texture2DArray.FirstArraySlice = static_cast<UINT>(i);
+		PreviewSRVDesc.Texture2DArray.ArraySize = 1;
+		CachedDevice->CreateShaderResourceView(DirShadowArray.Texture, &PreviewSRVDesc, &DirShadowArray.PreviewSRVs[i]);
+	}
+
+	D3D11_SHADER_RESOURCE_VIEW_DESC SRVDesc = {};
+	SRVDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+	SRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
+	SRVDesc.Texture2DArray.MostDetailedMip = 0;
+	SRVDesc.Texture2DArray.MipLevels = 1;
+	SRVDesc.Texture2DArray.FirstArraySlice = 0;
+	SRVDesc.Texture2DArray.ArraySize = static_cast<UINT>(NumCascades + 1);
+	CachedDevice->CreateShaderResourceView(DirShadowArray.Texture, &SRVDesc, &DirShadowArray.SRV);
+}
+
 void FShadowResourceManager::ResizeDepthShadowMapResource(FShadowMapResource& OutMap, uint32 Resolution)
 {
 	if (OutMap.DepthTexture && OutMap.Width == Resolution && OutMap.Height == Resolution && OutMap.DSV)
@@ -314,6 +357,17 @@ void FShadowResourceManager::ResizeVSMESMShadowMapResource(FShadowMapResource& O
 	CreateVSMESMShadowMapResource(OutMap, Resolution, Resolution);
 }
 
+void FShadowResourceManager::ResizeDirectionalShadowArray(uint32 Resolution, int NumCascades)
+{
+	if (DirShadowArray.Texture
+		&& static_cast<uint32>(DirShadowArray.Width) == Resolution
+		&& DirShadowArray.NumElements == static_cast<uint32>(NumCascades))
+	{
+		return;
+	}
+
+	CreateDirectionalShadowArray(Resolution, NumCascades);
+}
 
 void FShadowResourceManager::ReleaseShadowMapResource(FShadowMapResource& InMap)
 {
@@ -351,6 +405,40 @@ void FShadowResourceManager::ReleaseShadowMapResource(FShadowMapResource& InMap)
 	InMap.Height = 0;
 }
 
+void FShadowResourceManager::ReleaseDirectionalShadowArray()
+{
+	if (DirShadowArray.Texture)
+	{
+		DirShadowArray.Texture->Release();
+		DirShadowArray.Texture = nullptr;
+	}
+
+	if (DirShadowArray.SRV)
+	{
+		DirShadowArray.SRV->Release();
+		DirShadowArray.SRV = nullptr;
+	}
+
+	for (int i = 0; i < 5; ++i)
+	{
+		if (DirShadowArray.DSVs[i])
+		{
+			DirShadowArray.DSVs[i]->Release();
+			DirShadowArray.DSVs[i] = nullptr;
+		}
+
+		if (DirShadowArray.PreviewSRVs[i])
+		{
+			DirShadowArray.PreviewSRVs[i]->Release();
+			DirShadowArray.PreviewSRVs[i] = nullptr;
+		}
+	}
+
+	DirShadowArray.Width = 0.0f;
+	DirShadowArray.Height = 0.0f;
+	DirShadowArray.NumElements = 0;
+}
+
 bool FShadowResourceManager::EnsureShadowMapAtlas(uint32 Width, uint32 Height, const FShadowRuntimeOptions& ShadowOptions)
 {
 	if (Atlas.Map.Width == Width
@@ -362,8 +450,7 @@ bool FShadowResourceManager::EnsureShadowMapAtlas(uint32 Width, uint32 Height, c
 		return true;
 	}
 
-	const bool bCreated = CreateShadowMapAtlas(Width, Height, ShadowOptions);
-	return bCreated;
+	return CreateShadowMapAtlas(Width, Height, ShadowOptions);
 }
 
 bool FShadowResourceManager::CreateShadowMapAtlas(uint32 Width, uint32 Height, const FShadowRuntimeOptions& ShadowOptions)
@@ -385,17 +472,19 @@ bool FShadowResourceManager::CreateShadowMapAtlas(uint32 Width, uint32 Height, c
 			return false;
 		}
 
-		// VSM/ESM은 RTV에 moment를 기록하지만, depth test를 위해 DSV는 별도로 필요하다.
 		if (!CreateDepthShadowMapResource(Atlas.Map, Width, Height, false))
 		{
 			ReleaseShadowMapResource(Atlas.Map);
 			return false;
 		}
 	}
-	else if (!CreateDepthShadowMapResource(Atlas.Map, Width, Height, true))
+	else
 	{
-		ReleaseShadowMapResource(Atlas.Map);
-		return false;
+		if (!CreateDepthShadowMapResource(Atlas.Map, Width, Height, true))
+		{
+			ReleaseShadowMapResource(Atlas.Map);
+			return false;
+		}
 	}
 
 	Atlas.CursorX = 0;
@@ -436,7 +525,6 @@ FAtlasResourceInfo FShadowResourceManager::AllocateFromAtlas()
 	Info.bAllocated = true;
 
 	Atlas.CursorX += AtlasAllocSizeX;
-
 	return Info;
 }
 
@@ -448,7 +536,9 @@ bool FShadowResourceManager::ClearAtlas(const FShadowRuntimeOptions& ShadowOptio
 	}
 
 	CachedContext->ClearDepthStencilView(Atlas.Map.DSV, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 0.0f, 0);
-	if ((ShadowOptions.ShadowFilterMode == EShadowFilterMode::VSM || ShadowOptions.ShadowFilterMode == EShadowFilterMode::ESM) && Atlas.Map.RTV)
+
+	if ((ShadowOptions.ShadowFilterMode == EShadowFilterMode::VSM || ShadowOptions.ShadowFilterMode == EShadowFilterMode::ESM)
+		&& Atlas.Map.RTV)
 	{
 		const float ClearColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
 		CachedContext->ClearRenderTargetView(Atlas.Map.RTV, ClearColor);

@@ -12,7 +12,6 @@ namespace
 	void RestoreMainViewport(FD3DDevice& Device, const FFrameContext& MainFrame)
 	{
 		ID3D11DeviceContext* DeviceContext = Device.GetDeviceContext();
-
 		ID3D11RenderTargetView* RTV = MainFrame.ViewportRTV;
 		ID3D11DepthStencilView* DSV = MainFrame.ViewportDSV;
 
@@ -66,6 +65,85 @@ namespace
 		View.AtlasIndex = Info.Index;
 		View.bAtlasAllocated = Info.bAllocated;
 	}
+
+	void UpdateCacades(FDirectionalShadowData& ShadowData, const FVector& LightDirection, const FFrameContext& MainFrame)
+	{
+		FVector F = LightDirection.Normalized();
+
+		FVector worldUp = FVector(0.0f, 0.0f, 1.0f);
+		if (std::abs(F.Z) > 0.99f)
+			worldUp = FVector(1.0f, 0.0f, 0.0f);
+
+		FVector R = worldUp.Cross(F).Normalized();
+		FVector U = F.Cross(R).Normalized();
+
+		FMatrix LightView = FMatrix::MakeViewMatrix(F, R, U, FVector(0.0f, 0.0f, 0.0f));
+
+		FMatrix CamViewInv = MainFrame.View.GetInverse();
+
+		float TanHalfHFov = 1.0f / MainFrame.Proj.M[0][0];
+		float TanHalfVFov = 1.0f / MainFrame.Proj.M[1][1];
+
+		ShadowData.CasCadeEnds[0] = MainFrame.NearClip;
+		ShadowData.CasCadeEnds[ShadowData.NUM_CASCADES] = MainFrame.FarClip;
+
+		for (int i = 1; i < ShadowData.NUM_CASCADES; i++)
+		{
+			float t = static_cast<float>(i) / static_cast<float>(ShadowData.NUM_CASCADES);
+			float uniform = MainFrame.NearClip + (MainFrame.FarClip - MainFrame.NearClip) * t;
+			float log = MainFrame.NearClip * std::pow(MainFrame.FarClip / MainFrame.NearClip, t);
+			ShadowData.CasCadeEnds[i] = ShadowData.DistributeExponent * log
+				+ (1.0f - ShadowData.DistributeExponent) * uniform;
+		}
+
+		for (int i = 0; i < ShadowData.NUM_CASCADES; i++)
+		{
+			float Zn = ShadowData.CasCadeEnds[i];
+			float Zf = ShadowData.CasCadeEnds[i + 1];
+
+			FVector4 Corners[8] = {
+			   { Zn * TanHalfHFov,  Zn * TanHalfVFov, Zn, 1.f},
+			   {-Zn * TanHalfHFov,  Zn * TanHalfVFov, Zn, 1.f},
+			   { Zn * TanHalfHFov, -Zn * TanHalfVFov, Zn, 1.f},
+			   {-Zn * TanHalfHFov, -Zn * TanHalfVFov, Zn, 1.f},
+			   { Zf * TanHalfHFov,  Zf * TanHalfVFov, Zf, 1.f},
+			   {-Zf * TanHalfHFov,  Zf * TanHalfVFov, Zf, 1.f},
+			   { Zf * TanHalfHFov, -Zf * TanHalfVFov, Zf, 1.f},
+			   {-Zf * TanHalfHFov, -Zf * TanHalfVFov, Zf, 1.f},
+			};
+
+			float MinX = FLT_MAX, MaxX = -FLT_MAX;
+			float MinY = FLT_MAX, MaxY = -FLT_MAX;
+			float MinZ = FLT_MAX, MaxZ = -FLT_MAX;
+
+			for (auto& C : Corners)
+			{
+				FVector4 World = CamViewInv.TransformVector4(C);
+				FVector4 Light = LightView.TransformVector4(World);
+
+				MinX = std::min(MinX, Light.X); MaxX = std::max(MaxX, Light.X);
+				MinY = std::min(MinY, Light.Y); MaxY = std::max(MaxY, Light.Y);
+				MinZ = std::min(MinZ, Light.Z); MaxZ = std::max(MaxZ, Light.Z);
+			}
+
+			float Resolution = ShadowData.Settings.ShadowResolutionScale * 1024.0f;
+			float WorldUnitsPerTexel = (MaxX - MinX) / Resolution;
+
+			MinX = std::floor(MinX / WorldUnitsPerTexel) * WorldUnitsPerTexel;
+			MaxX = MinX + (MaxX - MinX);
+
+			MinY = std::floor(MinY / WorldUnitsPerTexel) * WorldUnitsPerTexel;
+			MaxY = MinY + (MaxY - MinY);
+
+			FShadowViewData& View = ShadowData.View[i];
+			View.LightView = LightView;
+			View.LightProj = FMatrix::MakeOrtho(MinX, MaxX, MinY, MaxY, MinZ, MaxZ);
+			View.LightViewProj = View.LightView * View.LightProj;
+
+			FVector4 VClip = MainFrame.Proj.TransformVector4(FVector4(0.0f, 0.0f, Zf, 1.0f));
+			ShadowData.CascadeEndClipZ[i] = VClip.Z / VClip.W;
+		}
+	}
 }
 
 void FShadowRenderer::Create(ID3D11Device* Device, ID3D11DeviceContext* DeviceContext)
@@ -90,7 +168,10 @@ void FShadowRenderer::RenderShadows(FD3DDevice& Device, FSystemResources& Resour
 
 	if (Scene.GetEnvironment().HasGlobalDirectionalLight())
 	{
-		RenderDirectionalShadow(Device, Resources, Env.GetGlobalDirectionalLightParams(), Scene);
+		if (Env.GetGlobalDirectionalLightParams().ShadowData.Settings.bCastShadows)
+		{
+			RenderDirectionalShadow(Device, Resources, Env.GetGlobalDirectionalLightParams(), Scene, MainFrame);
+		}
 	}
 
 	for (uint32 i = 0; i < Env.GetNumPointLights(); i++)
@@ -124,19 +205,24 @@ void FShadowRenderer::RenderShadows(FD3DDevice& Device, FSystemResources& Resour
 	RestoreMainViewport(Device, MainFrame);
 }
 
-void FShadowRenderer::RenderDirectionalShadow(FD3DDevice& Device, FSystemResources& Resources, FGlobalDirectionalLightParams& Light, FScene& Scene)
+void FShadowRenderer::RenderDirectionalShadow(FD3DDevice& Device, FSystemResources& Resources, FGlobalDirectionalLightParams& Light, FScene& Scene, const FFrameContext MainFrame)
 {
-	if (!Light.ShadowData.Settings.bCastShadows)
-	{
-		return;
-	}
+	UpdateCacades(Light.ShadowData, Light.Direction, MainFrame);
 
-	if (!IsShadowViewReady(Light.ShadowData.View, ShadowOptions))
+	for (int i = 0; i < Light.ShadowData.NUM_CASCADES; i++)
 	{
-		return;
-	}
+		auto* dsv = Resources.ShadowResourceManager.GetShadowArray().DSVs[i + 1]; // slices 1~4, slot 0 reserved for PSM
 
-	RenderShadowView(Device, Resources, Light.ShadowData.View, Scene);
+		Light.ShadowData.View[i].DepthMap.DSV = dsv;
+		Light.ShadowData.View[i].DepthMap.Texture = Resources.ShadowResourceManager.GetShadowArray().Texture;
+		Light.ShadowData.View[i].DepthMap.SRV = Resources.ShadowResourceManager.GetShadowArray().SRV;
+
+		float Resolution = Light.ShadowData.Settings.ShadowResolutionScale * 1024.0f;
+		Light.ShadowData.View[i].DepthMap.Width = (uint32)Resolution;
+		Light.ShadowData.View[i].DepthMap.Height = (uint32)Resolution;
+
+		RenderShadowView(Device, Resources, Light.ShadowData.View[i], Scene);
+	}
 }
 
 
