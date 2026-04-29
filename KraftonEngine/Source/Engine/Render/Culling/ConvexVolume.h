@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Engine/Core/CoreTypes.h"
 #include "Engine/Math/Vector.h"
 #include "Engine/Math/Matrix.h"
 
@@ -22,6 +23,10 @@ public:
 	bool ContainsAABB(const FBoundingBox& Box) const;
 	
 	EAABBFrustumClassify ClassifyAABB(const FBoundingBox& Box) const;
+	TStaticArray<FVector, 8> GetFrustumCorners() const;
+	FVector GetFrustumCenter() const;
 private:
+	static FVector IntersectPlanes(const FVector4& PlaneA, const FVector4& PlaneB, const FVector4& PlaneC);
+
 	FVector4 Planes[6];
 };

@@ -166,6 +166,16 @@ struct FDirectionalConstants
 	float ShadowBias;
 	float ShadowSlopeBias;
 	float ShadowSharpen;
+	FMatrixPOD PSMMainViewProjection;
+	FMatrixPOD PSMLightViewProj;
+	uint32 UsePSMShadow;
+	float _pad[3];
+};
+
+struct FPSMShadowConstants
+{
+	FMatrixPOD MainViewProjection;
+	FMatrixPOD LightViewProj;
 };
 
 // ============================================================
