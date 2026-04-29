@@ -27,7 +27,6 @@ float SampleShadowAtlas(float2 uv)
     return ShadowMapAtlasTexture.SampleLevel(PointClampSampler, uv, 0).r;
 }
 
-
 float SampleShadowAtlasVSM(float4 rect, float2 localUV, float currentDepth, float bias, float2 atlasTileSize)
 {
     float2 atlasUV = rect.xy + localUV * rect.zw;
