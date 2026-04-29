@@ -121,6 +121,15 @@ namespace
 		return true;
 	}
 
+	bool HasValidPSMView(const FDirectionalShadowData& ShadowData)
+	{
+		const FShadowViewData& View = ShadowData.PSMView;
+		return !ShadowData.MainViewProjection.IsIdentity()
+			&& !View.LightView.IsIdentity()
+			&& !View.LightProj.IsIdentity()
+			&& !View.LightViewProj.IsIdentity();
+	}
+
 	bool IsShadowCasterReceiverProxy(const FPrimitiveSceneProxy& Proxy)
 	{
 		if (!Proxy.IsVisible())
@@ -602,21 +611,28 @@ FShadowRenderer::FShadowRenderResult FShadowRenderer::RenderDirectionalShadow(FD
 {
 	FShadowRenderResult Result = {};
 
-	FMatrix PSMMainViewProjection = FMatrix::Identity;
-	FMatrix PSMLightView = FMatrix::Identity;
-	FMatrix PSMLightProj = FMatrix::Identity;
-	BuildPSMViewProjection(MainFrame, Scene, Light.Direction, PSMMainViewProjection, PSMLightView, PSMLightProj);
+	const bool bPSMMode = (ShadowOptions.DirectionalShadowMode == EDirectionalShadowMode::PSM);
+	const bool bFreezePSMViewForOverride = bPSMMode
+		&& Light.ShadowData.bOverrideCameraWithLight
+		&& HasValidPSMView(Light.ShadowData);
+	if (!bFreezePSMViewForOverride)
+	{
+		FMatrix PSMMainViewProjection = FMatrix::Identity;
+		FMatrix PSMLightView = FMatrix::Identity;
+		FMatrix PSMLightProj = FMatrix::Identity;
+		BuildPSMViewProjection(MainFrame, Scene, Light.Direction, PSMMainViewProjection, PSMLightView, PSMLightProj);
 
-	const FMatrix PSMLightViewProj = PSMLightView * PSMLightProj;
-	Light.ShadowData.MainViewProjection = PSMMainViewProjection;
-	Light.ShadowData.PSMView.LightView = PSMLightView;
-	Light.ShadowData.PSMView.LightProj = PSMLightProj;
-	Light.ShadowData.PSMView.LightViewProj = PSMLightViewProj;
+		const FMatrix PSMLightViewProj = PSMLightView * PSMLightProj;
+		Light.ShadowData.MainViewProjection = PSMMainViewProjection;
+		Light.ShadowData.PSMView.LightView = PSMLightView;
+		Light.ShadowData.PSMView.LightProj = PSMLightProj;
+		Light.ShadowData.PSMView.LightViewProj = PSMLightViewProj;
+	}
 
 	UpdateCascades(Light.ShadowData, Light.Direction, MainFrame, ShadowOptions);
 	const FDirectionalShadowArray& DirectionalArray = Resources.ShadowResourceManager.GetShadowArray();
 
-	if (ShadowOptions.DirectionalShadowMode == EDirectionalShadowMode::PSM)
+	if (bPSMMode)
 	{
 		FShadowMapResource& DepthMap = Light.ShadowData.PSMView.DepthMap;
 		DepthMap.DSV = DirectionalArray.DSVs[0];

@@ -138,6 +138,16 @@ struct FSceneDepthPConstants
 	uint32 Mode;
 };
 
+struct FShadowDepthPreviewConstants
+{
+	float U0 = 0.0f;
+	float V0 = 0.0f;
+	float U1 = 1.0f;
+	float V1 = 1.0f;
+	uint32 bSourceArray = 0;
+	float _pad[3] = {};
+};
+
 // Height Fog CB (b6) — HLSL FogBuffer와 1:1 대응
 struct FFogConstants
 {

@@ -687,12 +687,15 @@ bool FEditorViewportClient::TryApplyDirectionalLightOverride(AActor* SelectedAct
 	}
 
 	const FShadowRuntimeOptions& ShadowOptions = GEngine->GetRenderer().GetRuntimeOptions();
-	const int32 ActiveCascadeCount = (ShadowOptions.DirectionalShadowMode == EDirectionalShadowMode::PSM)
-		? 1
-		: FDirectionalShadowData::NUM_CASCADES;
+	const bool bPSMMode = (ShadowOptions.DirectionalShadowMode == EDirectionalShadowMode::PSM);
+	const int32 ActiveCascadeCount = bPSMMode ? 1 : FDirectionalShadowData::NUM_CASCADES;
 
 	int32 SelectedCascadeIndex = Directional.ShadowData.PreviewViewIndex;
-	if (SelectedCascadeIndex < 0)
+	if (bPSMMode)
+	{
+		SelectedCascadeIndex = -1;
+	}
+	else if (SelectedCascadeIndex < 0)
 	{
 		SelectedCascadeIndex = 0;
 	}
@@ -701,7 +704,9 @@ bool FEditorViewportClient::TryApplyDirectionalLightOverride(AActor* SelectedAct
 		SelectedCascadeIndex = ActiveCascadeCount - 1;
 	}
 
-	const FShadowViewData& LiveView = Directional.ShadowData.View[SelectedCascadeIndex];
+	const FShadowViewData& LiveView = bPSMMode
+		? Directional.ShadowData.PSMView
+		: Directional.ShadowData.View[SelectedCascadeIndex];
 	auto IsFiniteMatrix = [](const FMatrix& Matrix) -> bool
 	{
 		for (int32 Row = 0; Row < 4; ++Row)
@@ -775,6 +780,8 @@ bool FEditorViewportClient::TryApplyDirectionalLightOverride(AActor* SelectedAct
 	SnapshotView.LightView = DirectionalOverrideSnapshotLightView;
 	SnapshotView.LightProj = DirectionalOverrideSnapshotLightProj;
 	SnapshotView.LightViewProj = DirectionalOverrideSnapshotLightViewProj;
+	// PSM uses a post-perspective light camera, so an exact editor camera view is not representable.
+	// For inspection, view from the generated virtual PSM light as an orthographic camera.
 	ApplyCameraFromShadowView(SnapshotView, true);
 	return true;
 }

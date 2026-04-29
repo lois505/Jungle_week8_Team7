@@ -720,7 +720,7 @@ void FLevelViewportLayout::RenderLocalShadowAtlasPanel()
 		return;
 	}
 
-	const FRenderer& Renderer = GEngine->GetRenderer();
+	FRenderer& Renderer = GEngine->GetRenderer();
 	const FShadowAtlasResource& Atlas = Renderer.GetShadowAtlas();
 	const TArray<FLocalShadowRequest>& Requests = Renderer.GetLocalShadowRequests();
 
@@ -767,7 +767,12 @@ void FLevelViewportLayout::RenderLocalShadowAtlasPanel()
 
 	const ImVec2 ImageMin = ImGui::GetCursorScreenPos();
 	const ImVec2 ImageSize(DisplayWidth, DisplayHeight);
-	ImGui::Image(reinterpret_cast<ImTextureID>(Atlas.Map.SRV), ImageSize, ImVec2(0, 0), ImVec2(1, 1));
+	ID3D11ShaderResourceView* PreviewSRV = Renderer.RenderShadowDepthPreview(
+		EShadowDepthPreviewSlot::LocalAtlas,
+		Atlas.Map.SRV,
+		0.0f, 0.0f, 1.0f, 1.0f,
+		false);
+	ImGui::Image(reinterpret_cast<ImTextureID>(PreviewSRV), ImageSize, ImVec2(0, 0), ImVec2(1, 1));
 
 	ImDrawList* DrawList = ImGui::GetWindowDrawList();
 	const ImVec2 ImageMax(ImageMin.x + DisplayWidth, ImageMin.y + DisplayHeight);

@@ -47,6 +47,7 @@ void FShaderManager::Initialize(ID3D11Device* InDevice)
 	GetOrCreate(EShaderPath::OverlayFont);
 	GetOrCreate(EShaderPath::SubUV);
 	GetOrCreate(EShaderPath::Billboard);
+	GetOrCreate(EShaderPath::ShadowDepthPreview);
 		GetOrCreate(EShaderPath::HeightFog);
 	}
 

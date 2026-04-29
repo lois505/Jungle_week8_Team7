@@ -55,6 +55,7 @@ void FRenderer::Create(HWND hWindow)
 		STARTUP_TRACE_SCOPE("ShadowRenderer.Create");
 		ShadowRenderer.Create(Device.GetDevice(), Device.GetDeviceContext());
 	}
+	ShadowDepthPreviewCB.Create(Device.GetDevice(), sizeof(FShadowDepthPreviewConstants));
 
 	// GPU Profiler 초기화
 	{
@@ -68,6 +69,8 @@ void FRenderer::Release()
 	FGPUProfiler::Get().Shutdown();
 
 	ShadowRenderer.Release();
+	ShadowDepthPreviewCB.Release();
+	ReleaseShadowDepthPreviewTargets();
 
 	Builder.Release();
 
@@ -210,6 +213,195 @@ void FRenderer::CleanupPassState(FStateCache& Cache)
 
 	Cache.Cleanup(Device.GetDeviceContext());
 	Builder.GetCommandList().Reset();
+}
+
+bool FRenderer::EnsureShadowDepthPreviewTarget(uint32 SlotIndex)
+{
+	if (SlotIndex >= ShadowDepthPreviewSlotCount)
+	{
+		return false;
+	}
+
+	if (ShadowDepthPreviewTextures[SlotIndex] && ShadowDepthPreviewRTVs[SlotIndex] && ShadowDepthPreviewSRVs[SlotIndex])
+	{
+		return true;
+	}
+
+	if (ShadowDepthPreviewSRVs[SlotIndex])
+	{
+		ShadowDepthPreviewSRVs[SlotIndex]->Release();
+		ShadowDepthPreviewSRVs[SlotIndex] = nullptr;
+	}
+	if (ShadowDepthPreviewRTVs[SlotIndex])
+	{
+		ShadowDepthPreviewRTVs[SlotIndex]->Release();
+		ShadowDepthPreviewRTVs[SlotIndex] = nullptr;
+	}
+	if (ShadowDepthPreviewTextures[SlotIndex])
+	{
+		ShadowDepthPreviewTextures[SlotIndex]->Release();
+		ShadowDepthPreviewTextures[SlotIndex] = nullptr;
+	}
+
+	D3D11_TEXTURE2D_DESC TextureDesc = {};
+	TextureDesc.Width = ShadowDepthPreviewSize;
+	TextureDesc.Height = ShadowDepthPreviewSize;
+	TextureDesc.MipLevels = 1;
+	TextureDesc.ArraySize = 1;
+	TextureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	TextureDesc.SampleDesc.Count = 1;
+	TextureDesc.Usage = D3D11_USAGE_DEFAULT;
+	TextureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+
+	ID3D11Device* D3D = Device.GetDevice();
+	if (!D3D || FAILED(D3D->CreateTexture2D(&TextureDesc, nullptr, &ShadowDepthPreviewTextures[SlotIndex])))
+	{
+		UE_LOG("Failed to create shadow depth preview texture.");
+		return false;
+	}
+
+	if (FAILED(D3D->CreateRenderTargetView(ShadowDepthPreviewTextures[SlotIndex], nullptr, &ShadowDepthPreviewRTVs[SlotIndex]))
+		|| FAILED(D3D->CreateShaderResourceView(ShadowDepthPreviewTextures[SlotIndex], nullptr, &ShadowDepthPreviewSRVs[SlotIndex])))
+	{
+		UE_LOG("Failed to create shadow depth preview views.");
+		if (ShadowDepthPreviewSRVs[SlotIndex])
+		{
+			ShadowDepthPreviewSRVs[SlotIndex]->Release();
+			ShadowDepthPreviewSRVs[SlotIndex] = nullptr;
+		}
+		if (ShadowDepthPreviewRTVs[SlotIndex])
+		{
+			ShadowDepthPreviewRTVs[SlotIndex]->Release();
+			ShadowDepthPreviewRTVs[SlotIndex] = nullptr;
+		}
+		if (ShadowDepthPreviewTextures[SlotIndex])
+		{
+			ShadowDepthPreviewTextures[SlotIndex]->Release();
+			ShadowDepthPreviewTextures[SlotIndex] = nullptr;
+		}
+		return false;
+	}
+
+	return true;
+}
+
+void FRenderer::ReleaseShadowDepthPreviewTargets()
+{
+	for (uint32 SlotIndex = 0; SlotIndex < ShadowDepthPreviewSlotCount; ++SlotIndex)
+	{
+		if (ShadowDepthPreviewSRVs[SlotIndex])
+		{
+			ShadowDepthPreviewSRVs[SlotIndex]->Release();
+			ShadowDepthPreviewSRVs[SlotIndex] = nullptr;
+		}
+		if (ShadowDepthPreviewRTVs[SlotIndex])
+		{
+			ShadowDepthPreviewRTVs[SlotIndex]->Release();
+			ShadowDepthPreviewRTVs[SlotIndex] = nullptr;
+		}
+		if (ShadowDepthPreviewTextures[SlotIndex])
+		{
+			ShadowDepthPreviewTextures[SlotIndex]->Release();
+			ShadowDepthPreviewTextures[SlotIndex] = nullptr;
+		}
+	}
+}
+
+ID3D11ShaderResourceView* FRenderer::RenderShadowDepthPreview(
+	EShadowDepthPreviewSlot Slot,
+	ID3D11ShaderResourceView* SourceSRV,
+	float U0, float V0, float U1, float V1,
+	bool bSourceArray)
+{
+	const uint32 SlotIndex = static_cast<uint32>(Slot);
+	if (!SourceSRV || !EnsureShadowDepthPreviewTarget(SlotIndex))
+	{
+		return SourceSRV;
+	}
+
+	FShader* PreviewShader = FShaderManager::Get().GetOrCreate(EShaderPath::ShadowDepthPreview);
+	if (!PreviewShader)
+	{
+		return SourceSRV;
+	}
+
+	ID3D11DeviceContext* Ctx = Device.GetDeviceContext();
+	if (!Ctx)
+	{
+		return SourceSRV;
+	}
+
+	UINT OldViewportCount = 1;
+	D3D11_VIEWPORT OldViewport = {};
+	Ctx->RSGetViewports(&OldViewportCount, &OldViewport);
+
+	ID3D11RenderTargetView* OldRTV = nullptr;
+	ID3D11DepthStencilView* OldDSV = nullptr;
+	Ctx->OMGetRenderTargets(1, &OldRTV, &OldDSV);
+
+	D3D11_VIEWPORT PreviewViewport = {};
+	PreviewViewport.Width = static_cast<float>(ShadowDepthPreviewSize);
+	PreviewViewport.Height = static_cast<float>(ShadowDepthPreviewSize);
+	PreviewViewport.MinDepth = 0.0f;
+	PreviewViewport.MaxDepth = 1.0f;
+	Ctx->RSSetViewports(1, &PreviewViewport);
+
+	Resources.SetDepthStencilState(Device, EDepthStencilState::NoDepth);
+	Resources.SetBlendState(Device, EBlendState::Opaque);
+	Resources.SetRasterizerState(Device, ERasterizerState::SolidNoCull);
+	Resources.BindSystemSamplers(Device);
+
+	const float ClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	Ctx->OMSetRenderTargets(1, &ShadowDepthPreviewRTVs[SlotIndex], nullptr);
+	Ctx->ClearRenderTargetView(ShadowDepthPreviewRTVs[SlotIndex], ClearColor);
+
+	FShadowDepthPreviewConstants Constants = {};
+	Constants.U0 = U0;
+	Constants.V0 = V0;
+	Constants.U1 = U1;
+	Constants.V1 = V1;
+	Constants.bSourceArray = bSourceArray ? 1u : 0u;
+	ShadowDepthPreviewCB.Update(Ctx, &Constants, sizeof(Constants));
+
+	ID3D11Buffer* CB = ShadowDepthPreviewCB.GetBuffer();
+	Ctx->PSSetConstantBuffers(ECBSlot::PerShader0, 1, &CB);
+
+	ID3D11ShaderResourceView* NullSRV = nullptr;
+	if (bSourceArray)
+	{
+		Ctx->PSSetShaderResources(ESystemTexSlot::ShadowMapAtlas, 1, &NullSRV);
+		Ctx->PSSetShaderResources(ESystemTexSlot::DirectionalShadowArray, 1, &SourceSRV);
+	}
+	else
+	{
+		Ctx->PSSetShaderResources(ESystemTexSlot::ShadowMapAtlas, 1, &SourceSRV);
+		Ctx->PSSetShaderResources(ESystemTexSlot::DirectionalShadowArray, 1, &NullSRV);
+	}
+
+	PreviewShader->Bind(Ctx);
+	Ctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	Ctx->Draw(3, 0);
+
+	ID3D11ShaderResourceView* NullSRVs[2] = {};
+	Ctx->PSSetShaderResources(ESystemTexSlot::ShadowMapAtlas, 2, NullSRVs);
+
+	Ctx->OMSetRenderTargets(1, &OldRTV, OldDSV);
+	if (OldViewportCount > 0)
+	{
+		Ctx->RSSetViewports(1, &OldViewport);
+	}
+
+	if (OldRTV)
+	{
+		OldRTV->Release();
+	}
+	if (OldDSV)
+	{
+		OldDSV->Release();
+	}
+
+	Resources.ResetRenderStateCache();
+	return ShadowDepthPreviewSRVs[SlotIndex];
 }
 
 void FRenderer::DispatchClusterCullingResources()

@@ -18,6 +18,13 @@
 
 class FScene;
 
+enum class EShadowDepthPreviewSlot : uint32
+{
+	LightProperty = 0,
+	LocalAtlas,
+	Count
+};
+
 class FRenderer
 {
 public:
@@ -47,6 +54,11 @@ public:
 	const FDirectionalShadowArray& GetDirShadowArray() const { return Resources.ShadowResourceManager.GetShadowArray(); }
 	const FShadowTelemetry& GetShadowTelemetry() const { return Resources.ShadowResourceManager.GetTelemetry(); }
 	const TArray<FLocalShadowRequest>& GetLocalShadowRequests() const { return Resources.ShadowResourceManager.GetLocalShadowRequests(); }
+	ID3D11ShaderResourceView* RenderShadowDepthPreview(
+		EShadowDepthPreviewSlot Slot,
+		ID3D11ShaderResourceView* SourceSRV,
+		float U0, float V0, float U1, float V1,
+		bool bSourceArray);
 
 	void BindTileCullingResources() { Resources.BindTileCullingBuffers(Device); }
 	void UnbindTileCullingResources() { Resources.UnbindTileCullingBuffers(Device); }
@@ -71,6 +83,8 @@ public:
 private:
 	// 패스 루프 종료 후 시스템 텍스처 언바인딩 + 캐시 정리
 	void CleanupPassState(FStateCache& Cache);
+	bool EnsureShadowDepthPreviewTarget(uint32 SlotIndex);
+	void ReleaseShadowDepthPreviewTargets();
 
 private:
 	FD3DDevice Device;
@@ -82,6 +96,12 @@ private:
 	
 	//	Shadow
 	FShadowRenderer ShadowRenderer;
+	FConstantBuffer ShadowDepthPreviewCB;
+	static constexpr uint32 ShadowDepthPreviewSlotCount = static_cast<uint32>(EShadowDepthPreviewSlot::Count);
+	ID3D11Texture2D* ShadowDepthPreviewTextures[ShadowDepthPreviewSlotCount] = {};
+	ID3D11RenderTargetView* ShadowDepthPreviewRTVs[ShadowDepthPreviewSlotCount] = {};
+	ID3D11ShaderResourceView* ShadowDepthPreviewSRVs[ShadowDepthPreviewSlotCount] = {};
+	static constexpr uint32 ShadowDepthPreviewSize = 256;
 	
 	FTileBasedLightCulling TileBasedCulling;
 	FClusteredLightCuller ClusteredLightCuller;

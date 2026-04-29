@@ -660,17 +660,16 @@ void FEditorPropertyWidget::RenderDirectionalLightShadowPreview(UDirectionalLigh
 
 	if (DirShadowArray.PreviewSRVs[PreviewSliceIndex])
 	{
-		ImGui::TextDisabled("%s Slice: %d | %ux%u",
-			PreviewSliceIndex == 0 ? "PSM" : "CSM",
-			PreviewSliceIndex,
-			Params.ShadowData.Settings.ShadowResolutionScale * 1024.0f,
-			Params.ShadowData.Settings.ShadowResolutionScale * 1024.0f);
-
 		const float AvailableWidth = ImGui::GetContentRegionAvail().x;
 		const float PreviewSize = AvailableWidth < 256.0f ? AvailableWidth : 256.0f;
+		ID3D11ShaderResourceView* PreviewSRV = GEngine->GetRenderer().RenderShadowDepthPreview(
+			EShadowDepthPreviewSlot::LightProperty,
+			DirShadowArray.PreviewSRVs[PreviewSliceIndex],
+			0.0f, 0.0f, 1.0f, 1.0f,
+			true);
 
 		ImGui::Image(
-			reinterpret_cast<ImTextureID>(DirShadowArray.PreviewSRVs[PreviewSliceIndex]),
+			reinterpret_cast<ImTextureID>(PreviewSRV),
 			ImVec2(PreviewSize, PreviewSize)
 		);
 	}
@@ -804,11 +803,16 @@ void FEditorPropertyWidget::RenderShadowMapPreviewImage(const FLightShadowSettin
 
 		const float AvailableWidth = ImGui::GetContentRegionAvail().x;
 		const float PreviewSize = AvailableWidth < 256.0f ? AvailableWidth : 256.0f;
+		ID3D11ShaderResourceView* PreviewSRV = GEngine->GetRenderer().RenderShadowDepthPreview(
+			EShadowDepthPreviewSlot::LightProperty,
+			Atlas.Map.SRV,
+			U0, V0, U1, V1,
+			false);
 		ImGui::Image(
-			reinterpret_cast<ImTextureID>(Atlas.Map.SRV),
+			reinterpret_cast<ImTextureID>(PreviewSRV),
 			ImVec2(PreviewSize, PreviewSize),
-			ImVec2(U0, V0),
-			ImVec2(U1, V1));
+			ImVec2(0.0f, 0.0f),
+			ImVec2(1.0f, 1.0f));
 		return;
 	}
 
@@ -822,7 +826,12 @@ void FEditorPropertyWidget::RenderShadowMapPreviewImage(const FLightShadowSettin
 
 	const float AvailableWidth = ImGui::GetContentRegionAvail().x;
 	const float PreviewSize = AvailableWidth < 256.0f ? AvailableWidth : 256.0f;
-	ImGui::Image(reinterpret_cast<ImTextureID>(View.DepthMap.SRV), ImVec2(PreviewSize, PreviewSize));
+	ID3D11ShaderResourceView* PreviewSRV = GEngine->GetRenderer().RenderShadowDepthPreview(
+		EShadowDepthPreviewSlot::LightProperty,
+		View.DepthMap.SRV,
+		0.0f, 0.0f, 1.0f, 1.0f,
+		false);
+	ImGui::Image(reinterpret_cast<ImTextureID>(PreviewSRV), ImVec2(PreviewSize, PreviewSize));
 }
 
 void FEditorPropertyWidget::PropagatePropertyChange(const FString& PropName, const TArray<AActor*>& SelectedActors)
