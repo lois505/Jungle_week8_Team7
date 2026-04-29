@@ -75,6 +75,7 @@ void FSystemResources::Create(ID3D11Device* InDevice, ID3D11DeviceContext* Conte
 	FrameBuffer.Create(InDevice, sizeof(FFrameConstants));
 	LightingConstantBuffer.Create(InDevice, sizeof(FLightingCBData));
 	DirectionalShadowBuffer.Create(InDevice, sizeof(FDirectionalConstants));
+	PSMShadowBuffer.Create(InDevice, sizeof(FPSMShadowConstants));
 	ForwardLights.Create(InDevice, 32);
 	LocalShadows.Create(InDevice, 32);
 
@@ -97,6 +98,8 @@ void FSystemResources::Release()
 
 	FrameBuffer.Release();
 	LightingConstantBuffer.Release();
+	DirectionalShadowBuffer.Release();
+	PSMShadowBuffer.Release();
 	ForwardLights.Release();
 	LocalShadows.Release();
 	TileCullingResource.Release();
@@ -174,6 +177,9 @@ void FSystemResources::UpdateLightAndShadowBuffer(FD3DDevice& Device, const FSce
 			DirectionalCB.ShadowBias = DirLightParams.ShadowData.Settings.ShadowBias;
 			DirectionalCB.ShadowSlopeBias = DirLightParams.ShadowData.Settings.ShadowSlopeBias;
 			DirectionalCB.ShadowSharpen = DirLightParams.ShadowData.Settings.ShadowSharpen;
+			DirectionalCB.PSMMainViewProjection = ShadowData.MainViewProjection.ConvertToPOD();
+			DirectionalCB.PSMLightViewProj = ShadowData.PSMView.LightViewProj.ConvertToPOD();
+			DirectionalCB.UsePSMShadow = (ShadowOptions.DirectionalShadowMode == EDirectionalShadowMode::Single) ? 1u : 0u;
 
 			// 추가 팁: 셰이더에서 texelSize를 계산할 수 있도록 해상도 정보를 CB에 포함하세요.
 			// 현재 Resolution이 2048이라면, 셰이더는 이 값을 받아 PCF 필터링 보폭을 정하게 됩니다.

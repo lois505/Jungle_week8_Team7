@@ -1,6 +1,25 @@
 #include "Engine/Render/Culling/ConvexVolume.h"
 #include "Engine/Core/EngineTypes.h"
 
+FVector FConvexVolume::IntersectPlanes(const FVector4& PlaneA, const FVector4& PlaneB, const FVector4& PlaneC)
+{
+	const FVector NormalA(PlaneA.X, PlaneA.Y, PlaneA.Z);
+	const FVector NormalB(PlaneB.X, PlaneB.Y, PlaneB.Z);
+	const FVector NormalC(PlaneC.X, PlaneC.Y, PlaneC.Z);
+
+	const FVector CrossBC = NormalB.Cross(NormalC);
+	const FVector CrossCA = NormalC.Cross(NormalA);
+	const FVector CrossAB = NormalA.Cross(NormalB);
+	const float Denominator = NormalA.Dot(CrossBC);
+
+	if (std::abs(Denominator) < 1e-6f)
+	{
+		return FVector();
+	}
+
+	return ((CrossBC * -PlaneA.W) + (CrossCA * -PlaneB.W) + (CrossAB * -PlaneC.W)) / Denominator;
+}
+
 void FConvexVolume::UpdateFromMatrix(const FMatrix& InViewProjectionMatrix)
 {
 	const FMatrix& M = InViewProjectionMatrix;
@@ -90,4 +109,31 @@ EAABBFrustumClassify FConvexVolume::ClassifyAABB(const FBoundingBox& Box) const
 
 	return bContained ? EAABBFrustumClassify::Contains
 	                  : EAABBFrustumClassify::Intersects;
+}
+
+TStaticArray<FVector, 8> FConvexVolume::GetFrustumCorners() const
+{
+	return {
+		IntersectPlanes(Planes[0], Planes[3], Planes[4]),
+		IntersectPlanes(Planes[1], Planes[3], Planes[4]),
+		IntersectPlanes(Planes[1], Planes[2], Planes[4]),
+		IntersectPlanes(Planes[0], Planes[2], Planes[4]),
+		IntersectPlanes(Planes[0], Planes[3], Planes[5]),
+		IntersectPlanes(Planes[1], Planes[3], Planes[5]),
+		IntersectPlanes(Planes[1], Planes[2], Planes[5]),
+		IntersectPlanes(Planes[0], Planes[2], Planes[5]),
+	};
+}
+
+FVector FConvexVolume::GetFrustumCenter() const
+{
+	const TStaticArray<FVector, 8> Corners = GetFrustumCorners();
+	FVector Center;
+
+	for (const FVector& Corner : Corners)
+	{
+		Center += Corner;
+	}
+
+	return Center / static_cast<float>(Corners.size());
 }

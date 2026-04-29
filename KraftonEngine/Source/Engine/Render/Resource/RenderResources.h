@@ -162,6 +162,7 @@ struct FSystemResources
 	//	--- Shadow ---
 	FShadowResourceManager ShadowResourceManager;
 	FConstantBuffer DirectionalShadowBuffer;
+	FConstantBuffer PSMShadowBuffer;
 
 	// --- Render State Managers ---
 	FRasterizerStateManager RasterizerStateManager;

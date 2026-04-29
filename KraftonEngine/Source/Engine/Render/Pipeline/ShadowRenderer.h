@@ -39,7 +39,8 @@ private:
 	FShadowRenderResult RenderPointShadow(FD3DDevice& Device, FSystemResources& Resources, FPointLightParams& Light, FScene& Scene);
 	FShadowRenderResult RenderSpotShadow(FD3DDevice& Device, FSystemResources& Resources, FSpotLightParams& Light, FScene& Scene);
 
-	bool RenderShadowView(FD3DDevice& Device, FSystemResources& Resources, FShadowViewData& View, FScene& Scene);
+	bool RenderShadowView(FD3DDevice& Device, FSystemResources& Resources, FShadowViewData& View, FScene& Scene,
+		bool bUsePSMShader = false, const FMatrix* PSMMainViewProjection = nullptr);
 	void UnbindShadowReadResourcesForWrite(FD3DDevice& Device);
 	void UnbindShadowWriteTargets(FD3DDevice& Device);
 
