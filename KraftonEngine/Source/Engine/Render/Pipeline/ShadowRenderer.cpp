@@ -98,7 +98,7 @@ namespace
 		return Proxy.GetMeshBuffer() && !Proxy.GetSectionDraws().empty() && Proxy.GetCachedBounds().IsValid();
 	}
 
-	FBoundingBox BuildShadowReceiverBounds(const FScene& Scene)
+	FBoundingBox BuildShadowReceiverBounds(const FScene& Scene, const FFrameContext& MainFrame)
 	{
 		FBoundingBox Bounds;
 
@@ -110,6 +110,11 @@ namespace
 			}
 
 			const FBoundingBox& ProxyBounds = Proxy->GetCachedBounds();
+			if (MainFrame.FrustumVolume.ClassifyAABB(ProxyBounds) == EAABBFrustumClassify::Outside)
+			{
+				continue;
+			}
+
 			Bounds.Expand(ProxyBounds.Min);
 			Bounds.Expand(ProxyBounds.Max);
 		}
@@ -422,7 +427,7 @@ namespace
 	void BuildPSMViewProjection(const FFrameContext& MainFrame, const FScene& Scene, const FVector& LightDirection,
 		FMatrix& OutVirtualCameraViewProjection, FMatrix& OutPSMLightView, FMatrix& OutPSMLightProj)
 	{
-		const FBoundingBox ReceiverBounds = BuildShadowReceiverBounds(Scene);
+		const FBoundingBox ReceiverBounds = BuildShadowReceiverBounds(Scene, MainFrame);
 		const float CameraFitNear = ComputeCameraFitNear(MainFrame, ReceiverBounds);
 
 		const float AspectRatio = (MainFrame.ViewportHeight > 1.0f)
