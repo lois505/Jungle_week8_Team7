@@ -8,14 +8,19 @@
 #include <string>
 #include "Core/RayTypes.h"
 #include "Core/CollisionTypes.h"
+#include "Math/Matrix.h"
 class UWorld;
 class UCameraComponent;
+class UBillboardComponent;
 class UGizmoComponent;
 class FEditorSettings;
 class FWindowsWindow;
 class FSelectionManager;
 class FViewport;
 class FOverlayStatSystem;
+class AActor;
+class FSceneEnvironment;
+struct FShadowViewData;
 
 class FEditorViewportClient : public FViewportClient
 {
@@ -71,10 +76,26 @@ public:
 	void RenderViewportImage(bool bIsActiveViewport);
 
 private:
+	struct FBillboardVisibilityBackup
+	{
+		UBillboardComponent* Component = nullptr;
+		bool bWasVisible = true;
+	};
+
 	void TickEditorShortcuts();
 	void TickInput(float DeltaTime);
 	void TickInteraction(float DeltaTime);
 	void HandleDragStart(const FRay& Ray); //픽킹 시작
+	void ApplyLightPerspectiveOverride();
+	void ApplyBillboardVisibilityForLightOverride(AActor* SelectedActor);
+	void RestoreBillboardVisibilityAfterLightOverride();
+	void SaveCameraStateForLightOverride();
+	void RestoreCameraStateAfterLightOverride();
+	void ApplyCameraFromShadowView(const FShadowViewData& ShadowView, bool bOrthographic);
+	bool TryApplyDirectionalLightOverride(AActor* SelectedActor, const FSceneEnvironment& Environment);
+	bool TryApplySpotLightOverride(AActor* SelectedActor, const FSceneEnvironment& Environment);
+	bool TryApplyPointLightOverride(AActor* SelectedActor, const FSceneEnvironment& Environment);
+	void ClearDirectionalOverrideSnapshot();
 
 private:
 	FViewport* Viewport = nullptr;
@@ -86,6 +107,22 @@ private:
 	const FEditorSettings* Settings = nullptr;
 	FSelectionManager* SelectionManager = nullptr;
 	FViewportRenderOptions RenderOptions;
+	bool bLightPerspectiveOverrideActive = false;
+	bool bHasSavedCameraStateForLightOverride = false;
+	FVector SavedCameraWorldLocation = FVector(0.0f, 0.0f, 0.0f);
+	FVector SavedCameraEulerRotation = FVector(0.0f, 0.0f, 0.0f); // X=Roll, Y=Pitch, Z=Yaw
+	float SavedCameraFOV = 3.14159265358979f / 3.0f;
+	float SavedCameraOrthoWidth = 10.0f;
+	bool bSavedCameraIsOrthographic = false;
+	AActor* BillboardOverrideActor = nullptr;
+	TArray<FBillboardVisibilityBackup> BillboardVisibilityBackups;
+
+	bool bHasDirectionalOverrideSnapshot = false;
+	AActor* DirectionalOverrideSnapshotActor = nullptr;
+	int32 DirectionalOverrideSnapshotViewIndex = -1;
+	FMatrix DirectionalOverrideSnapshotLightView = FMatrix::Identity;
+	FMatrix DirectionalOverrideSnapshotLightProj = FMatrix::Identity;
+	FMatrix DirectionalOverrideSnapshotLightViewProj = FMatrix::Identity;
 
 	float WindowWidth = 1920.f;
 	float WindowHeight = 1080.f;

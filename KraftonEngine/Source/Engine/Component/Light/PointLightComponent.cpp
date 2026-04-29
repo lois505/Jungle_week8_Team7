@@ -31,6 +31,11 @@ IMPLEMENT_CLASS(UPointLightComponent, ULightComponent)
 
 void UPointLightComponent::ContributeSelectedVisuals(FScene& Scene) const
 {
+	if (IsOverrideCameraWithLightPerspective())
+	{
+		return;
+	}
+
 	const FVector Center = GetWorldLocation();
 	constexpr int32 Segments = 24;
 
@@ -62,7 +67,7 @@ void UPointLightComponent::PushToScene()
 	Params.ShadowData.Settings.ShadowBias = ShadowBias;
 	Params.ShadowData.Settings.ShadowSlopeBias = ShadowSlopeBias;
 	Params.ShadowData.Settings.ShadowSharpen = ShadowSharpen;
-	//	bOverrideCameraWithLight는 나중에 고려
+	Params.ShadowData.bOverrideCameraWithLight = IsOverrideCameraWithLightPerspective();
 
 
 	FVector FRU[6][3] = {

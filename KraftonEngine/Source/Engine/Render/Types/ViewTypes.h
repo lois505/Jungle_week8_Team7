@@ -79,4 +79,5 @@ struct FViewportRenderOptions
 	ELightCullingMode LightCullingMode = ELightCullingMode::Cluster;
 	float HeatMapMax = 20.0f;
 	bool Enable25DCulling = true;
+
 };

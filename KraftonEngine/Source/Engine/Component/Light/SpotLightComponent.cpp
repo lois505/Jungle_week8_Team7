@@ -9,6 +9,11 @@ IMPLEMENT_CLASS(USpotLightComponent, UPointLightComponent)
 
 void USpotLightComponent::ContributeSelectedVisuals(FScene& Scene) const
 {
+	if (IsOverrideCameraWithLightPerspective())
+	{
+		return;
+	}
+
 	const FVector Apex = GetWorldLocation();
 	const FVector Forward = GetForwardVector();
 	const FVector Right = GetRightVector();
@@ -72,7 +77,7 @@ void USpotLightComponent::PushToScene()
 	Params.ShadowData.Settings.ShadowBias = ShadowBias;
 	Params.ShadowData.Settings.ShadowSlopeBias = ShadowSlopeBias;
 	Params.ShadowData.Settings.ShadowSharpen = ShadowSharpen;
-	//	bOverrideCameraWithLight는 나중에 고려
+	Params.ShadowData.bOverrideCameraWithLight = IsOverrideCameraWithLightPerspective();
 
 	Params.ShadowData.View.DepthMap = {};
 

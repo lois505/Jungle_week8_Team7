@@ -9,10 +9,13 @@ public:
 	void GetEditableProperties(TArray<FPropertyDescriptor>& OutProps) override;
 	void PostEditProperty(const char* PropertyName) override { ULightComponentBase::PostEditProperty(PropertyName); PushToScene(); }
 	void Serialize(FArchive& Ar) override;
+	bool IsOverrideCameraWithLightPerspective() const { return bOverrideCameraWithLightPerspective; }
+	void SetOverrideCameraWithLightPerspective(bool bEnable) { bOverrideCameraWithLightPerspective = bEnable; PushToScene(); }
 	
 protected:
 	float ShadowResolutionScale = 1.f;
 	float ShadowBias = 2.0f;
 	float ShadowSlopeBias = 2.0f;
 	float ShadowSharpen = 0.35f;
+	bool bOverrideCameraWithLightPerspective = false;
 };

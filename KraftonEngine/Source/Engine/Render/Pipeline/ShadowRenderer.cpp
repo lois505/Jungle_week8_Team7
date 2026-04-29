@@ -97,6 +97,19 @@ namespace
 		return CascadeIndex + 1u; // CSM slices
 	}
 
+	bool HasValidDirectionalViews(const FDirectionalShadowData& ShadowData, int32 ActiveCascadeCount)
+	{
+		for (int32 Index = 0; Index < ActiveCascadeCount; ++Index)
+		{
+			const FShadowViewData& View = ShadowData.View[Index];
+			if (View.LightView.IsIdentity() || View.LightProj.IsIdentity() || View.LightViewProj.IsIdentity())
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
 	bool IsShadowCasterReceiverProxy(const FPrimitiveSceneProxy& Proxy)
 	{
 		if (!Proxy.IsVisible())
@@ -538,6 +551,11 @@ namespace
 	{
 		const bool bSingleMode = (ShadowOptions.DirectionalShadowMode == EDirectionalShadowMode::Single);
 		const int32 ActiveCascadeCount = bSingleMode ? 1 : ShadowData.NUM_CASCADES;
+
+		if (ShadowData.bOverrideCameraWithLight && HasValidDirectionalViews(ShadowData, ActiveCascadeCount))
+		{
+			return;
+		}
 
 		FVector F = LightDirection.Normalized();
 

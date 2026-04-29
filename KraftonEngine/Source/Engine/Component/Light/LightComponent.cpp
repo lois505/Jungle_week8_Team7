@@ -23,4 +23,5 @@ void ULightComponent::Serialize(FArchive& Ar)
 	Ar << ShadowBias;
 	Ar << ShadowSlopeBias;
 	Ar << ShadowSharpen;
+	Ar << bOverrideCameraWithLightPerspective;
 }

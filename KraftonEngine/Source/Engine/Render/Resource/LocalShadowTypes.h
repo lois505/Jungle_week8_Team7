@@ -30,6 +30,7 @@ struct FLocalShadowRequest
 	uint64 RequestKey = 0;
 	FShadowResolutionRecord Resolution;
 	float Priority = 0.0f;
+	bool bForceRenderPriority = false;
 	bool bNeedsRender = false;
 	bool bAllocated = false;
 	uint32 AtlasOffsetX = 0;
