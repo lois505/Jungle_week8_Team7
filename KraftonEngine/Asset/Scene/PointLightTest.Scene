@@ -1,8 +1,918 @@
 {
   "Actors" : [{
       "ClassName" : "AStaticMeshActor",
+      "NonSceneComponents" : [{
+          "ClassName" : "URotatingMovementComponent",
+          "Properties" : {
+            "Auto Register Updated" : true,
+            "Rotation Rate" : [0.000000, 90.000000, 0.000000],
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
+        }],
+      "PrimitiveKey" : "66",
+      "RootComponent" : {
+        "Children" : [],
+        "ClassName" : "UStaticMeshComponent",
+        "Properties" : {
+          "Element 0" : {
+            "Path" : "Asset/Materials/Auto/Eyes.mat"
+          },
+          "Element 1" : {
+            "Path" : "Asset/Materials/Auto/EyeWhites.mat"
+          },
+          "Element 10" : {
+            "Path" : "Asset/Materials/Auto/Skirt.mat"
+          },
+          "Element 11" : {
+            "Path" : "Asset/Materials/Auto/Shoes.mat"
+          },
+          "Element 12" : {
+            "Path" : "Asset/Materials/Auto/Gloves.mat"
+          },
+          "Element 2" : {
+            "Path" : "Asset/Materials/Auto/Neck.mat"
+          },
+          "Element 3" : {
+            "Path" : "Asset/Materials/Auto/Face.mat"
+          },
+          "Element 4" : {
+            "Path" : "Asset/Materials/Auto/Hair.mat"
+          },
+          "Element 5" : {
+            "Path" : "Asset/Materials/Auto/Expression.mat"
+          },
+          "Element 6" : {
+            "Path" : "Asset/Materials/Auto/Skin.mat"
+          },
+          "Element 7" : {
+            "Path" : "Asset/Materials/Auto/Clothes.mat"
+          },
+          "Element 8" : {
+            "Path" : "Asset/Materials/Auto/Pants.mat"
+          },
+          "Element 9" : {
+            "Path" : "Asset/Materials/Auto/BackAccessory.mat"
+          },
+          "Location" : [2.298661, 69.952774, 1.285870],
+          "Rotation" : [0.000000, 90.000000, 0.000000],
+          "Scale" : [3.000000, 3.000000, 3.000000],
+          "Static Mesh" : "Data/Lumine/LumineModel.obj",
+          "Visible" : true,
+          "bEditorOnly" : false,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
+      "ClassName" : "AStaticMeshActor",
+      "NonSceneComponents" : [{
+          "ClassName" : "URotatingMovementComponent",
+          "Properties" : {
+            "Auto Register Updated" : true,
+            "Rotation Rate" : [0.000000, 90.000000, 0.000000],
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
+        }],
+      "PrimitiveKey" : "85",
+      "RootComponent" : {
+        "Children" : [],
+        "ClassName" : "UStaticMeshComponent",
+        "Properties" : {
+          "Element 0" : {
+            "Path" : "Asset/Materials/Auto/Eyes.mat"
+          },
+          "Element 1" : {
+            "Path" : "Asset/Materials/Auto/EyeWhites.mat"
+          },
+          "Element 10" : {
+            "Path" : "Asset/Materials/Auto/Skirt.mat"
+          },
+          "Element 11" : {
+            "Path" : "Asset/Materials/Auto/Shoes.mat"
+          },
+          "Element 12" : {
+            "Path" : "Asset/Materials/Auto/Gloves.mat"
+          },
+          "Element 2" : {
+            "Path" : "Asset/Materials/Auto/Neck.mat"
+          },
+          "Element 3" : {
+            "Path" : "Asset/Materials/Auto/Face.mat"
+          },
+          "Element 4" : {
+            "Path" : "Asset/Materials/Auto/Hair.mat"
+          },
+          "Element 5" : {
+            "Path" : "Asset/Materials/Auto/Expression.mat"
+          },
+          "Element 6" : {
+            "Path" : "Asset/Materials/Auto/Skin.mat"
+          },
+          "Element 7" : {
+            "Path" : "Asset/Materials/Auto/Clothes.mat"
+          },
+          "Element 8" : {
+            "Path" : "Asset/Materials/Auto/Pants.mat"
+          },
+          "Element 9" : {
+            "Path" : "Asset/Materials/Auto/BackAccessory.mat"
+          },
+          "Location" : [2.298661, 76.576088, 1.285870],
+          "Rotation" : [0.000000, 90.000000, 0.000000],
+          "Scale" : [3.000000, 3.000000, 3.000000],
+          "Static Mesh" : "Data/Lumine/LumineModel.obj",
+          "Visible" : true,
+          "bEditorOnly" : false,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
+      "ClassName" : "AStaticMeshActor",
+      "NonSceneComponents" : [{
+          "ClassName" : "URotatingMovementComponent",
+          "Properties" : {
+            "Auto Register Updated" : true,
+            "Rotation Rate" : [0.000000, 90.000000, 0.000000],
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
+        }],
+      "PrimitiveKey" : "87",
+      "RootComponent" : {
+        "Children" : [],
+        "ClassName" : "UStaticMeshComponent",
+        "Properties" : {
+          "Element 0" : {
+            "Path" : "Asset/Materials/Auto/Eyes.mat"
+          },
+          "Element 1" : {
+            "Path" : "Asset/Materials/Auto/EyeWhites.mat"
+          },
+          "Element 10" : {
+            "Path" : "Asset/Materials/Auto/Skirt.mat"
+          },
+          "Element 11" : {
+            "Path" : "Asset/Materials/Auto/Shoes.mat"
+          },
+          "Element 12" : {
+            "Path" : "Asset/Materials/Auto/Gloves.mat"
+          },
+          "Element 2" : {
+            "Path" : "Asset/Materials/Auto/Neck.mat"
+          },
+          "Element 3" : {
+            "Path" : "Asset/Materials/Auto/Face.mat"
+          },
+          "Element 4" : {
+            "Path" : "Asset/Materials/Auto/Hair.mat"
+          },
+          "Element 5" : {
+            "Path" : "Asset/Materials/Auto/Expression.mat"
+          },
+          "Element 6" : {
+            "Path" : "Asset/Materials/Auto/Skin.mat"
+          },
+          "Element 7" : {
+            "Path" : "Asset/Materials/Auto/Clothes.mat"
+          },
+          "Element 8" : {
+            "Path" : "Asset/Materials/Auto/Pants.mat"
+          },
+          "Element 9" : {
+            "Path" : "Asset/Materials/Auto/BackAccessory.mat"
+          },
+          "Location" : [2.298661, 84.398857, 1.285870],
+          "Rotation" : [0.000000, 90.000000, 0.000000],
+          "Scale" : [3.000000, 3.000000, 3.000000],
+          "Static Mesh" : "Data/Lumine/LumineModel.obj",
+          "Visible" : true,
+          "bEditorOnly" : false,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
+      "ClassName" : "AStaticMeshActor",
+      "NonSceneComponents" : [{
+          "ClassName" : "URotatingMovementComponent",
+          "Properties" : {
+            "Auto Register Updated" : true,
+            "Rotation Rate" : [0.000000, 90.000000, 0.000000],
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
+        }],
+      "PrimitiveKey" : "89",
+      "RootComponent" : {
+        "Children" : [],
+        "ClassName" : "UStaticMeshComponent",
+        "Properties" : {
+          "Element 0" : {
+            "Path" : "Asset/Materials/Auto/Eyes.mat"
+          },
+          "Element 1" : {
+            "Path" : "Asset/Materials/Auto/EyeWhites.mat"
+          },
+          "Element 10" : {
+            "Path" : "Asset/Materials/Auto/Skirt.mat"
+          },
+          "Element 11" : {
+            "Path" : "Asset/Materials/Auto/Shoes.mat"
+          },
+          "Element 12" : {
+            "Path" : "Asset/Materials/Auto/Gloves.mat"
+          },
+          "Element 2" : {
+            "Path" : "Asset/Materials/Auto/Neck.mat"
+          },
+          "Element 3" : {
+            "Path" : "Asset/Materials/Auto/Face.mat"
+          },
+          "Element 4" : {
+            "Path" : "Asset/Materials/Auto/Hair.mat"
+          },
+          "Element 5" : {
+            "Path" : "Asset/Materials/Auto/Expression.mat"
+          },
+          "Element 6" : {
+            "Path" : "Asset/Materials/Auto/Skin.mat"
+          },
+          "Element 7" : {
+            "Path" : "Asset/Materials/Auto/Clothes.mat"
+          },
+          "Element 8" : {
+            "Path" : "Asset/Materials/Auto/Pants.mat"
+          },
+          "Element 9" : {
+            "Path" : "Asset/Materials/Auto/BackAccessory.mat"
+          },
+          "Location" : [2.298661, -9.892338, 1.285870],
+          "Rotation" : [0.000000, 90.000000, 0.000000],
+          "Scale" : [3.000000, 3.000000, 3.000000],
+          "Static Mesh" : "Data/Lumine/LumineModel.obj",
+          "Visible" : true,
+          "bEditorOnly" : false,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
+      "ClassName" : "AStaticMeshActor",
+      "NonSceneComponents" : [{
+          "ClassName" : "URotatingMovementComponent",
+          "Properties" : {
+            "Auto Register Updated" : true,
+            "Rotation Rate" : [0.000000, 90.000000, 0.000000],
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
+        }],
+      "PrimitiveKey" : "91",
+      "RootComponent" : {
+        "Children" : [],
+        "ClassName" : "UStaticMeshComponent",
+        "Properties" : {
+          "Element 0" : {
+            "Path" : "Asset/Materials/Auto/Eyes.mat"
+          },
+          "Element 1" : {
+            "Path" : "Asset/Materials/Auto/EyeWhites.mat"
+          },
+          "Element 10" : {
+            "Path" : "Asset/Materials/Auto/Skirt.mat"
+          },
+          "Element 11" : {
+            "Path" : "Asset/Materials/Auto/Shoes.mat"
+          },
+          "Element 12" : {
+            "Path" : "Asset/Materials/Auto/Gloves.mat"
+          },
+          "Element 2" : {
+            "Path" : "Asset/Materials/Auto/Neck.mat"
+          },
+          "Element 3" : {
+            "Path" : "Asset/Materials/Auto/Face.mat"
+          },
+          "Element 4" : {
+            "Path" : "Asset/Materials/Auto/Hair.mat"
+          },
+          "Element 5" : {
+            "Path" : "Asset/Materials/Auto/Expression.mat"
+          },
+          "Element 6" : {
+            "Path" : "Asset/Materials/Auto/Skin.mat"
+          },
+          "Element 7" : {
+            "Path" : "Asset/Materials/Auto/Clothes.mat"
+          },
+          "Element 8" : {
+            "Path" : "Asset/Materials/Auto/Pants.mat"
+          },
+          "Element 9" : {
+            "Path" : "Asset/Materials/Auto/BackAccessory.mat"
+          },
+          "Location" : [2.298661, -18.847713, 1.285870],
+          "Rotation" : [0.000000, 90.000000, 0.000000],
+          "Scale" : [3.000000, 3.000000, 3.000000],
+          "Static Mesh" : "Data/Lumine/LumineModel.obj",
+          "Visible" : true,
+          "bEditorOnly" : false,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
+      "ClassName" : "AStaticMeshActor",
+      "NonSceneComponents" : [{
+          "ClassName" : "URotatingMovementComponent",
+          "Properties" : {
+            "Auto Register Updated" : true,
+            "Rotation Rate" : [0.000000, 90.000000, 0.000000],
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
+        }],
+      "PrimitiveKey" : "93",
+      "RootComponent" : {
+        "Children" : [],
+        "ClassName" : "UStaticMeshComponent",
+        "Properties" : {
+          "Element 0" : {
+            "Path" : "Asset/Materials/Auto/Eyes.mat"
+          },
+          "Element 1" : {
+            "Path" : "Asset/Materials/Auto/EyeWhites.mat"
+          },
+          "Element 10" : {
+            "Path" : "Asset/Materials/Auto/Skirt.mat"
+          },
+          "Element 11" : {
+            "Path" : "Asset/Materials/Auto/Shoes.mat"
+          },
+          "Element 12" : {
+            "Path" : "Asset/Materials/Auto/Gloves.mat"
+          },
+          "Element 2" : {
+            "Path" : "Asset/Materials/Auto/Neck.mat"
+          },
+          "Element 3" : {
+            "Path" : "Asset/Materials/Auto/Face.mat"
+          },
+          "Element 4" : {
+            "Path" : "Asset/Materials/Auto/Hair.mat"
+          },
+          "Element 5" : {
+            "Path" : "Asset/Materials/Auto/Expression.mat"
+          },
+          "Element 6" : {
+            "Path" : "Asset/Materials/Auto/Skin.mat"
+          },
+          "Element 7" : {
+            "Path" : "Asset/Materials/Auto/Clothes.mat"
+          },
+          "Element 8" : {
+            "Path" : "Asset/Materials/Auto/Pants.mat"
+          },
+          "Element 9" : {
+            "Path" : "Asset/Materials/Auto/BackAccessory.mat"
+          },
+          "Location" : [2.298661, -27.297268, 1.285870],
+          "Rotation" : [0.000000, 90.000000, 0.000000],
+          "Scale" : [3.000000, 3.000000, 3.000000],
+          "Static Mesh" : "Data/Lumine/LumineModel.obj",
+          "Visible" : true,
+          "bEditorOnly" : false,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
+      "ClassName" : "AStaticMeshActor",
+      "NonSceneComponents" : [{
+          "ClassName" : "URotatingMovementComponent",
+          "Properties" : {
+            "Auto Register Updated" : true,
+            "Rotation Rate" : [0.000000, 90.000000, 0.000000],
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
+        }],
+      "PrimitiveKey" : "95",
+      "RootComponent" : {
+        "Children" : [],
+        "ClassName" : "UStaticMeshComponent",
+        "Properties" : {
+          "Element 0" : {
+            "Path" : "Asset/Materials/Auto/Eyes.mat"
+          },
+          "Element 1" : {
+            "Path" : "Asset/Materials/Auto/EyeWhites.mat"
+          },
+          "Element 10" : {
+            "Path" : "Asset/Materials/Auto/Skirt.mat"
+          },
+          "Element 11" : {
+            "Path" : "Asset/Materials/Auto/Shoes.mat"
+          },
+          "Element 12" : {
+            "Path" : "Asset/Materials/Auto/Gloves.mat"
+          },
+          "Element 2" : {
+            "Path" : "Asset/Materials/Auto/Neck.mat"
+          },
+          "Element 3" : {
+            "Path" : "Asset/Materials/Auto/Face.mat"
+          },
+          "Element 4" : {
+            "Path" : "Asset/Materials/Auto/Hair.mat"
+          },
+          "Element 5" : {
+            "Path" : "Asset/Materials/Auto/Expression.mat"
+          },
+          "Element 6" : {
+            "Path" : "Asset/Materials/Auto/Skin.mat"
+          },
+          "Element 7" : {
+            "Path" : "Asset/Materials/Auto/Clothes.mat"
+          },
+          "Element 8" : {
+            "Path" : "Asset/Materials/Auto/Pants.mat"
+          },
+          "Element 9" : {
+            "Path" : "Asset/Materials/Auto/BackAccessory.mat"
+          },
+          "Location" : [2.298661, -35.428654, 1.285870],
+          "Rotation" : [0.000000, 90.000000, 0.000000],
+          "Scale" : [3.000000, 3.000000, 3.000000],
+          "Static Mesh" : "Data/Lumine/LumineModel.obj",
+          "Visible" : true,
+          "bEditorOnly" : false,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
+      "ClassName" : "AStaticMeshActor",
+      "NonSceneComponents" : [{
+          "ClassName" : "URotatingMovementComponent",
+          "Properties" : {
+            "Auto Register Updated" : true,
+            "Rotation Rate" : [0.000000, 90.000000, 0.000000],
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
+        }],
+      "PrimitiveKey" : "97",
+      "RootComponent" : {
+        "Children" : [],
+        "ClassName" : "UStaticMeshComponent",
+        "Properties" : {
+          "Element 0" : {
+            "Path" : "Asset/Materials/Auto/Eyes.mat"
+          },
+          "Element 1" : {
+            "Path" : "Asset/Materials/Auto/EyeWhites.mat"
+          },
+          "Element 10" : {
+            "Path" : "Asset/Materials/Auto/Skirt.mat"
+          },
+          "Element 11" : {
+            "Path" : "Asset/Materials/Auto/Shoes.mat"
+          },
+          "Element 12" : {
+            "Path" : "Asset/Materials/Auto/Gloves.mat"
+          },
+          "Element 2" : {
+            "Path" : "Asset/Materials/Auto/Neck.mat"
+          },
+          "Element 3" : {
+            "Path" : "Asset/Materials/Auto/Face.mat"
+          },
+          "Element 4" : {
+            "Path" : "Asset/Materials/Auto/Hair.mat"
+          },
+          "Element 5" : {
+            "Path" : "Asset/Materials/Auto/Expression.mat"
+          },
+          "Element 6" : {
+            "Path" : "Asset/Materials/Auto/Skin.mat"
+          },
+          "Element 7" : {
+            "Path" : "Asset/Materials/Auto/Clothes.mat"
+          },
+          "Element 8" : {
+            "Path" : "Asset/Materials/Auto/Pants.mat"
+          },
+          "Element 9" : {
+            "Path" : "Asset/Materials/Auto/BackAccessory.mat"
+          },
+          "Location" : [2.298661, -43.866413, 1.285870],
+          "Rotation" : [0.000000, 90.000000, 0.000000],
+          "Scale" : [3.000000, 3.000000, 3.000000],
+          "Static Mesh" : "Data/Lumine/LumineModel.obj",
+          "Visible" : true,
+          "bEditorOnly" : false,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
+      "ClassName" : "AStaticMeshActor",
+      "NonSceneComponents" : [{
+          "ClassName" : "URotatingMovementComponent",
+          "Properties" : {
+            "Auto Register Updated" : true,
+            "Rotation Rate" : [0.000000, 90.000000, 0.000000],
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
+        }],
+      "PrimitiveKey" : "99",
+      "RootComponent" : {
+        "Children" : [],
+        "ClassName" : "UStaticMeshComponent",
+        "Properties" : {
+          "Element 0" : {
+            "Path" : "Asset/Materials/Auto/Eyes.mat"
+          },
+          "Element 1" : {
+            "Path" : "Asset/Materials/Auto/EyeWhites.mat"
+          },
+          "Element 10" : {
+            "Path" : "Asset/Materials/Auto/Skirt.mat"
+          },
+          "Element 11" : {
+            "Path" : "Asset/Materials/Auto/Shoes.mat"
+          },
+          "Element 12" : {
+            "Path" : "Asset/Materials/Auto/Gloves.mat"
+          },
+          "Element 2" : {
+            "Path" : "Asset/Materials/Auto/Neck.mat"
+          },
+          "Element 3" : {
+            "Path" : "Asset/Materials/Auto/Face.mat"
+          },
+          "Element 4" : {
+            "Path" : "Asset/Materials/Auto/Hair.mat"
+          },
+          "Element 5" : {
+            "Path" : "Asset/Materials/Auto/Expression.mat"
+          },
+          "Element 6" : {
+            "Path" : "Asset/Materials/Auto/Skin.mat"
+          },
+          "Element 7" : {
+            "Path" : "Asset/Materials/Auto/Clothes.mat"
+          },
+          "Element 8" : {
+            "Path" : "Asset/Materials/Auto/Pants.mat"
+          },
+          "Element 9" : {
+            "Path" : "Asset/Materials/Auto/BackAccessory.mat"
+          },
+          "Location" : [2.298661, -52.816433, 1.285870],
+          "Rotation" : [0.000000, 90.000000, 0.000000],
+          "Scale" : [3.000000, 3.000000, 3.000000],
+          "Static Mesh" : "Data/Lumine/LumineModel.obj",
+          "Visible" : true,
+          "bEditorOnly" : false,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
+      "ClassName" : "AStaticMeshActor",
+      "NonSceneComponents" : [{
+          "ClassName" : "URotatingMovementComponent",
+          "Properties" : {
+            "Auto Register Updated" : true,
+            "Rotation Rate" : [0.000000, 90.000000, 0.000000],
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
+        }],
+      "PrimitiveKey" : "101",
+      "RootComponent" : {
+        "Children" : [],
+        "ClassName" : "UStaticMeshComponent",
+        "Properties" : {
+          "Element 0" : {
+            "Path" : "Asset/Materials/Auto/Eyes.mat"
+          },
+          "Element 1" : {
+            "Path" : "Asset/Materials/Auto/EyeWhites.mat"
+          },
+          "Element 10" : {
+            "Path" : "Asset/Materials/Auto/Skirt.mat"
+          },
+          "Element 11" : {
+            "Path" : "Asset/Materials/Auto/Shoes.mat"
+          },
+          "Element 12" : {
+            "Path" : "Asset/Materials/Auto/Gloves.mat"
+          },
+          "Element 2" : {
+            "Path" : "Asset/Materials/Auto/Neck.mat"
+          },
+          "Element 3" : {
+            "Path" : "Asset/Materials/Auto/Face.mat"
+          },
+          "Element 4" : {
+            "Path" : "Asset/Materials/Auto/Hair.mat"
+          },
+          "Element 5" : {
+            "Path" : "Asset/Materials/Auto/Expression.mat"
+          },
+          "Element 6" : {
+            "Path" : "Asset/Materials/Auto/Skin.mat"
+          },
+          "Element 7" : {
+            "Path" : "Asset/Materials/Auto/Clothes.mat"
+          },
+          "Element 8" : {
+            "Path" : "Asset/Materials/Auto/Pants.mat"
+          },
+          "Element 9" : {
+            "Path" : "Asset/Materials/Auto/BackAccessory.mat"
+          },
+          "Location" : [2.298661, -61.539295, 1.285870],
+          "Rotation" : [0.000000, 90.000000, 0.000000],
+          "Scale" : [3.000000, 3.000000, 3.000000],
+          "Static Mesh" : "Data/Lumine/LumineModel.obj",
+          "Visible" : true,
+          "bEditorOnly" : false,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
+      "ClassName" : "AStaticMeshActor",
+      "NonSceneComponents" : [{
+          "ClassName" : "URotatingMovementComponent",
+          "Properties" : {
+            "Auto Register Updated" : true,
+            "Rotation Rate" : [0.000000, 90.000000, 0.000000],
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
+        }],
+      "PrimitiveKey" : "103",
+      "RootComponent" : {
+        "Children" : [],
+        "ClassName" : "UStaticMeshComponent",
+        "Properties" : {
+          "Element 0" : {
+            "Path" : "Asset/Materials/Auto/Eyes.mat"
+          },
+          "Element 1" : {
+            "Path" : "Asset/Materials/Auto/EyeWhites.mat"
+          },
+          "Element 10" : {
+            "Path" : "Asset/Materials/Auto/Skirt.mat"
+          },
+          "Element 11" : {
+            "Path" : "Asset/Materials/Auto/Shoes.mat"
+          },
+          "Element 12" : {
+            "Path" : "Asset/Materials/Auto/Gloves.mat"
+          },
+          "Element 2" : {
+            "Path" : "Asset/Materials/Auto/Neck.mat"
+          },
+          "Element 3" : {
+            "Path" : "Asset/Materials/Auto/Face.mat"
+          },
+          "Element 4" : {
+            "Path" : "Asset/Materials/Auto/Hair.mat"
+          },
+          "Element 5" : {
+            "Path" : "Asset/Materials/Auto/Expression.mat"
+          },
+          "Element 6" : {
+            "Path" : "Asset/Materials/Auto/Skin.mat"
+          },
+          "Element 7" : {
+            "Path" : "Asset/Materials/Auto/Clothes.mat"
+          },
+          "Element 8" : {
+            "Path" : "Asset/Materials/Auto/Pants.mat"
+          },
+          "Element 9" : {
+            "Path" : "Asset/Materials/Auto/BackAccessory.mat"
+          },
+          "Location" : [2.298661, -69.208328, 1.285870],
+          "Rotation" : [0.000000, 90.000000, 0.000000],
+          "Scale" : [3.000000, 3.000000, 3.000000],
+          "Static Mesh" : "Data/Lumine/LumineModel.obj",
+          "Visible" : true,
+          "bEditorOnly" : false,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
+      "ClassName" : "AStaticMeshActor",
+      "NonSceneComponents" : [{
+          "ClassName" : "URotatingMovementComponent",
+          "Properties" : {
+            "Auto Register Updated" : true,
+            "Rotation Rate" : [0.000000, 90.000000, 0.000000],
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
+        }],
+      "PrimitiveKey" : "105",
+      "RootComponent" : {
+        "Children" : [],
+        "ClassName" : "UStaticMeshComponent",
+        "Properties" : {
+          "Element 0" : {
+            "Path" : "Asset/Materials/Auto/Eyes.mat"
+          },
+          "Element 1" : {
+            "Path" : "Asset/Materials/Auto/EyeWhites.mat"
+          },
+          "Element 10" : {
+            "Path" : "Asset/Materials/Auto/Skirt.mat"
+          },
+          "Element 11" : {
+            "Path" : "Asset/Materials/Auto/Shoes.mat"
+          },
+          "Element 12" : {
+            "Path" : "Asset/Materials/Auto/Gloves.mat"
+          },
+          "Element 2" : {
+            "Path" : "Asset/Materials/Auto/Neck.mat"
+          },
+          "Element 3" : {
+            "Path" : "Asset/Materials/Auto/Face.mat"
+          },
+          "Element 4" : {
+            "Path" : "Asset/Materials/Auto/Hair.mat"
+          },
+          "Element 5" : {
+            "Path" : "Asset/Materials/Auto/Expression.mat"
+          },
+          "Element 6" : {
+            "Path" : "Asset/Materials/Auto/Skin.mat"
+          },
+          "Element 7" : {
+            "Path" : "Asset/Materials/Auto/Clothes.mat"
+          },
+          "Element 8" : {
+            "Path" : "Asset/Materials/Auto/Pants.mat"
+          },
+          "Element 9" : {
+            "Path" : "Asset/Materials/Auto/BackAccessory.mat"
+          },
+          "Location" : [2.298661, -77.953468, 1.285870],
+          "Rotation" : [0.000000, 90.000000, 0.000000],
+          "Scale" : [3.000000, 3.000000, 3.000000],
+          "Static Mesh" : "Data/Lumine/LumineModel.obj",
+          "Visible" : true,
+          "bEditorOnly" : false,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
+      "ClassName" : "AStaticMeshActor",
+      "NonSceneComponents" : [{
+          "ClassName" : "URotatingMovementComponent",
+          "Properties" : {
+            "Auto Register Updated" : true,
+            "Rotation Rate" : [0.000000, 90.000000, 0.000000],
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
+        }],
+      "PrimitiveKey" : "107",
+      "RootComponent" : {
+        "Children" : [],
+        "ClassName" : "UStaticMeshComponent",
+        "Properties" : {
+          "Element 0" : {
+            "Path" : "Asset/Materials/Auto/Eyes.mat"
+          },
+          "Element 1" : {
+            "Path" : "Asset/Materials/Auto/EyeWhites.mat"
+          },
+          "Element 10" : {
+            "Path" : "Asset/Materials/Auto/Skirt.mat"
+          },
+          "Element 11" : {
+            "Path" : "Asset/Materials/Auto/Shoes.mat"
+          },
+          "Element 12" : {
+            "Path" : "Asset/Materials/Auto/Gloves.mat"
+          },
+          "Element 2" : {
+            "Path" : "Asset/Materials/Auto/Neck.mat"
+          },
+          "Element 3" : {
+            "Path" : "Asset/Materials/Auto/Face.mat"
+          },
+          "Element 4" : {
+            "Path" : "Asset/Materials/Auto/Hair.mat"
+          },
+          "Element 5" : {
+            "Path" : "Asset/Materials/Auto/Expression.mat"
+          },
+          "Element 6" : {
+            "Path" : "Asset/Materials/Auto/Skin.mat"
+          },
+          "Element 7" : {
+            "Path" : "Asset/Materials/Auto/Clothes.mat"
+          },
+          "Element 8" : {
+            "Path" : "Asset/Materials/Auto/Pants.mat"
+          },
+          "Element 9" : {
+            "Path" : "Asset/Materials/Auto/BackAccessory.mat"
+          },
+          "Location" : [2.298661, -86.250053, 1.285870],
+          "Rotation" : [0.000000, 90.000000, 0.000000],
+          "Scale" : [3.000000, 3.000000, 3.000000],
+          "Static Mesh" : "Data/Lumine/LumineModel.obj",
+          "Visible" : true,
+          "bEditorOnly" : false,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
+      "ClassName" : "AStaticMeshActor",
+      "NonSceneComponents" : [{
+          "ClassName" : "URotatingMovementComponent",
+          "Properties" : {
+            "Auto Register Updated" : true,
+            "Rotation Rate" : [0.000000, 90.000000, 0.000000],
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
+        }],
+      "PrimitiveKey" : "109",
+      "RootComponent" : {
+        "Children" : [],
+        "ClassName" : "UStaticMeshComponent",
+        "Properties" : {
+          "Element 0" : {
+            "Path" : "Asset/Materials/Auto/Eyes.mat"
+          },
+          "Element 1" : {
+            "Path" : "Asset/Materials/Auto/EyeWhites.mat"
+          },
+          "Element 10" : {
+            "Path" : "Asset/Materials/Auto/Skirt.mat"
+          },
+          "Element 11" : {
+            "Path" : "Asset/Materials/Auto/Shoes.mat"
+          },
+          "Element 12" : {
+            "Path" : "Asset/Materials/Auto/Gloves.mat"
+          },
+          "Element 2" : {
+            "Path" : "Asset/Materials/Auto/Neck.mat"
+          },
+          "Element 3" : {
+            "Path" : "Asset/Materials/Auto/Face.mat"
+          },
+          "Element 4" : {
+            "Path" : "Asset/Materials/Auto/Hair.mat"
+          },
+          "Element 5" : {
+            "Path" : "Asset/Materials/Auto/Expression.mat"
+          },
+          "Element 6" : {
+            "Path" : "Asset/Materials/Auto/Skin.mat"
+          },
+          "Element 7" : {
+            "Path" : "Asset/Materials/Auto/Clothes.mat"
+          },
+          "Element 8" : {
+            "Path" : "Asset/Materials/Auto/Pants.mat"
+          },
+          "Element 9" : {
+            "Path" : "Asset/Materials/Auto/BackAccessory.mat"
+          },
+          "Location" : [2.298661, -95.284859, 1.285870],
+          "Rotation" : [0.000000, 90.000000, 0.000000],
+          "Scale" : [3.000000, 3.000000, 3.000000],
+          "Static Mesh" : "Data/Lumine/LumineModel.obj",
+          "Visible" : true,
+          "bEditorOnly" : false,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
+      "ClassName" : "AStaticMeshActor",
       "NonSceneComponents" : [],
-      "PrimitiveKey" : "61",
+      "PrimitiveKey" : "111",
       "RootComponent" : {
         "Children" : [],
         "ClassName" : "UStaticMeshComponent",
@@ -31,7 +941,7 @@
             "bTickEnable" : true
           }
         }],
-      "PrimitiveKey" : "66",
+      "PrimitiveKey" : "116",
       "RootComponent" : {
         "Children" : [],
         "ClassName" : "UStaticMeshComponent",
@@ -88,7 +998,7 @@
     }, {
       "ClassName" : "AStaticMeshActor",
       "NonSceneComponents" : [],
-      "PrimitiveKey" : "85",
+      "PrimitiveKey" : "118",
       "RootComponent" : {
         "Children" : [],
         "ClassName" : "UStaticMeshComponent",
@@ -109,7 +1019,7 @@
     }, {
       "ClassName" : "AStaticMeshActor",
       "NonSceneComponents" : [],
-      "PrimitiveKey" : "87",
+      "PrimitiveKey" : "120",
       "RootComponent" : {
         "Children" : [],
         "ClassName" : "UStaticMeshComponent",
@@ -128,90 +1038,6 @@
       },
       "bVisible" : true
     }, {
-      "ClassName" : "APointLightActor",
-      "NonSceneComponents" : [],
-      "RootComponent" : {
-        "Children" : [{
-            "Children" : [],
-            "ClassName" : "UPointLightComponent",
-            "Properties" : {
-              "AttenuationRadius" : 6.480000,
-              "Cast Shadows" : true,
-              "Color" : [0.129872, 0.110559, 0.873418, 1.000000],
-              "Intensity" : 2.000000,
-              "LightFalloffExponent" : 1.000000,
-              "Location" : [0.000000, 0.000000, 0.000000],
-              "Rotation" : [0.000000, 0.000000, 0.000000],
-              "Scale" : [1.000000, 1.000000, 1.000000],
-              "Shadow Bias" : 0.020000,
-              "Shadow Resolution Scale" : 2.000000,
-              "Shadow Sharpen" : 0.350000,
-              "Shadow Slope Bias" : 0.000000,
-              "Visible" : true,
-              "bEditorOnly" : false,
-              "bTickEnable" : true
-            }
-          }],
-        "ClassName" : "UBillboardComponent",
-        "Properties" : {
-          "Height" : 1.000000,
-          "Location" : [1.375274, -3.288431, 3.868886],
-          "Material" : {
-            "Path" : "Asset/Materials/Editor/PointLight.mat"
-          },
-          "Rotation" : [0.000000, 0.000000, 0.000000],
-          "Scale" : [1.000000, 1.000000, 1.000000],
-          "Visible" : true,
-          "Width" : 1.000000,
-          "bEditorOnly" : true,
-          "bTickEnable" : true
-        }
-      },
-      "bVisible" : true
-    }, {
-      "ClassName" : "ASpotLightActor",
-      "NonSceneComponents" : [],
-      "RootComponent" : {
-        "Children" : [{
-            "Children" : [],
-            "ClassName" : "USpotLightComponent",
-            "Properties" : {
-              "AttenuationRadius" : 9.320000,
-              "Cast Shadows" : true,
-              "Color" : [1.000000, 1.000000, 1.000000, 1.000000],
-              "InnerConeAngle" : 20.000000,
-              "Intensity" : 1.000000,
-              "LightFalloffExponent" : 1.000000,
-              "Location" : [0.000000, 0.000000, 0.000000],
-              "OuterConeAngle" : 40.000000,
-              "Rotation" : [0.000000, 0.000000, 0.000000],
-              "Scale" : [1.000000, 1.000000, 1.000000],
-              "Shadow Bias" : 0.000000,
-              "Shadow Resolution Scale" : 1.000000,
-              "Shadow Sharpen" : 1.000000,
-              "Shadow Slope Bias" : 0.000000,
-              "Visible" : true,
-              "bEditorOnly" : false,
-              "bTickEnable" : true
-            }
-          }],
-        "ClassName" : "UBillboardComponent",
-        "Properties" : {
-          "Height" : 1.000000,
-          "Location" : [2.970187, -4.386452, 6.012697],
-          "Material" : {
-            "Path" : "Asset/Materials/Editor/SpotLight.mat"
-          },
-          "Rotation" : [0.000000, 164.051331, -65.213707],
-          "Scale" : [1.000000, 1.000000, 1.000000],
-          "Visible" : true,
-          "Width" : 1.000000,
-          "bEditorOnly" : true,
-          "bTickEnable" : true
-        }
-      },
-      "bVisible" : true
-    }, {
       "ClassName" : "AStaticMeshActor",
       "NonSceneComponents" : [{
           "ClassName" : "URotatingMovementComponent",
@@ -222,7 +1048,7 @@
             "bTickEnable" : true
           }
         }],
-      "PrimitiveKey" : "106",
+      "PrimitiveKey" : "122",
       "RootComponent" : {
         "Children" : [],
         "ClassName" : "UStaticMeshComponent",
@@ -267,264 +1093,11 @@
             "Path" : "Asset/Materials/Auto/BackAccessory.mat"
           },
           "Location" : [2.298661, 2.931827, 1.285870],
-          "Rotation" : [-0.000000, 89.999992, 0.000000],
+          "Rotation" : [0.000000, 90.000000, 0.000000],
           "Scale" : [3.000000, 3.000000, 3.000000],
           "Static Mesh" : "Data/Lumine/LumineModel.obj",
           "Visible" : true,
           "bEditorOnly" : false,
-          "bTickEnable" : true
-        }
-      },
-      "bVisible" : true
-    }, {
-      "ClassName" : "APointLightActor",
-      "NonSceneComponents" : [],
-      "RootComponent" : {
-        "Children" : [{
-            "Children" : [],
-            "ClassName" : "UPointLightComponent",
-            "Properties" : {
-              "AttenuationRadius" : 6.480000,
-              "Cast Shadows" : true,
-              "Color" : [0.129872, 0.110559, 0.873418, 1.000000],
-              "Intensity" : 2.000000,
-              "LightFalloffExponent" : 1.000000,
-              "Location" : [0.000000, 0.000000, 0.000000],
-              "Rotation" : [-0.000000, 0.000000, 0.000000],
-              "Scale" : [1.000000, 1.000000, 1.000000],
-              "Shadow Bias" : 0.020000,
-              "Shadow Resolution Scale" : 1.000000,
-              "Shadow Sharpen" : 0.350000,
-              "Shadow Slope Bias" : 0.000000,
-              "Visible" : true,
-              "bEditorOnly" : false,
-              "bTickEnable" : true
-            }
-          }],
-        "ClassName" : "UBillboardComponent",
-        "Properties" : {
-          "Height" : 1.000000,
-          "Location" : [1.375274, 2.909348, 3.868886],
-          "Material" : {
-            "Path" : "Asset/Materials/Editor/PointLight.mat"
-          },
-          "Rotation" : [-0.000000, 0.000000, 0.000000],
-          "Scale" : [1.000000, 1.000000, 1.000000],
-          "Visible" : true,
-          "Width" : 1.000000,
-          "bEditorOnly" : true,
-          "bTickEnable" : true
-        }
-      },
-      "bVisible" : true
-    }, {
-      "ClassName" : "AStaticMeshActor",
-      "NonSceneComponents" : [{
-          "ClassName" : "URotatingMovementComponent",
-          "Properties" : {
-            "Auto Register Updated" : true,
-            "Rotation Rate" : [0.000000, 90.000000, 0.000000],
-            "bEditorOnly" : false,
-            "bTickEnable" : true
-          }
-        }],
-      "PrimitiveKey" : "112",
-      "RootComponent" : {
-        "Children" : [],
-        "ClassName" : "UStaticMeshComponent",
-        "Properties" : {
-          "Element 0" : {
-            "Path" : "Asset/Materials/Auto/Eyes.mat"
-          },
-          "Element 1" : {
-            "Path" : "Asset/Materials/Auto/EyeWhites.mat"
-          },
-          "Element 10" : {
-            "Path" : "Asset/Materials/Auto/Skirt.mat"
-          },
-          "Element 11" : {
-            "Path" : "Asset/Materials/Auto/Shoes.mat"
-          },
-          "Element 12" : {
-            "Path" : "Asset/Materials/Auto/Gloves.mat"
-          },
-          "Element 2" : {
-            "Path" : "Asset/Materials/Auto/Neck.mat"
-          },
-          "Element 3" : {
-            "Path" : "Asset/Materials/Auto/Face.mat"
-          },
-          "Element 4" : {
-            "Path" : "Asset/Materials/Auto/Hair.mat"
-          },
-          "Element 5" : {
-            "Path" : "Asset/Materials/Auto/Expression.mat"
-          },
-          "Element 6" : {
-            "Path" : "Asset/Materials/Auto/Skin.mat"
-          },
-          "Element 7" : {
-            "Path" : "Asset/Materials/Auto/Clothes.mat"
-          },
-          "Element 8" : {
-            "Path" : "Asset/Materials/Auto/Pants.mat"
-          },
-          "Element 9" : {
-            "Path" : "Asset/Materials/Auto/BackAccessory.mat"
-          },
-          "Location" : [2.298661, 10.249503, 1.285870],
-          "Rotation" : [-0.000000, 89.999992, 0.000000],
-          "Scale" : [3.000000, 3.000000, 3.000000],
-          "Static Mesh" : "Data/Lumine/LumineModel.obj",
-          "Visible" : true,
-          "bEditorOnly" : false,
-          "bTickEnable" : true
-        }
-      },
-      "bVisible" : true
-    }, {
-      "ClassName" : "APointLightActor",
-      "NonSceneComponents" : [],
-      "RootComponent" : {
-        "Children" : [{
-            "Children" : [],
-            "ClassName" : "UPointLightComponent",
-            "Properties" : {
-              "AttenuationRadius" : 6.480000,
-              "Cast Shadows" : true,
-              "Color" : [0.129872, 0.110559, 0.873418, 1.000000],
-              "Intensity" : 2.000000,
-              "LightFalloffExponent" : 1.000000,
-              "Location" : [0.000000, 0.000000, 0.000000],
-              "Rotation" : [-0.000000, 0.000000, 0.000000],
-              "Scale" : [1.000000, 1.000000, 1.000000],
-              "Shadow Bias" : 0.020000,
-              "Shadow Resolution Scale" : 1.000000,
-              "Shadow Sharpen" : 0.350000,
-              "Shadow Slope Bias" : 0.000000,
-              "Visible" : true,
-              "bEditorOnly" : false,
-              "bTickEnable" : true
-            }
-          }],
-        "ClassName" : "UBillboardComponent",
-        "Properties" : {
-          "Height" : 1.000000,
-          "Location" : [1.375274, 10.227024, 3.868886],
-          "Material" : {
-            "Path" : "Asset/Materials/Editor/PointLight.mat"
-          },
-          "Rotation" : [-0.000000, 0.000000, 0.000000],
-          "Scale" : [1.000000, 1.000000, 1.000000],
-          "Visible" : true,
-          "Width" : 1.000000,
-          "bEditorOnly" : true,
-          "bTickEnable" : true
-        }
-      },
-      "bVisible" : true
-    }, {
-      "ClassName" : "AStaticMeshActor",
-      "NonSceneComponents" : [{
-          "ClassName" : "URotatingMovementComponent",
-          "Properties" : {
-            "Auto Register Updated" : true,
-            "Rotation Rate" : [0.000000, 90.000000, 0.000000],
-            "bEditorOnly" : false,
-            "bTickEnable" : true
-          }
-        }],
-      "PrimitiveKey" : "118",
-      "RootComponent" : {
-        "Children" : [],
-        "ClassName" : "UStaticMeshComponent",
-        "Properties" : {
-          "Element 0" : {
-            "Path" : "Asset/Materials/Auto/Eyes.mat"
-          },
-          "Element 1" : {
-            "Path" : "Asset/Materials/Auto/EyeWhites.mat"
-          },
-          "Element 10" : {
-            "Path" : "Asset/Materials/Auto/Skirt.mat"
-          },
-          "Element 11" : {
-            "Path" : "Asset/Materials/Auto/Shoes.mat"
-          },
-          "Element 12" : {
-            "Path" : "Asset/Materials/Auto/Gloves.mat"
-          },
-          "Element 2" : {
-            "Path" : "Asset/Materials/Auto/Neck.mat"
-          },
-          "Element 3" : {
-            "Path" : "Asset/Materials/Auto/Face.mat"
-          },
-          "Element 4" : {
-            "Path" : "Asset/Materials/Auto/Hair.mat"
-          },
-          "Element 5" : {
-            "Path" : "Asset/Materials/Auto/Expression.mat"
-          },
-          "Element 6" : {
-            "Path" : "Asset/Materials/Auto/Skin.mat"
-          },
-          "Element 7" : {
-            "Path" : "Asset/Materials/Auto/Clothes.mat"
-          },
-          "Element 8" : {
-            "Path" : "Asset/Materials/Auto/Pants.mat"
-          },
-          "Element 9" : {
-            "Path" : "Asset/Materials/Auto/BackAccessory.mat"
-          },
-          "Location" : [2.298661, 17.816566, 1.285870],
-          "Rotation" : [-0.000000, 89.999992, 0.000000],
-          "Scale" : [3.000000, 3.000000, 3.000000],
-          "Static Mesh" : "Data/Lumine/LumineModel.obj",
-          "Visible" : true,
-          "bEditorOnly" : false,
-          "bTickEnable" : true
-        }
-      },
-      "bVisible" : true
-    }, {
-      "ClassName" : "APointLightActor",
-      "NonSceneComponents" : [],
-      "RootComponent" : {
-        "Children" : [{
-            "Children" : [],
-            "ClassName" : "UPointLightComponent",
-            "Properties" : {
-              "AttenuationRadius" : 6.480000,
-              "Cast Shadows" : true,
-              "Color" : [0.129872, 0.110559, 0.873418, 1.000000],
-              "Intensity" : 2.000000,
-              "LightFalloffExponent" : 1.000000,
-              "Location" : [0.000000, 0.000000, 0.000000],
-              "Rotation" : [-0.000000, 0.000000, 0.000000],
-              "Scale" : [1.000000, 1.000000, 1.000000],
-              "Shadow Bias" : 0.020000,
-              "Shadow Resolution Scale" : 1.000000,
-              "Shadow Sharpen" : 0.350000,
-              "Shadow Slope Bias" : 0.000000,
-              "Visible" : true,
-              "bEditorOnly" : false,
-              "bTickEnable" : true
-            }
-          }],
-        "ClassName" : "UBillboardComponent",
-        "Properties" : {
-          "Height" : 1.000000,
-          "Location" : [1.375274, 17.794086, 3.868886],
-          "Material" : {
-            "Path" : "Asset/Materials/Editor/PointLight.mat"
-          },
-          "Rotation" : [-0.000000, 0.000000, 0.000000],
-          "Scale" : [1.000000, 1.000000, 1.000000],
-          "Visible" : true,
-          "Width" : 1.000000,
-          "bEditorOnly" : true,
           "bTickEnable" : true
         }
       },
@@ -584,8 +1157,8 @@
           "Element 9" : {
             "Path" : "Asset/Materials/Auto/BackAccessory.mat"
           },
-          "Location" : [2.298661, 25.431286, 1.285870],
-          "Rotation" : [-0.000000, 89.999992, 0.000000],
+          "Location" : [2.298661, 10.249503, 1.285870],
+          "Rotation" : [0.000000, 90.000000, 0.000000],
           "Scale" : [3.000000, 3.000000, 3.000000],
           "Static Mesh" : "Data/Lumine/LumineModel.obj",
           "Visible" : true,
@@ -595,42 +1168,131 @@
       },
       "bVisible" : true
     }, {
-      "ClassName" : "APointLightActor",
-      "NonSceneComponents" : [],
+      "ClassName" : "AStaticMeshActor",
+      "NonSceneComponents" : [{
+          "ClassName" : "URotatingMovementComponent",
+          "Properties" : {
+            "Auto Register Updated" : true,
+            "Rotation Rate" : [0.000000, 90.000000, 0.000000],
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
+        }],
+      "PrimitiveKey" : "126",
       "RootComponent" : {
-        "Children" : [{
-            "Children" : [],
-            "ClassName" : "UPointLightComponent",
-            "Properties" : {
-              "AttenuationRadius" : 6.480000,
-              "Cast Shadows" : true,
-              "Color" : [0.129872, 0.110559, 0.873418, 1.000000],
-              "Intensity" : 2.000000,
-              "LightFalloffExponent" : 1.000000,
-              "Location" : [0.000000, 0.000000, 0.000000],
-              "Rotation" : [-0.000000, 0.000000, 0.000000],
-              "Scale" : [1.000000, 1.000000, 1.000000],
-              "Shadow Bias" : 0.020000,
-              "Shadow Resolution Scale" : 1.000000,
-              "Shadow Sharpen" : 0.350000,
-              "Shadow Slope Bias" : 0.000000,
-              "Visible" : true,
-              "bEditorOnly" : false,
-              "bTickEnable" : true
-            }
-          }],
-        "ClassName" : "UBillboardComponent",
+        "Children" : [],
+        "ClassName" : "UStaticMeshComponent",
         "Properties" : {
-          "Height" : 1.000000,
-          "Location" : [1.375274, 25.408806, 3.868886],
-          "Material" : {
-            "Path" : "Asset/Materials/Editor/PointLight.mat"
+          "Element 0" : {
+            "Path" : "Asset/Materials/Auto/Eyes.mat"
           },
-          "Rotation" : [-0.000000, 0.000000, 0.000000],
-          "Scale" : [1.000000, 1.000000, 1.000000],
+          "Element 1" : {
+            "Path" : "Asset/Materials/Auto/EyeWhites.mat"
+          },
+          "Element 10" : {
+            "Path" : "Asset/Materials/Auto/Skirt.mat"
+          },
+          "Element 11" : {
+            "Path" : "Asset/Materials/Auto/Shoes.mat"
+          },
+          "Element 12" : {
+            "Path" : "Asset/Materials/Auto/Gloves.mat"
+          },
+          "Element 2" : {
+            "Path" : "Asset/Materials/Auto/Neck.mat"
+          },
+          "Element 3" : {
+            "Path" : "Asset/Materials/Auto/Face.mat"
+          },
+          "Element 4" : {
+            "Path" : "Asset/Materials/Auto/Hair.mat"
+          },
+          "Element 5" : {
+            "Path" : "Asset/Materials/Auto/Expression.mat"
+          },
+          "Element 6" : {
+            "Path" : "Asset/Materials/Auto/Skin.mat"
+          },
+          "Element 7" : {
+            "Path" : "Asset/Materials/Auto/Clothes.mat"
+          },
+          "Element 8" : {
+            "Path" : "Asset/Materials/Auto/Pants.mat"
+          },
+          "Element 9" : {
+            "Path" : "Asset/Materials/Auto/BackAccessory.mat"
+          },
+          "Location" : [2.298661, 17.816566, 1.285870],
+          "Rotation" : [0.000000, 90.000000, 0.000000],
+          "Scale" : [3.000000, 3.000000, 3.000000],
+          "Static Mesh" : "Data/Lumine/LumineModel.obj",
           "Visible" : true,
-          "Width" : 1.000000,
-          "bEditorOnly" : true,
+          "bEditorOnly" : false,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
+      "ClassName" : "AStaticMeshActor",
+      "NonSceneComponents" : [{
+          "ClassName" : "URotatingMovementComponent",
+          "Properties" : {
+            "Auto Register Updated" : true,
+            "Rotation Rate" : [0.000000, 90.000000, 0.000000],
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
+        }],
+      "PrimitiveKey" : "128",
+      "RootComponent" : {
+        "Children" : [],
+        "ClassName" : "UStaticMeshComponent",
+        "Properties" : {
+          "Element 0" : {
+            "Path" : "Asset/Materials/Auto/Eyes.mat"
+          },
+          "Element 1" : {
+            "Path" : "Asset/Materials/Auto/EyeWhites.mat"
+          },
+          "Element 10" : {
+            "Path" : "Asset/Materials/Auto/Skirt.mat"
+          },
+          "Element 11" : {
+            "Path" : "Asset/Materials/Auto/Shoes.mat"
+          },
+          "Element 12" : {
+            "Path" : "Asset/Materials/Auto/Gloves.mat"
+          },
+          "Element 2" : {
+            "Path" : "Asset/Materials/Auto/Neck.mat"
+          },
+          "Element 3" : {
+            "Path" : "Asset/Materials/Auto/Face.mat"
+          },
+          "Element 4" : {
+            "Path" : "Asset/Materials/Auto/Hair.mat"
+          },
+          "Element 5" : {
+            "Path" : "Asset/Materials/Auto/Expression.mat"
+          },
+          "Element 6" : {
+            "Path" : "Asset/Materials/Auto/Skin.mat"
+          },
+          "Element 7" : {
+            "Path" : "Asset/Materials/Auto/Clothes.mat"
+          },
+          "Element 8" : {
+            "Path" : "Asset/Materials/Auto/Pants.mat"
+          },
+          "Element 9" : {
+            "Path" : "Asset/Materials/Auto/BackAccessory.mat"
+          },
+          "Location" : [2.298661, 25.431286, 1.285870],
+          "Rotation" : [0.000000, 90.000000, 0.000000],
+          "Scale" : [3.000000, 3.000000, 3.000000],
+          "Static Mesh" : "Data/Lumine/LumineModel.obj",
+          "Visible" : true,
+          "bEditorOnly" : false,
           "bTickEnable" : true
         }
       },
@@ -691,7 +1353,7 @@
             "Path" : "Asset/Materials/Auto/BackAccessory.mat"
           },
           "Location" : [2.298661, 32.541897, 1.285870],
-          "Rotation" : [-0.000000, 89.999992, 0.000000],
+          "Rotation" : [0.000000, 90.000000, 0.000000],
           "Scale" : [3.000000, 3.000000, 3.000000],
           "Static Mesh" : "Data/Lumine/LumineModel.obj",
           "Visible" : true,
@@ -701,42 +1363,131 @@
       },
       "bVisible" : true
     }, {
-      "ClassName" : "APointLightActor",
-      "NonSceneComponents" : [],
+      "ClassName" : "AStaticMeshActor",
+      "NonSceneComponents" : [{
+          "ClassName" : "URotatingMovementComponent",
+          "Properties" : {
+            "Auto Register Updated" : true,
+            "Rotation Rate" : [0.000000, 90.000000, 0.000000],
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
+        }],
+      "PrimitiveKey" : "132",
       "RootComponent" : {
-        "Children" : [{
-            "Children" : [],
-            "ClassName" : "UPointLightComponent",
-            "Properties" : {
-              "AttenuationRadius" : 6.480000,
-              "Cast Shadows" : true,
-              "Color" : [0.129872, 0.110559, 0.873418, 1.000000],
-              "Intensity" : 2.000000,
-              "LightFalloffExponent" : 1.000000,
-              "Location" : [0.000000, 0.000000, 0.000000],
-              "Rotation" : [-0.000000, 0.000000, 0.000000],
-              "Scale" : [1.000000, 1.000000, 1.000000],
-              "Shadow Bias" : 0.020000,
-              "Shadow Resolution Scale" : 1.000000,
-              "Shadow Sharpen" : 0.350000,
-              "Shadow Slope Bias" : 0.000000,
-              "Visible" : true,
-              "bEditorOnly" : false,
-              "bTickEnable" : true
-            }
-          }],
-        "ClassName" : "UBillboardComponent",
+        "Children" : [],
+        "ClassName" : "UStaticMeshComponent",
         "Properties" : {
-          "Height" : 1.000000,
-          "Location" : [1.375274, 32.519417, 3.868886],
-          "Material" : {
-            "Path" : "Asset/Materials/Editor/PointLight.mat"
+          "Element 0" : {
+            "Path" : "Asset/Materials/Auto/Eyes.mat"
           },
-          "Rotation" : [-0.000000, 0.000000, 0.000000],
-          "Scale" : [1.000000, 1.000000, 1.000000],
+          "Element 1" : {
+            "Path" : "Asset/Materials/Auto/EyeWhites.mat"
+          },
+          "Element 10" : {
+            "Path" : "Asset/Materials/Auto/Skirt.mat"
+          },
+          "Element 11" : {
+            "Path" : "Asset/Materials/Auto/Shoes.mat"
+          },
+          "Element 12" : {
+            "Path" : "Asset/Materials/Auto/Gloves.mat"
+          },
+          "Element 2" : {
+            "Path" : "Asset/Materials/Auto/Neck.mat"
+          },
+          "Element 3" : {
+            "Path" : "Asset/Materials/Auto/Face.mat"
+          },
+          "Element 4" : {
+            "Path" : "Asset/Materials/Auto/Hair.mat"
+          },
+          "Element 5" : {
+            "Path" : "Asset/Materials/Auto/Expression.mat"
+          },
+          "Element 6" : {
+            "Path" : "Asset/Materials/Auto/Skin.mat"
+          },
+          "Element 7" : {
+            "Path" : "Asset/Materials/Auto/Clothes.mat"
+          },
+          "Element 8" : {
+            "Path" : "Asset/Materials/Auto/Pants.mat"
+          },
+          "Element 9" : {
+            "Path" : "Asset/Materials/Auto/BackAccessory.mat"
+          },
+          "Location" : [2.298661, 39.712261, 1.285870],
+          "Rotation" : [0.000000, 90.000000, 0.000000],
+          "Scale" : [3.000000, 3.000000, 3.000000],
+          "Static Mesh" : "Data/Lumine/LumineModel.obj",
           "Visible" : true,
-          "Width" : 1.000000,
-          "bEditorOnly" : true,
+          "bEditorOnly" : false,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
+      "ClassName" : "AStaticMeshActor",
+      "NonSceneComponents" : [{
+          "ClassName" : "URotatingMovementComponent",
+          "Properties" : {
+            "Auto Register Updated" : true,
+            "Rotation Rate" : [0.000000, 90.000000, 0.000000],
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
+        }],
+      "PrimitiveKey" : "134",
+      "RootComponent" : {
+        "Children" : [],
+        "ClassName" : "UStaticMeshComponent",
+        "Properties" : {
+          "Element 0" : {
+            "Path" : "Asset/Materials/Auto/Eyes.mat"
+          },
+          "Element 1" : {
+            "Path" : "Asset/Materials/Auto/EyeWhites.mat"
+          },
+          "Element 10" : {
+            "Path" : "Asset/Materials/Auto/Skirt.mat"
+          },
+          "Element 11" : {
+            "Path" : "Asset/Materials/Auto/Shoes.mat"
+          },
+          "Element 12" : {
+            "Path" : "Asset/Materials/Auto/Gloves.mat"
+          },
+          "Element 2" : {
+            "Path" : "Asset/Materials/Auto/Neck.mat"
+          },
+          "Element 3" : {
+            "Path" : "Asset/Materials/Auto/Face.mat"
+          },
+          "Element 4" : {
+            "Path" : "Asset/Materials/Auto/Hair.mat"
+          },
+          "Element 5" : {
+            "Path" : "Asset/Materials/Auto/Expression.mat"
+          },
+          "Element 6" : {
+            "Path" : "Asset/Materials/Auto/Skin.mat"
+          },
+          "Element 7" : {
+            "Path" : "Asset/Materials/Auto/Clothes.mat"
+          },
+          "Element 8" : {
+            "Path" : "Asset/Materials/Auto/Pants.mat"
+          },
+          "Element 9" : {
+            "Path" : "Asset/Materials/Auto/BackAccessory.mat"
+          },
+          "Location" : [2.298661, 48.630665, 1.285870],
+          "Rotation" : [0.000000, 90.000000, 0.000000],
+          "Scale" : [3.000000, 3.000000, 3.000000],
+          "Static Mesh" : "Data/Lumine/LumineModel.obj",
+          "Visible" : true,
+          "bEditorOnly" : false,
           "bTickEnable" : true
         }
       },
@@ -796,265 +1547,12 @@
           "Element 9" : {
             "Path" : "Asset/Materials/Auto/BackAccessory.mat"
           },
-          "Location" : [2.298661, 39.712261, 1.285870],
-          "Rotation" : [-0.000000, 89.999992, 0.000000],
-          "Scale" : [3.000000, 3.000000, 3.000000],
-          "Static Mesh" : "Data/Lumine/LumineModel.obj",
-          "Visible" : true,
-          "bEditorOnly" : false,
-          "bTickEnable" : true
-        }
-      },
-      "bVisible" : true
-    }, {
-      "ClassName" : "APointLightActor",
-      "NonSceneComponents" : [],
-      "RootComponent" : {
-        "Children" : [{
-            "Children" : [],
-            "ClassName" : "UPointLightComponent",
-            "Properties" : {
-              "AttenuationRadius" : 6.480000,
-              "Cast Shadows" : true,
-              "Color" : [0.129872, 0.110559, 0.873418, 1.000000],
-              "Intensity" : 2.000000,
-              "LightFalloffExponent" : 1.000000,
-              "Location" : [0.000000, 0.000000, 0.000000],
-              "Rotation" : [-0.000000, 0.000000, 0.000000],
-              "Scale" : [1.000000, 1.000000, 1.000000],
-              "Shadow Bias" : 0.020000,
-              "Shadow Resolution Scale" : 1.000000,
-              "Shadow Sharpen" : 0.350000,
-              "Shadow Slope Bias" : 0.000000,
-              "Visible" : true,
-              "bEditorOnly" : false,
-              "bTickEnable" : true
-            }
-          }],
-        "ClassName" : "UBillboardComponent",
-        "Properties" : {
-          "Height" : 1.000000,
-          "Location" : [1.375274, 39.689781, 3.868886],
-          "Material" : {
-            "Path" : "Asset/Materials/Editor/PointLight.mat"
-          },
-          "Rotation" : [-0.000000, 0.000000, 0.000000],
-          "Scale" : [1.000000, 1.000000, 1.000000],
-          "Visible" : true,
-          "Width" : 1.000000,
-          "bEditorOnly" : true,
-          "bTickEnable" : true
-        }
-      },
-      "bVisible" : true
-    }, {
-      "ClassName" : "AStaticMeshActor",
-      "NonSceneComponents" : [{
-          "ClassName" : "URotatingMovementComponent",
-          "Properties" : {
-            "Auto Register Updated" : true,
-            "Rotation Rate" : [0.000000, 90.000000, 0.000000],
-            "bEditorOnly" : false,
-            "bTickEnable" : true
-          }
-        }],
-      "PrimitiveKey" : "142",
-      "RootComponent" : {
-        "Children" : [],
-        "ClassName" : "UStaticMeshComponent",
-        "Properties" : {
-          "Element 0" : {
-            "Path" : "Asset/Materials/Auto/Eyes.mat"
-          },
-          "Element 1" : {
-            "Path" : "Asset/Materials/Auto/EyeWhites.mat"
-          },
-          "Element 10" : {
-            "Path" : "Asset/Materials/Auto/Skirt.mat"
-          },
-          "Element 11" : {
-            "Path" : "Asset/Materials/Auto/Shoes.mat"
-          },
-          "Element 12" : {
-            "Path" : "Asset/Materials/Auto/Gloves.mat"
-          },
-          "Element 2" : {
-            "Path" : "Asset/Materials/Auto/Neck.mat"
-          },
-          "Element 3" : {
-            "Path" : "Asset/Materials/Auto/Face.mat"
-          },
-          "Element 4" : {
-            "Path" : "Asset/Materials/Auto/Hair.mat"
-          },
-          "Element 5" : {
-            "Path" : "Asset/Materials/Auto/Expression.mat"
-          },
-          "Element 6" : {
-            "Path" : "Asset/Materials/Auto/Skin.mat"
-          },
-          "Element 7" : {
-            "Path" : "Asset/Materials/Auto/Clothes.mat"
-          },
-          "Element 8" : {
-            "Path" : "Asset/Materials/Auto/Pants.mat"
-          },
-          "Element 9" : {
-            "Path" : "Asset/Materials/Auto/BackAccessory.mat"
-          },
-          "Location" : [2.298661, 48.630665, 1.285870],
-          "Rotation" : [-0.000000, 89.999992, 0.000000],
-          "Scale" : [3.000000, 3.000000, 3.000000],
-          "Static Mesh" : "Data/Lumine/LumineModel.obj",
-          "Visible" : true,
-          "bEditorOnly" : false,
-          "bTickEnable" : true
-        }
-      },
-      "bVisible" : true
-    }, {
-      "ClassName" : "APointLightActor",
-      "NonSceneComponents" : [],
-      "RootComponent" : {
-        "Children" : [{
-            "Children" : [],
-            "ClassName" : "UPointLightComponent",
-            "Properties" : {
-              "AttenuationRadius" : 6.480000,
-              "Cast Shadows" : true,
-              "Color" : [0.129872, 0.110559, 0.873418, 1.000000],
-              "Intensity" : 2.000000,
-              "LightFalloffExponent" : 1.000000,
-              "Location" : [0.000000, 0.000000, 0.000000],
-              "Rotation" : [-0.000000, 0.000000, 0.000000],
-              "Scale" : [1.000000, 1.000000, 1.000000],
-              "Shadow Bias" : 0.020000,
-              "Shadow Resolution Scale" : 1.000000,
-              "Shadow Sharpen" : 0.350000,
-              "Shadow Slope Bias" : 0.000000,
-              "Visible" : true,
-              "bEditorOnly" : false,
-              "bTickEnable" : true
-            }
-          }],
-        "ClassName" : "UBillboardComponent",
-        "Properties" : {
-          "Height" : 1.000000,
-          "Location" : [1.375274, 48.608185, 3.868886],
-          "Material" : {
-            "Path" : "Asset/Materials/Editor/PointLight.mat"
-          },
-          "Rotation" : [-0.000000, 0.000000, 0.000000],
-          "Scale" : [1.000000, 1.000000, 1.000000],
-          "Visible" : true,
-          "Width" : 1.000000,
-          "bEditorOnly" : true,
-          "bTickEnable" : true
-        }
-      },
-      "bVisible" : true
-    }, {
-      "ClassName" : "AStaticMeshActor",
-      "NonSceneComponents" : [{
-          "ClassName" : "URotatingMovementComponent",
-          "Properties" : {
-            "Auto Register Updated" : true,
-            "Rotation Rate" : [0.000000, 90.000000, 0.000000],
-            "bEditorOnly" : false,
-            "bTickEnable" : true
-          }
-        }],
-      "PrimitiveKey" : "148",
-      "RootComponent" : {
-        "Children" : [],
-        "ClassName" : "UStaticMeshComponent",
-        "Properties" : {
-          "Element 0" : {
-            "Path" : "Asset/Materials/Auto/Eyes.mat"
-          },
-          "Element 1" : {
-            "Path" : "Asset/Materials/Auto/EyeWhites.mat"
-          },
-          "Element 10" : {
-            "Path" : "Asset/Materials/Auto/Skirt.mat"
-          },
-          "Element 11" : {
-            "Path" : "Asset/Materials/Auto/Shoes.mat"
-          },
-          "Element 12" : {
-            "Path" : "Asset/Materials/Auto/Gloves.mat"
-          },
-          "Element 2" : {
-            "Path" : "Asset/Materials/Auto/Neck.mat"
-          },
-          "Element 3" : {
-            "Path" : "Asset/Materials/Auto/Face.mat"
-          },
-          "Element 4" : {
-            "Path" : "Asset/Materials/Auto/Hair.mat"
-          },
-          "Element 5" : {
-            "Path" : "Asset/Materials/Auto/Expression.mat"
-          },
-          "Element 6" : {
-            "Path" : "Asset/Materials/Auto/Skin.mat"
-          },
-          "Element 7" : {
-            "Path" : "Asset/Materials/Auto/Clothes.mat"
-          },
-          "Element 8" : {
-            "Path" : "Asset/Materials/Auto/Pants.mat"
-          },
-          "Element 9" : {
-            "Path" : "Asset/Materials/Auto/BackAccessory.mat"
-          },
           "Location" : [2.298661, 55.692783, 1.285870],
-          "Rotation" : [-0.000000, 89.999992, 0.000000],
+          "Rotation" : [0.000000, 90.000000, 0.000000],
           "Scale" : [3.000000, 3.000000, 3.000000],
           "Static Mesh" : "Data/Lumine/LumineModel.obj",
           "Visible" : true,
           "bEditorOnly" : false,
-          "bTickEnable" : true
-        }
-      },
-      "bVisible" : true
-    }, {
-      "ClassName" : "APointLightActor",
-      "NonSceneComponents" : [],
-      "RootComponent" : {
-        "Children" : [{
-            "Children" : [],
-            "ClassName" : "UPointLightComponent",
-            "Properties" : {
-              "AttenuationRadius" : 6.480000,
-              "Cast Shadows" : true,
-              "Color" : [0.129872, 0.110559, 0.873418, 1.000000],
-              "Intensity" : 2.000000,
-              "LightFalloffExponent" : 1.000000,
-              "Location" : [0.000000, 0.000000, 0.000000],
-              "Rotation" : [-0.000000, 0.000000, 0.000000],
-              "Scale" : [1.000000, 1.000000, 1.000000],
-              "Shadow Bias" : 0.020000,
-              "Shadow Resolution Scale" : 1.000000,
-              "Shadow Sharpen" : 0.350000,
-              "Shadow Slope Bias" : 0.000000,
-              "Visible" : true,
-              "bEditorOnly" : false,
-              "bTickEnable" : true
-            }
-          }],
-        "ClassName" : "UBillboardComponent",
-        "Properties" : {
-          "Height" : 1.000000,
-          "Location" : [1.375274, 55.670303, 3.868886],
-          "Material" : {
-            "Path" : "Asset/Materials/Editor/PointLight.mat"
-          },
-          "Rotation" : [-0.000000, 0.000000, 0.000000],
-          "Scale" : [1.000000, 1.000000, 1.000000],
-          "Visible" : true,
-          "Width" : 1.000000,
-          "bEditorOnly" : true,
           "bTickEnable" : true
         }
       },
@@ -1070,7 +1568,7 @@
             "bTickEnable" : true
           }
         }],
-      "PrimitiveKey" : "154",
+      "PrimitiveKey" : "138",
       "RootComponent" : {
         "Children" : [],
         "ClassName" : "UStaticMeshComponent",
@@ -1115,7 +1613,7 @@
             "Path" : "Asset/Materials/Auto/BackAccessory.mat"
           },
           "Location" : [2.298661, 62.221249, 1.285870],
-          "Rotation" : [-0.000000, 89.999992, 0.000000],
+          "Rotation" : [0.000000, 90.000000, 0.000000],
           "Scale" : [3.000000, 3.000000, 3.000000],
           "Static Mesh" : "Data/Lumine/LumineModel.obj",
           "Visible" : true,
@@ -1138,12 +1636,424 @@
               "Intensity" : 2.000000,
               "LightFalloffExponent" : 1.000000,
               "Location" : [0.000000, 0.000000, 0.000000],
-              "Rotation" : [-0.000000, 0.000000, 0.000000],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
               "Scale" : [1.000000, 1.000000, 1.000000],
-              "Shadow Bias" : 0.020000,
+              "Shadow Bias" : 2.000000,
+              "Shadow Resolution Scale" : 2.000000,
+              "Shadow Sharpen" : 0.350000,
+              "Shadow Slope Bias" : 2.000000,
+              "Visible" : true,
+              "bEditorOnly" : false,
+              "bTickEnable" : true
+            }
+          }],
+        "ClassName" : "UBillboardComponent",
+        "Properties" : {
+          "Height" : 1.000000,
+          "Location" : [1.375274, -3.288431, 3.868886],
+          "Material" : {
+            "Path" : "Asset/Materials/Editor/PointLight.mat"
+          },
+          "Rotation" : [0.000000, 0.000000, 0.000000],
+          "Scale" : [1.000000, 1.000000, 1.000000],
+          "Visible" : true,
+          "Width" : 1.000000,
+          "bEditorOnly" : true,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
+      "ClassName" : "ASpotLightActor",
+      "NonSceneComponents" : [],
+      "RootComponent" : {
+        "Children" : [{
+            "Children" : [],
+            "ClassName" : "USpotLightComponent",
+            "Properties" : {
+              "AttenuationRadius" : 9.320000,
+              "Cast Shadows" : true,
+              "Color" : [1.000000, 1.000000, 1.000000, 1.000000],
+              "InnerConeAngle" : 20.000000,
+              "Intensity" : 1.000000,
+              "LightFalloffExponent" : 1.000000,
+              "Location" : [0.000000, 0.000000, 0.000000],
+              "OuterConeAngle" : 40.000000,
+              "Rotation" : [0.000000, 0.000000, 0.000000],
+              "Scale" : [1.000000, 1.000000, 1.000000],
+              "Shadow Bias" : 2.000000,
+              "Shadow Resolution Scale" : 1.000000,
+              "Shadow Sharpen" : 1.000000,
+              "Shadow Slope Bias" : 2.000000,
+              "Visible" : true,
+              "bEditorOnly" : false,
+              "bTickEnable" : true
+            }
+          }],
+        "ClassName" : "UBillboardComponent",
+        "Properties" : {
+          "Height" : 1.000000,
+          "Location" : [-2.076985, -3.401069, 9.021894],
+          "Material" : {
+            "Path" : "Asset/Materials/Editor/SpotLight.mat"
+          },
+          "Rotation" : [-89.900002, 164.051331, -65.213707],
+          "Scale" : [1.000000, 1.000000, 1.000000],
+          "Visible" : true,
+          "Width" : 1.000000,
+          "bEditorOnly" : true,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
+      "ClassName" : "APointLightActor",
+      "NonSceneComponents" : [],
+      "RootComponent" : {
+        "Children" : [{
+            "Children" : [],
+            "ClassName" : "UPointLightComponent",
+            "Properties" : {
+              "AttenuationRadius" : 6.480000,
+              "Cast Shadows" : true,
+              "Color" : [0.129872, 0.110559, 0.873418, 1.000000],
+              "Intensity" : 2.000000,
+              "LightFalloffExponent" : 1.000000,
+              "Location" : [0.000000, 0.000000, 0.000000],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
+              "Scale" : [1.000000, 1.000000, 1.000000],
+              "Shadow Bias" : 2.000000,
               "Shadow Resolution Scale" : 1.000000,
               "Shadow Sharpen" : 0.350000,
-              "Shadow Slope Bias" : 0.000000,
+              "Shadow Slope Bias" : 2.000000,
+              "Visible" : true,
+              "bEditorOnly" : false,
+              "bTickEnable" : true
+            }
+          }],
+        "ClassName" : "UBillboardComponent",
+        "Properties" : {
+          "Height" : 1.000000,
+          "Location" : [1.375274, 2.909348, 3.868886],
+          "Material" : {
+            "Path" : "Asset/Materials/Editor/PointLight.mat"
+          },
+          "Rotation" : [0.000000, 0.000000, 0.000000],
+          "Scale" : [1.000000, 1.000000, 1.000000],
+          "Visible" : true,
+          "Width" : 1.000000,
+          "bEditorOnly" : true,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
+      "ClassName" : "APointLightActor",
+      "NonSceneComponents" : [],
+      "RootComponent" : {
+        "Children" : [{
+            "Children" : [],
+            "ClassName" : "UPointLightComponent",
+            "Properties" : {
+              "AttenuationRadius" : 6.480000,
+              "Cast Shadows" : true,
+              "Color" : [0.129872, 0.110559, 0.873418, 1.000000],
+              "Intensity" : 2.000000,
+              "LightFalloffExponent" : 1.000000,
+              "Location" : [0.000000, 0.000000, 0.000000],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
+              "Scale" : [1.000000, 1.000000, 1.000000],
+              "Shadow Bias" : 2.000000,
+              "Shadow Resolution Scale" : 1.000000,
+              "Shadow Sharpen" : 0.350000,
+              "Shadow Slope Bias" : 2.000000,
+              "Visible" : true,
+              "bEditorOnly" : false,
+              "bTickEnable" : true
+            }
+          }],
+        "ClassName" : "UBillboardComponent",
+        "Properties" : {
+          "Height" : 1.000000,
+          "Location" : [1.375274, 10.227024, 3.868886],
+          "Material" : {
+            "Path" : "Asset/Materials/Editor/PointLight.mat"
+          },
+          "Rotation" : [0.000000, 0.000000, 0.000000],
+          "Scale" : [1.000000, 1.000000, 1.000000],
+          "Visible" : true,
+          "Width" : 1.000000,
+          "bEditorOnly" : true,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
+      "ClassName" : "APointLightActor",
+      "NonSceneComponents" : [],
+      "RootComponent" : {
+        "Children" : [{
+            "Children" : [],
+            "ClassName" : "UPointLightComponent",
+            "Properties" : {
+              "AttenuationRadius" : 6.480000,
+              "Cast Shadows" : true,
+              "Color" : [0.129872, 0.110559, 0.873418, 1.000000],
+              "Intensity" : 2.000000,
+              "LightFalloffExponent" : 1.000000,
+              "Location" : [0.000000, 0.000000, 0.000000],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
+              "Scale" : [1.000000, 1.000000, 1.000000],
+              "Shadow Bias" : 2.000000,
+              "Shadow Resolution Scale" : 1.000000,
+              "Shadow Sharpen" : 0.350000,
+              "Shadow Slope Bias" : 2.000000,
+              "Visible" : true,
+              "bEditorOnly" : false,
+              "bTickEnable" : true
+            }
+          }],
+        "ClassName" : "UBillboardComponent",
+        "Properties" : {
+          "Height" : 1.000000,
+          "Location" : [1.375274, 17.794086, 3.868886],
+          "Material" : {
+            "Path" : "Asset/Materials/Editor/PointLight.mat"
+          },
+          "Rotation" : [0.000000, 0.000000, 0.000000],
+          "Scale" : [1.000000, 1.000000, 1.000000],
+          "Visible" : true,
+          "Width" : 1.000000,
+          "bEditorOnly" : true,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
+      "ClassName" : "APointLightActor",
+      "NonSceneComponents" : [],
+      "RootComponent" : {
+        "Children" : [{
+            "Children" : [],
+            "ClassName" : "UPointLightComponent",
+            "Properties" : {
+              "AttenuationRadius" : 6.480000,
+              "Cast Shadows" : true,
+              "Color" : [0.129872, 0.110559, 0.873418, 1.000000],
+              "Intensity" : 2.000000,
+              "LightFalloffExponent" : 1.000000,
+              "Location" : [0.000000, 0.000000, 0.000000],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
+              "Scale" : [1.000000, 1.000000, 1.000000],
+              "Shadow Bias" : 2.000000,
+              "Shadow Resolution Scale" : 1.000000,
+              "Shadow Sharpen" : 0.350000,
+              "Shadow Slope Bias" : 2.000000,
+              "Visible" : true,
+              "bEditorOnly" : false,
+              "bTickEnable" : true
+            }
+          }],
+        "ClassName" : "UBillboardComponent",
+        "Properties" : {
+          "Height" : 1.000000,
+          "Location" : [1.375274, 25.408806, 3.868886],
+          "Material" : {
+            "Path" : "Asset/Materials/Editor/PointLight.mat"
+          },
+          "Rotation" : [0.000000, 0.000000, 0.000000],
+          "Scale" : [1.000000, 1.000000, 1.000000],
+          "Visible" : true,
+          "Width" : 1.000000,
+          "bEditorOnly" : true,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
+      "ClassName" : "APointLightActor",
+      "NonSceneComponents" : [],
+      "RootComponent" : {
+        "Children" : [{
+            "Children" : [],
+            "ClassName" : "UPointLightComponent",
+            "Properties" : {
+              "AttenuationRadius" : 6.480000,
+              "Cast Shadows" : true,
+              "Color" : [0.129872, 0.110559, 0.873418, 1.000000],
+              "Intensity" : 2.000000,
+              "LightFalloffExponent" : 1.000000,
+              "Location" : [0.000000, 0.000000, 0.000000],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
+              "Scale" : [1.000000, 1.000000, 1.000000],
+              "Shadow Bias" : 2.000000,
+              "Shadow Resolution Scale" : 1.000000,
+              "Shadow Sharpen" : 0.350000,
+              "Shadow Slope Bias" : 2.000000,
+              "Visible" : true,
+              "bEditorOnly" : false,
+              "bTickEnable" : true
+            }
+          }],
+        "ClassName" : "UBillboardComponent",
+        "Properties" : {
+          "Height" : 1.000000,
+          "Location" : [1.375274, 32.519417, 3.868886],
+          "Material" : {
+            "Path" : "Asset/Materials/Editor/PointLight.mat"
+          },
+          "Rotation" : [0.000000, 0.000000, 0.000000],
+          "Scale" : [1.000000, 1.000000, 1.000000],
+          "Visible" : true,
+          "Width" : 1.000000,
+          "bEditorOnly" : true,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
+      "ClassName" : "APointLightActor",
+      "NonSceneComponents" : [],
+      "RootComponent" : {
+        "Children" : [{
+            "Children" : [],
+            "ClassName" : "UPointLightComponent",
+            "Properties" : {
+              "AttenuationRadius" : 6.480000,
+              "Cast Shadows" : true,
+              "Color" : [0.129872, 0.110559, 0.873418, 1.000000],
+              "Intensity" : 2.000000,
+              "LightFalloffExponent" : 1.000000,
+              "Location" : [0.000000, 0.000000, 0.000000],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
+              "Scale" : [1.000000, 1.000000, 1.000000],
+              "Shadow Bias" : 2.000000,
+              "Shadow Resolution Scale" : 1.000000,
+              "Shadow Sharpen" : 0.350000,
+              "Shadow Slope Bias" : 2.000000,
+              "Visible" : true,
+              "bEditorOnly" : false,
+              "bTickEnable" : true
+            }
+          }],
+        "ClassName" : "UBillboardComponent",
+        "Properties" : {
+          "Height" : 1.000000,
+          "Location" : [1.375274, 39.689781, 3.868886],
+          "Material" : {
+            "Path" : "Asset/Materials/Editor/PointLight.mat"
+          },
+          "Rotation" : [0.000000, 0.000000, 0.000000],
+          "Scale" : [1.000000, 1.000000, 1.000000],
+          "Visible" : true,
+          "Width" : 1.000000,
+          "bEditorOnly" : true,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
+      "ClassName" : "APointLightActor",
+      "NonSceneComponents" : [],
+      "RootComponent" : {
+        "Children" : [{
+            "Children" : [],
+            "ClassName" : "UPointLightComponent",
+            "Properties" : {
+              "AttenuationRadius" : 6.480000,
+              "Cast Shadows" : true,
+              "Color" : [0.129872, 0.110559, 0.873418, 1.000000],
+              "Intensity" : 2.000000,
+              "LightFalloffExponent" : 1.000000,
+              "Location" : [0.000000, 0.000000, 0.000000],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
+              "Scale" : [1.000000, 1.000000, 1.000000],
+              "Shadow Bias" : 2.000000,
+              "Shadow Resolution Scale" : 1.000000,
+              "Shadow Sharpen" : 0.350000,
+              "Shadow Slope Bias" : 2.000000,
+              "Visible" : true,
+              "bEditorOnly" : false,
+              "bTickEnable" : true
+            }
+          }],
+        "ClassName" : "UBillboardComponent",
+        "Properties" : {
+          "Height" : 1.000000,
+          "Location" : [1.375274, 48.608185, 3.868886],
+          "Material" : {
+            "Path" : "Asset/Materials/Editor/PointLight.mat"
+          },
+          "Rotation" : [0.000000, 0.000000, 0.000000],
+          "Scale" : [1.000000, 1.000000, 1.000000],
+          "Visible" : true,
+          "Width" : 1.000000,
+          "bEditorOnly" : true,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
+      "ClassName" : "APointLightActor",
+      "NonSceneComponents" : [],
+      "RootComponent" : {
+        "Children" : [{
+            "Children" : [],
+            "ClassName" : "UPointLightComponent",
+            "Properties" : {
+              "AttenuationRadius" : 6.480000,
+              "Cast Shadows" : true,
+              "Color" : [0.129872, 0.110559, 0.873418, 1.000000],
+              "Intensity" : 2.000000,
+              "LightFalloffExponent" : 1.000000,
+              "Location" : [0.000000, 0.000000, 0.000000],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
+              "Scale" : [1.000000, 1.000000, 1.000000],
+              "Shadow Bias" : 2.000000,
+              "Shadow Resolution Scale" : 1.000000,
+              "Shadow Sharpen" : 0.350000,
+              "Shadow Slope Bias" : 2.000000,
+              "Visible" : true,
+              "bEditorOnly" : false,
+              "bTickEnable" : true
+            }
+          }],
+        "ClassName" : "UBillboardComponent",
+        "Properties" : {
+          "Height" : 1.000000,
+          "Location" : [1.375274, 55.670303, 3.868886],
+          "Material" : {
+            "Path" : "Asset/Materials/Editor/PointLight.mat"
+          },
+          "Rotation" : [0.000000, 0.000000, 0.000000],
+          "Scale" : [1.000000, 1.000000, 1.000000],
+          "Visible" : true,
+          "Width" : 1.000000,
+          "bEditorOnly" : true,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
+      "ClassName" : "APointLightActor",
+      "NonSceneComponents" : [],
+      "RootComponent" : {
+        "Children" : [{
+            "Children" : [],
+            "ClassName" : "UPointLightComponent",
+            "Properties" : {
+              "AttenuationRadius" : 6.480000,
+              "Cast Shadows" : true,
+              "Color" : [0.129872, 0.110559, 0.873418, 1.000000],
+              "Intensity" : 2.000000,
+              "LightFalloffExponent" : 1.000000,
+              "Location" : [0.000000, 0.000000, 0.000000],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
+              "Scale" : [1.000000, 1.000000, 1.000000],
+              "Shadow Bias" : 2.000000,
+              "Shadow Resolution Scale" : 1.000000,
+              "Shadow Sharpen" : 0.350000,
+              "Shadow Slope Bias" : 2.000000,
               "Visible" : true,
               "bEditorOnly" : false,
               "bTickEnable" : true
@@ -1156,76 +2066,11 @@
           "Material" : {
             "Path" : "Asset/Materials/Editor/PointLight.mat"
           },
-          "Rotation" : [-0.000000, 0.000000, 0.000000],
+          "Rotation" : [0.000000, 0.000000, 0.000000],
           "Scale" : [1.000000, 1.000000, 1.000000],
           "Visible" : true,
           "Width" : 1.000000,
           "bEditorOnly" : true,
-          "bTickEnable" : true
-        }
-      },
-      "bVisible" : true
-    }, {
-      "ClassName" : "AStaticMeshActor",
-      "NonSceneComponents" : [{
-          "ClassName" : "URotatingMovementComponent",
-          "Properties" : {
-            "Auto Register Updated" : true,
-            "Rotation Rate" : [0.000000, 90.000000, 0.000000],
-            "bEditorOnly" : false,
-            "bTickEnable" : true
-          }
-        }],
-      "PrimitiveKey" : "160",
-      "RootComponent" : {
-        "Children" : [],
-        "ClassName" : "UStaticMeshComponent",
-        "Properties" : {
-          "Element 0" : {
-            "Path" : "Asset/Materials/Auto/Eyes.mat"
-          },
-          "Element 1" : {
-            "Path" : "Asset/Materials/Auto/EyeWhites.mat"
-          },
-          "Element 10" : {
-            "Path" : "Asset/Materials/Auto/Skirt.mat"
-          },
-          "Element 11" : {
-            "Path" : "Asset/Materials/Auto/Shoes.mat"
-          },
-          "Element 12" : {
-            "Path" : "Asset/Materials/Auto/Gloves.mat"
-          },
-          "Element 2" : {
-            "Path" : "Asset/Materials/Auto/Neck.mat"
-          },
-          "Element 3" : {
-            "Path" : "Asset/Materials/Auto/Face.mat"
-          },
-          "Element 4" : {
-            "Path" : "Asset/Materials/Auto/Hair.mat"
-          },
-          "Element 5" : {
-            "Path" : "Asset/Materials/Auto/Expression.mat"
-          },
-          "Element 6" : {
-            "Path" : "Asset/Materials/Auto/Skin.mat"
-          },
-          "Element 7" : {
-            "Path" : "Asset/Materials/Auto/Clothes.mat"
-          },
-          "Element 8" : {
-            "Path" : "Asset/Materials/Auto/Pants.mat"
-          },
-          "Element 9" : {
-            "Path" : "Asset/Materials/Auto/BackAccessory.mat"
-          },
-          "Location" : [2.298661, 69.952774, 1.285870],
-          "Rotation" : [-0.000000, 89.999992, 0.000000],
-          "Scale" : [3.000000, 3.000000, 3.000000],
-          "Static Mesh" : "Data/Lumine/LumineModel.obj",
-          "Visible" : true,
-          "bEditorOnly" : false,
           "bTickEnable" : true
         }
       },
@@ -1244,12 +2089,12 @@
               "Intensity" : 2.000000,
               "LightFalloffExponent" : 1.000000,
               "Location" : [0.000000, 0.000000, 0.000000],
-              "Rotation" : [-0.000000, 0.000000, 0.000000],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
               "Scale" : [1.000000, 1.000000, 1.000000],
-              "Shadow Bias" : 0.020000,
+              "Shadow Bias" : 2.000000,
               "Shadow Resolution Scale" : 1.000000,
               "Shadow Sharpen" : 0.350000,
-              "Shadow Slope Bias" : 0.000000,
+              "Shadow Slope Bias" : 2.000000,
               "Visible" : true,
               "bEditorOnly" : false,
               "bTickEnable" : true
@@ -1262,76 +2107,11 @@
           "Material" : {
             "Path" : "Asset/Materials/Editor/PointLight.mat"
           },
-          "Rotation" : [-0.000000, 0.000000, 0.000000],
+          "Rotation" : [0.000000, 0.000000, 0.000000],
           "Scale" : [1.000000, 1.000000, 1.000000],
           "Visible" : true,
           "Width" : 1.000000,
           "bEditorOnly" : true,
-          "bTickEnable" : true
-        }
-      },
-      "bVisible" : true
-    }, {
-      "ClassName" : "AStaticMeshActor",
-      "NonSceneComponents" : [{
-          "ClassName" : "URotatingMovementComponent",
-          "Properties" : {
-            "Auto Register Updated" : true,
-            "Rotation Rate" : [0.000000, 90.000000, 0.000000],
-            "bEditorOnly" : false,
-            "bTickEnable" : true
-          }
-        }],
-      "PrimitiveKey" : "166",
-      "RootComponent" : {
-        "Children" : [],
-        "ClassName" : "UStaticMeshComponent",
-        "Properties" : {
-          "Element 0" : {
-            "Path" : "Asset/Materials/Auto/Eyes.mat"
-          },
-          "Element 1" : {
-            "Path" : "Asset/Materials/Auto/EyeWhites.mat"
-          },
-          "Element 10" : {
-            "Path" : "Asset/Materials/Auto/Skirt.mat"
-          },
-          "Element 11" : {
-            "Path" : "Asset/Materials/Auto/Shoes.mat"
-          },
-          "Element 12" : {
-            "Path" : "Asset/Materials/Auto/Gloves.mat"
-          },
-          "Element 2" : {
-            "Path" : "Asset/Materials/Auto/Neck.mat"
-          },
-          "Element 3" : {
-            "Path" : "Asset/Materials/Auto/Face.mat"
-          },
-          "Element 4" : {
-            "Path" : "Asset/Materials/Auto/Hair.mat"
-          },
-          "Element 5" : {
-            "Path" : "Asset/Materials/Auto/Expression.mat"
-          },
-          "Element 6" : {
-            "Path" : "Asset/Materials/Auto/Skin.mat"
-          },
-          "Element 7" : {
-            "Path" : "Asset/Materials/Auto/Clothes.mat"
-          },
-          "Element 8" : {
-            "Path" : "Asset/Materials/Auto/Pants.mat"
-          },
-          "Element 9" : {
-            "Path" : "Asset/Materials/Auto/BackAccessory.mat"
-          },
-          "Location" : [2.298661, 76.576088, 1.285870],
-          "Rotation" : [-0.000000, 89.999992, 0.000000],
-          "Scale" : [3.000000, 3.000000, 3.000000],
-          "Static Mesh" : "Data/Lumine/LumineModel.obj",
-          "Visible" : true,
-          "bEditorOnly" : false,
           "bTickEnable" : true
         }
       },
@@ -1350,12 +2130,12 @@
               "Intensity" : 2.000000,
               "LightFalloffExponent" : 1.000000,
               "Location" : [0.000000, 0.000000, 0.000000],
-              "Rotation" : [-0.000000, 0.000000, 0.000000],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
               "Scale" : [1.000000, 1.000000, 1.000000],
-              "Shadow Bias" : 0.020000,
+              "Shadow Bias" : 2.000000,
               "Shadow Resolution Scale" : 1.000000,
               "Shadow Sharpen" : 0.350000,
-              "Shadow Slope Bias" : 0.000000,
+              "Shadow Slope Bias" : 2.000000,
               "Visible" : true,
               "bEditorOnly" : false,
               "bTickEnable" : true
@@ -1368,76 +2148,11 @@
           "Material" : {
             "Path" : "Asset/Materials/Editor/PointLight.mat"
           },
-          "Rotation" : [-0.000000, 0.000000, 0.000000],
+          "Rotation" : [0.000000, 0.000000, 0.000000],
           "Scale" : [1.000000, 1.000000, 1.000000],
           "Visible" : true,
           "Width" : 1.000000,
           "bEditorOnly" : true,
-          "bTickEnable" : true
-        }
-      },
-      "bVisible" : true
-    }, {
-      "ClassName" : "AStaticMeshActor",
-      "NonSceneComponents" : [{
-          "ClassName" : "URotatingMovementComponent",
-          "Properties" : {
-            "Auto Register Updated" : true,
-            "Rotation Rate" : [0.000000, 90.000000, 0.000000],
-            "bEditorOnly" : false,
-            "bTickEnable" : true
-          }
-        }],
-      "PrimitiveKey" : "172",
-      "RootComponent" : {
-        "Children" : [],
-        "ClassName" : "UStaticMeshComponent",
-        "Properties" : {
-          "Element 0" : {
-            "Path" : "Asset/Materials/Auto/Eyes.mat"
-          },
-          "Element 1" : {
-            "Path" : "Asset/Materials/Auto/EyeWhites.mat"
-          },
-          "Element 10" : {
-            "Path" : "Asset/Materials/Auto/Skirt.mat"
-          },
-          "Element 11" : {
-            "Path" : "Asset/Materials/Auto/Shoes.mat"
-          },
-          "Element 12" : {
-            "Path" : "Asset/Materials/Auto/Gloves.mat"
-          },
-          "Element 2" : {
-            "Path" : "Asset/Materials/Auto/Neck.mat"
-          },
-          "Element 3" : {
-            "Path" : "Asset/Materials/Auto/Face.mat"
-          },
-          "Element 4" : {
-            "Path" : "Asset/Materials/Auto/Hair.mat"
-          },
-          "Element 5" : {
-            "Path" : "Asset/Materials/Auto/Expression.mat"
-          },
-          "Element 6" : {
-            "Path" : "Asset/Materials/Auto/Skin.mat"
-          },
-          "Element 7" : {
-            "Path" : "Asset/Materials/Auto/Clothes.mat"
-          },
-          "Element 8" : {
-            "Path" : "Asset/Materials/Auto/Pants.mat"
-          },
-          "Element 9" : {
-            "Path" : "Asset/Materials/Auto/BackAccessory.mat"
-          },
-          "Location" : [2.298661, 84.398857, 1.285870],
-          "Rotation" : [-0.000000, 89.999992, 0.000000],
-          "Scale" : [3.000000, 3.000000, 3.000000],
-          "Static Mesh" : "Data/Lumine/LumineModel.obj",
-          "Visible" : true,
-          "bEditorOnly" : false,
           "bTickEnable" : true
         }
       },
@@ -1456,12 +2171,12 @@
               "Intensity" : 2.000000,
               "LightFalloffExponent" : 1.000000,
               "Location" : [0.000000, 0.000000, 0.000000],
-              "Rotation" : [-0.000000, 0.000000, 0.000000],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
               "Scale" : [1.000000, 1.000000, 1.000000],
-              "Shadow Bias" : 0.020000,
+              "Shadow Bias" : 2.000000,
               "Shadow Resolution Scale" : 1.000000,
               "Shadow Sharpen" : 0.350000,
-              "Shadow Slope Bias" : 0.000000,
+              "Shadow Slope Bias" : 2.000000,
               "Visible" : true,
               "bEditorOnly" : false,
               "bTickEnable" : true
@@ -1474,76 +2189,11 @@
           "Material" : {
             "Path" : "Asset/Materials/Editor/PointLight.mat"
           },
-          "Rotation" : [-0.000000, 0.000000, 0.000000],
+          "Rotation" : [0.000000, 0.000000, 0.000000],
           "Scale" : [1.000000, 1.000000, 1.000000],
           "Visible" : true,
           "Width" : 1.000000,
           "bEditorOnly" : true,
-          "bTickEnable" : true
-        }
-      },
-      "bVisible" : true
-    }, {
-      "ClassName" : "AStaticMeshActor",
-      "NonSceneComponents" : [{
-          "ClassName" : "URotatingMovementComponent",
-          "Properties" : {
-            "Auto Register Updated" : true,
-            "Rotation Rate" : [0.000000, 90.000000, 0.000000],
-            "bEditorOnly" : false,
-            "bTickEnable" : true
-          }
-        }],
-      "PrimitiveKey" : "178",
-      "RootComponent" : {
-        "Children" : [],
-        "ClassName" : "UStaticMeshComponent",
-        "Properties" : {
-          "Element 0" : {
-            "Path" : "Asset/Materials/Auto/Eyes.mat"
-          },
-          "Element 1" : {
-            "Path" : "Asset/Materials/Auto/EyeWhites.mat"
-          },
-          "Element 10" : {
-            "Path" : "Asset/Materials/Auto/Skirt.mat"
-          },
-          "Element 11" : {
-            "Path" : "Asset/Materials/Auto/Shoes.mat"
-          },
-          "Element 12" : {
-            "Path" : "Asset/Materials/Auto/Gloves.mat"
-          },
-          "Element 2" : {
-            "Path" : "Asset/Materials/Auto/Neck.mat"
-          },
-          "Element 3" : {
-            "Path" : "Asset/Materials/Auto/Face.mat"
-          },
-          "Element 4" : {
-            "Path" : "Asset/Materials/Auto/Hair.mat"
-          },
-          "Element 5" : {
-            "Path" : "Asset/Materials/Auto/Expression.mat"
-          },
-          "Element 6" : {
-            "Path" : "Asset/Materials/Auto/Skin.mat"
-          },
-          "Element 7" : {
-            "Path" : "Asset/Materials/Auto/Clothes.mat"
-          },
-          "Element 8" : {
-            "Path" : "Asset/Materials/Auto/Pants.mat"
-          },
-          "Element 9" : {
-            "Path" : "Asset/Materials/Auto/BackAccessory.mat"
-          },
-          "Location" : [2.298661, -9.892338, 1.285870],
-          "Rotation" : [-0.000000, 89.999992, 0.000000],
-          "Scale" : [3.000000, 3.000000, 3.000000],
-          "Static Mesh" : "Data/Lumine/LumineModel.obj",
-          "Visible" : true,
-          "bEditorOnly" : false,
           "bTickEnable" : true
         }
       },
@@ -1562,12 +2212,12 @@
               "Intensity" : 2.000000,
               "LightFalloffExponent" : 1.000000,
               "Location" : [0.000000, 0.000000, 0.000000],
-              "Rotation" : [-0.000000, 0.000000, 0.000000],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
               "Scale" : [1.000000, 1.000000, 1.000000],
-              "Shadow Bias" : 0.020000,
+              "Shadow Bias" : 2.000000,
               "Shadow Resolution Scale" : 1.000000,
               "Shadow Sharpen" : 0.350000,
-              "Shadow Slope Bias" : 0.000000,
+              "Shadow Slope Bias" : 2.000000,
               "Visible" : true,
               "bEditorOnly" : false,
               "bTickEnable" : true
@@ -1580,76 +2230,11 @@
           "Material" : {
             "Path" : "Asset/Materials/Editor/PointLight.mat"
           },
-          "Rotation" : [-0.000000, 0.000000, 0.000000],
+          "Rotation" : [0.000000, 0.000000, 0.000000],
           "Scale" : [1.000000, 1.000000, 1.000000],
           "Visible" : true,
           "Width" : 1.000000,
           "bEditorOnly" : true,
-          "bTickEnable" : true
-        }
-      },
-      "bVisible" : true
-    }, {
-      "ClassName" : "AStaticMeshActor",
-      "NonSceneComponents" : [{
-          "ClassName" : "URotatingMovementComponent",
-          "Properties" : {
-            "Auto Register Updated" : true,
-            "Rotation Rate" : [0.000000, 90.000000, 0.000000],
-            "bEditorOnly" : false,
-            "bTickEnable" : true
-          }
-        }],
-      "PrimitiveKey" : "184",
-      "RootComponent" : {
-        "Children" : [],
-        "ClassName" : "UStaticMeshComponent",
-        "Properties" : {
-          "Element 0" : {
-            "Path" : "Asset/Materials/Auto/Eyes.mat"
-          },
-          "Element 1" : {
-            "Path" : "Asset/Materials/Auto/EyeWhites.mat"
-          },
-          "Element 10" : {
-            "Path" : "Asset/Materials/Auto/Skirt.mat"
-          },
-          "Element 11" : {
-            "Path" : "Asset/Materials/Auto/Shoes.mat"
-          },
-          "Element 12" : {
-            "Path" : "Asset/Materials/Auto/Gloves.mat"
-          },
-          "Element 2" : {
-            "Path" : "Asset/Materials/Auto/Neck.mat"
-          },
-          "Element 3" : {
-            "Path" : "Asset/Materials/Auto/Face.mat"
-          },
-          "Element 4" : {
-            "Path" : "Asset/Materials/Auto/Hair.mat"
-          },
-          "Element 5" : {
-            "Path" : "Asset/Materials/Auto/Expression.mat"
-          },
-          "Element 6" : {
-            "Path" : "Asset/Materials/Auto/Skin.mat"
-          },
-          "Element 7" : {
-            "Path" : "Asset/Materials/Auto/Clothes.mat"
-          },
-          "Element 8" : {
-            "Path" : "Asset/Materials/Auto/Pants.mat"
-          },
-          "Element 9" : {
-            "Path" : "Asset/Materials/Auto/BackAccessory.mat"
-          },
-          "Location" : [2.298661, -18.847713, 1.285870],
-          "Rotation" : [-0.000000, 89.999992, 0.000000],
-          "Scale" : [3.000000, 3.000000, 3.000000],
-          "Static Mesh" : "Data/Lumine/LumineModel.obj",
-          "Visible" : true,
-          "bEditorOnly" : false,
           "bTickEnable" : true
         }
       },
@@ -1668,12 +2253,12 @@
               "Intensity" : 2.000000,
               "LightFalloffExponent" : 1.000000,
               "Location" : [0.000000, 0.000000, 0.000000],
-              "Rotation" : [-0.000000, 0.000000, 0.000000],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
               "Scale" : [1.000000, 1.000000, 1.000000],
-              "Shadow Bias" : 0.020000,
+              "Shadow Bias" : 2.000000,
               "Shadow Resolution Scale" : 1.000000,
               "Shadow Sharpen" : 0.350000,
-              "Shadow Slope Bias" : 0.000000,
+              "Shadow Slope Bias" : 2.000000,
               "Visible" : true,
               "bEditorOnly" : false,
               "bTickEnable" : true
@@ -1686,76 +2271,11 @@
           "Material" : {
             "Path" : "Asset/Materials/Editor/PointLight.mat"
           },
-          "Rotation" : [-0.000000, 0.000000, 0.000000],
+          "Rotation" : [0.000000, 0.000000, 0.000000],
           "Scale" : [1.000000, 1.000000, 1.000000],
           "Visible" : true,
           "Width" : 1.000000,
           "bEditorOnly" : true,
-          "bTickEnable" : true
-        }
-      },
-      "bVisible" : true
-    }, {
-      "ClassName" : "AStaticMeshActor",
-      "NonSceneComponents" : [{
-          "ClassName" : "URotatingMovementComponent",
-          "Properties" : {
-            "Auto Register Updated" : true,
-            "Rotation Rate" : [0.000000, 90.000000, 0.000000],
-            "bEditorOnly" : false,
-            "bTickEnable" : true
-          }
-        }],
-      "PrimitiveKey" : "190",
-      "RootComponent" : {
-        "Children" : [],
-        "ClassName" : "UStaticMeshComponent",
-        "Properties" : {
-          "Element 0" : {
-            "Path" : "Asset/Materials/Auto/Eyes.mat"
-          },
-          "Element 1" : {
-            "Path" : "Asset/Materials/Auto/EyeWhites.mat"
-          },
-          "Element 10" : {
-            "Path" : "Asset/Materials/Auto/Skirt.mat"
-          },
-          "Element 11" : {
-            "Path" : "Asset/Materials/Auto/Shoes.mat"
-          },
-          "Element 12" : {
-            "Path" : "Asset/Materials/Auto/Gloves.mat"
-          },
-          "Element 2" : {
-            "Path" : "Asset/Materials/Auto/Neck.mat"
-          },
-          "Element 3" : {
-            "Path" : "Asset/Materials/Auto/Face.mat"
-          },
-          "Element 4" : {
-            "Path" : "Asset/Materials/Auto/Hair.mat"
-          },
-          "Element 5" : {
-            "Path" : "Asset/Materials/Auto/Expression.mat"
-          },
-          "Element 6" : {
-            "Path" : "Asset/Materials/Auto/Skin.mat"
-          },
-          "Element 7" : {
-            "Path" : "Asset/Materials/Auto/Clothes.mat"
-          },
-          "Element 8" : {
-            "Path" : "Asset/Materials/Auto/Pants.mat"
-          },
-          "Element 9" : {
-            "Path" : "Asset/Materials/Auto/BackAccessory.mat"
-          },
-          "Location" : [2.298661, -27.297268, 1.285870],
-          "Rotation" : [-0.000000, 89.999992, 0.000000],
-          "Scale" : [3.000000, 3.000000, 3.000000],
-          "Static Mesh" : "Data/Lumine/LumineModel.obj",
-          "Visible" : true,
-          "bEditorOnly" : false,
           "bTickEnable" : true
         }
       },
@@ -1774,12 +2294,12 @@
               "Intensity" : 2.000000,
               "LightFalloffExponent" : 1.000000,
               "Location" : [0.000000, 0.000000, 0.000000],
-              "Rotation" : [-0.000000, 0.000000, 0.000000],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
               "Scale" : [1.000000, 1.000000, 1.000000],
-              "Shadow Bias" : 0.020000,
+              "Shadow Bias" : 2.000000,
               "Shadow Resolution Scale" : 1.000000,
               "Shadow Sharpen" : 0.350000,
-              "Shadow Slope Bias" : 0.000000,
+              "Shadow Slope Bias" : 2.000000,
               "Visible" : true,
               "bEditorOnly" : false,
               "bTickEnable" : true
@@ -1792,76 +2312,11 @@
           "Material" : {
             "Path" : "Asset/Materials/Editor/PointLight.mat"
           },
-          "Rotation" : [-0.000000, 0.000000, 0.000000],
+          "Rotation" : [0.000000, 0.000000, 0.000000],
           "Scale" : [1.000000, 1.000000, 1.000000],
           "Visible" : true,
           "Width" : 1.000000,
           "bEditorOnly" : true,
-          "bTickEnable" : true
-        }
-      },
-      "bVisible" : true
-    }, {
-      "ClassName" : "AStaticMeshActor",
-      "NonSceneComponents" : [{
-          "ClassName" : "URotatingMovementComponent",
-          "Properties" : {
-            "Auto Register Updated" : true,
-            "Rotation Rate" : [0.000000, 90.000000, 0.000000],
-            "bEditorOnly" : false,
-            "bTickEnable" : true
-          }
-        }],
-      "PrimitiveKey" : "196",
-      "RootComponent" : {
-        "Children" : [],
-        "ClassName" : "UStaticMeshComponent",
-        "Properties" : {
-          "Element 0" : {
-            "Path" : "Asset/Materials/Auto/Eyes.mat"
-          },
-          "Element 1" : {
-            "Path" : "Asset/Materials/Auto/EyeWhites.mat"
-          },
-          "Element 10" : {
-            "Path" : "Asset/Materials/Auto/Skirt.mat"
-          },
-          "Element 11" : {
-            "Path" : "Asset/Materials/Auto/Shoes.mat"
-          },
-          "Element 12" : {
-            "Path" : "Asset/Materials/Auto/Gloves.mat"
-          },
-          "Element 2" : {
-            "Path" : "Asset/Materials/Auto/Neck.mat"
-          },
-          "Element 3" : {
-            "Path" : "Asset/Materials/Auto/Face.mat"
-          },
-          "Element 4" : {
-            "Path" : "Asset/Materials/Auto/Hair.mat"
-          },
-          "Element 5" : {
-            "Path" : "Asset/Materials/Auto/Expression.mat"
-          },
-          "Element 6" : {
-            "Path" : "Asset/Materials/Auto/Skin.mat"
-          },
-          "Element 7" : {
-            "Path" : "Asset/Materials/Auto/Clothes.mat"
-          },
-          "Element 8" : {
-            "Path" : "Asset/Materials/Auto/Pants.mat"
-          },
-          "Element 9" : {
-            "Path" : "Asset/Materials/Auto/BackAccessory.mat"
-          },
-          "Location" : [2.298661, -35.428654, 1.285870],
-          "Rotation" : [-0.000000, 89.999992, 0.000000],
-          "Scale" : [3.000000, 3.000000, 3.000000],
-          "Static Mesh" : "Data/Lumine/LumineModel.obj",
-          "Visible" : true,
-          "bEditorOnly" : false,
           "bTickEnable" : true
         }
       },
@@ -1880,12 +2335,12 @@
               "Intensity" : 2.000000,
               "LightFalloffExponent" : 1.000000,
               "Location" : [0.000000, 0.000000, 0.000000],
-              "Rotation" : [-0.000000, 0.000000, 0.000000],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
               "Scale" : [1.000000, 1.000000, 1.000000],
-              "Shadow Bias" : 0.020000,
+              "Shadow Bias" : 2.000000,
               "Shadow Resolution Scale" : 1.000000,
               "Shadow Sharpen" : 0.350000,
-              "Shadow Slope Bias" : 0.000000,
+              "Shadow Slope Bias" : 2.000000,
               "Visible" : true,
               "bEditorOnly" : false,
               "bTickEnable" : true
@@ -1898,76 +2353,11 @@
           "Material" : {
             "Path" : "Asset/Materials/Editor/PointLight.mat"
           },
-          "Rotation" : [-0.000000, 0.000000, 0.000000],
+          "Rotation" : [0.000000, 0.000000, 0.000000],
           "Scale" : [1.000000, 1.000000, 1.000000],
           "Visible" : true,
           "Width" : 1.000000,
           "bEditorOnly" : true,
-          "bTickEnable" : true
-        }
-      },
-      "bVisible" : true
-    }, {
-      "ClassName" : "AStaticMeshActor",
-      "NonSceneComponents" : [{
-          "ClassName" : "URotatingMovementComponent",
-          "Properties" : {
-            "Auto Register Updated" : true,
-            "Rotation Rate" : [0.000000, 90.000000, 0.000000],
-            "bEditorOnly" : false,
-            "bTickEnable" : true
-          }
-        }],
-      "PrimitiveKey" : "202",
-      "RootComponent" : {
-        "Children" : [],
-        "ClassName" : "UStaticMeshComponent",
-        "Properties" : {
-          "Element 0" : {
-            "Path" : "Asset/Materials/Auto/Eyes.mat"
-          },
-          "Element 1" : {
-            "Path" : "Asset/Materials/Auto/EyeWhites.mat"
-          },
-          "Element 10" : {
-            "Path" : "Asset/Materials/Auto/Skirt.mat"
-          },
-          "Element 11" : {
-            "Path" : "Asset/Materials/Auto/Shoes.mat"
-          },
-          "Element 12" : {
-            "Path" : "Asset/Materials/Auto/Gloves.mat"
-          },
-          "Element 2" : {
-            "Path" : "Asset/Materials/Auto/Neck.mat"
-          },
-          "Element 3" : {
-            "Path" : "Asset/Materials/Auto/Face.mat"
-          },
-          "Element 4" : {
-            "Path" : "Asset/Materials/Auto/Hair.mat"
-          },
-          "Element 5" : {
-            "Path" : "Asset/Materials/Auto/Expression.mat"
-          },
-          "Element 6" : {
-            "Path" : "Asset/Materials/Auto/Skin.mat"
-          },
-          "Element 7" : {
-            "Path" : "Asset/Materials/Auto/Clothes.mat"
-          },
-          "Element 8" : {
-            "Path" : "Asset/Materials/Auto/Pants.mat"
-          },
-          "Element 9" : {
-            "Path" : "Asset/Materials/Auto/BackAccessory.mat"
-          },
-          "Location" : [2.298661, -43.866413, 1.285870],
-          "Rotation" : [-0.000000, 89.999992, 0.000000],
-          "Scale" : [3.000000, 3.000000, 3.000000],
-          "Static Mesh" : "Data/Lumine/LumineModel.obj",
-          "Visible" : true,
-          "bEditorOnly" : false,
           "bTickEnable" : true
         }
       },
@@ -1986,12 +2376,12 @@
               "Intensity" : 2.000000,
               "LightFalloffExponent" : 1.000000,
               "Location" : [0.000000, 0.000000, 0.000000],
-              "Rotation" : [-0.000000, 0.000000, 0.000000],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
               "Scale" : [1.000000, 1.000000, 1.000000],
-              "Shadow Bias" : 0.020000,
+              "Shadow Bias" : 2.000000,
               "Shadow Resolution Scale" : 1.000000,
               "Shadow Sharpen" : 0.350000,
-              "Shadow Slope Bias" : 0.000000,
+              "Shadow Slope Bias" : 2.000000,
               "Visible" : true,
               "bEditorOnly" : false,
               "bTickEnable" : true
@@ -2004,76 +2394,11 @@
           "Material" : {
             "Path" : "Asset/Materials/Editor/PointLight.mat"
           },
-          "Rotation" : [-0.000000, 0.000000, 0.000000],
+          "Rotation" : [0.000000, 0.000000, 0.000000],
           "Scale" : [1.000000, 1.000000, 1.000000],
           "Visible" : true,
           "Width" : 1.000000,
           "bEditorOnly" : true,
-          "bTickEnable" : true
-        }
-      },
-      "bVisible" : true
-    }, {
-      "ClassName" : "AStaticMeshActor",
-      "NonSceneComponents" : [{
-          "ClassName" : "URotatingMovementComponent",
-          "Properties" : {
-            "Auto Register Updated" : true,
-            "Rotation Rate" : [0.000000, 90.000000, 0.000000],
-            "bEditorOnly" : false,
-            "bTickEnable" : true
-          }
-        }],
-      "PrimitiveKey" : "208",
-      "RootComponent" : {
-        "Children" : [],
-        "ClassName" : "UStaticMeshComponent",
-        "Properties" : {
-          "Element 0" : {
-            "Path" : "Asset/Materials/Auto/Eyes.mat"
-          },
-          "Element 1" : {
-            "Path" : "Asset/Materials/Auto/EyeWhites.mat"
-          },
-          "Element 10" : {
-            "Path" : "Asset/Materials/Auto/Skirt.mat"
-          },
-          "Element 11" : {
-            "Path" : "Asset/Materials/Auto/Shoes.mat"
-          },
-          "Element 12" : {
-            "Path" : "Asset/Materials/Auto/Gloves.mat"
-          },
-          "Element 2" : {
-            "Path" : "Asset/Materials/Auto/Neck.mat"
-          },
-          "Element 3" : {
-            "Path" : "Asset/Materials/Auto/Face.mat"
-          },
-          "Element 4" : {
-            "Path" : "Asset/Materials/Auto/Hair.mat"
-          },
-          "Element 5" : {
-            "Path" : "Asset/Materials/Auto/Expression.mat"
-          },
-          "Element 6" : {
-            "Path" : "Asset/Materials/Auto/Skin.mat"
-          },
-          "Element 7" : {
-            "Path" : "Asset/Materials/Auto/Clothes.mat"
-          },
-          "Element 8" : {
-            "Path" : "Asset/Materials/Auto/Pants.mat"
-          },
-          "Element 9" : {
-            "Path" : "Asset/Materials/Auto/BackAccessory.mat"
-          },
-          "Location" : [2.298661, -52.816433, 1.285870],
-          "Rotation" : [-0.000000, 89.999992, 0.000000],
-          "Scale" : [3.000000, 3.000000, 3.000000],
-          "Static Mesh" : "Data/Lumine/LumineModel.obj",
-          "Visible" : true,
-          "bEditorOnly" : false,
           "bTickEnable" : true
         }
       },
@@ -2092,12 +2417,12 @@
               "Intensity" : 2.000000,
               "LightFalloffExponent" : 1.000000,
               "Location" : [0.000000, 0.000000, 0.000000],
-              "Rotation" : [-0.000000, 0.000000, 0.000000],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
               "Scale" : [1.000000, 1.000000, 1.000000],
-              "Shadow Bias" : 0.020000,
+              "Shadow Bias" : 2.000000,
               "Shadow Resolution Scale" : 1.000000,
               "Shadow Sharpen" : 0.350000,
-              "Shadow Slope Bias" : 0.000000,
+              "Shadow Slope Bias" : 2.000000,
               "Visible" : true,
               "bEditorOnly" : false,
               "bTickEnable" : true
@@ -2110,76 +2435,11 @@
           "Material" : {
             "Path" : "Asset/Materials/Editor/PointLight.mat"
           },
-          "Rotation" : [-0.000000, 0.000000, 0.000000],
+          "Rotation" : [0.000000, 0.000000, 0.000000],
           "Scale" : [1.000000, 1.000000, 1.000000],
           "Visible" : true,
           "Width" : 1.000000,
           "bEditorOnly" : true,
-          "bTickEnable" : true
-        }
-      },
-      "bVisible" : true
-    }, {
-      "ClassName" : "AStaticMeshActor",
-      "NonSceneComponents" : [{
-          "ClassName" : "URotatingMovementComponent",
-          "Properties" : {
-            "Auto Register Updated" : true,
-            "Rotation Rate" : [0.000000, 90.000000, 0.000000],
-            "bEditorOnly" : false,
-            "bTickEnable" : true
-          }
-        }],
-      "PrimitiveKey" : "214",
-      "RootComponent" : {
-        "Children" : [],
-        "ClassName" : "UStaticMeshComponent",
-        "Properties" : {
-          "Element 0" : {
-            "Path" : "Asset/Materials/Auto/Eyes.mat"
-          },
-          "Element 1" : {
-            "Path" : "Asset/Materials/Auto/EyeWhites.mat"
-          },
-          "Element 10" : {
-            "Path" : "Asset/Materials/Auto/Skirt.mat"
-          },
-          "Element 11" : {
-            "Path" : "Asset/Materials/Auto/Shoes.mat"
-          },
-          "Element 12" : {
-            "Path" : "Asset/Materials/Auto/Gloves.mat"
-          },
-          "Element 2" : {
-            "Path" : "Asset/Materials/Auto/Neck.mat"
-          },
-          "Element 3" : {
-            "Path" : "Asset/Materials/Auto/Face.mat"
-          },
-          "Element 4" : {
-            "Path" : "Asset/Materials/Auto/Hair.mat"
-          },
-          "Element 5" : {
-            "Path" : "Asset/Materials/Auto/Expression.mat"
-          },
-          "Element 6" : {
-            "Path" : "Asset/Materials/Auto/Skin.mat"
-          },
-          "Element 7" : {
-            "Path" : "Asset/Materials/Auto/Clothes.mat"
-          },
-          "Element 8" : {
-            "Path" : "Asset/Materials/Auto/Pants.mat"
-          },
-          "Element 9" : {
-            "Path" : "Asset/Materials/Auto/BackAccessory.mat"
-          },
-          "Location" : [2.298661, -61.539295, 1.285870],
-          "Rotation" : [-0.000000, 89.999992, 0.000000],
-          "Scale" : [3.000000, 3.000000, 3.000000],
-          "Static Mesh" : "Data/Lumine/LumineModel.obj",
-          "Visible" : true,
-          "bEditorOnly" : false,
           "bTickEnable" : true
         }
       },
@@ -2198,12 +2458,12 @@
               "Intensity" : 2.000000,
               "LightFalloffExponent" : 1.000000,
               "Location" : [0.000000, 0.000000, 0.000000],
-              "Rotation" : [-0.000000, 0.000000, 0.000000],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
               "Scale" : [1.000000, 1.000000, 1.000000],
-              "Shadow Bias" : 0.020000,
+              "Shadow Bias" : 2.000000,
               "Shadow Resolution Scale" : 1.000000,
               "Shadow Sharpen" : 0.350000,
-              "Shadow Slope Bias" : 0.000000,
+              "Shadow Slope Bias" : 2.000000,
               "Visible" : true,
               "bEditorOnly" : false,
               "bTickEnable" : true
@@ -2216,76 +2476,11 @@
           "Material" : {
             "Path" : "Asset/Materials/Editor/PointLight.mat"
           },
-          "Rotation" : [-0.000000, 0.000000, 0.000000],
+          "Rotation" : [0.000000, 0.000000, 0.000000],
           "Scale" : [1.000000, 1.000000, 1.000000],
           "Visible" : true,
           "Width" : 1.000000,
           "bEditorOnly" : true,
-          "bTickEnable" : true
-        }
-      },
-      "bVisible" : true
-    }, {
-      "ClassName" : "AStaticMeshActor",
-      "NonSceneComponents" : [{
-          "ClassName" : "URotatingMovementComponent",
-          "Properties" : {
-            "Auto Register Updated" : true,
-            "Rotation Rate" : [0.000000, 90.000000, 0.000000],
-            "bEditorOnly" : false,
-            "bTickEnable" : true
-          }
-        }],
-      "PrimitiveKey" : "220",
-      "RootComponent" : {
-        "Children" : [],
-        "ClassName" : "UStaticMeshComponent",
-        "Properties" : {
-          "Element 0" : {
-            "Path" : "Asset/Materials/Auto/Eyes.mat"
-          },
-          "Element 1" : {
-            "Path" : "Asset/Materials/Auto/EyeWhites.mat"
-          },
-          "Element 10" : {
-            "Path" : "Asset/Materials/Auto/Skirt.mat"
-          },
-          "Element 11" : {
-            "Path" : "Asset/Materials/Auto/Shoes.mat"
-          },
-          "Element 12" : {
-            "Path" : "Asset/Materials/Auto/Gloves.mat"
-          },
-          "Element 2" : {
-            "Path" : "Asset/Materials/Auto/Neck.mat"
-          },
-          "Element 3" : {
-            "Path" : "Asset/Materials/Auto/Face.mat"
-          },
-          "Element 4" : {
-            "Path" : "Asset/Materials/Auto/Hair.mat"
-          },
-          "Element 5" : {
-            "Path" : "Asset/Materials/Auto/Expression.mat"
-          },
-          "Element 6" : {
-            "Path" : "Asset/Materials/Auto/Skin.mat"
-          },
-          "Element 7" : {
-            "Path" : "Asset/Materials/Auto/Clothes.mat"
-          },
-          "Element 8" : {
-            "Path" : "Asset/Materials/Auto/Pants.mat"
-          },
-          "Element 9" : {
-            "Path" : "Asset/Materials/Auto/BackAccessory.mat"
-          },
-          "Location" : [2.298661, -69.208328, 1.285870],
-          "Rotation" : [-0.000000, 89.999992, 0.000000],
-          "Scale" : [3.000000, 3.000000, 3.000000],
-          "Static Mesh" : "Data/Lumine/LumineModel.obj",
-          "Visible" : true,
-          "bEditorOnly" : false,
           "bTickEnable" : true
         }
       },
@@ -2304,12 +2499,12 @@
               "Intensity" : 2.000000,
               "LightFalloffExponent" : 1.000000,
               "Location" : [0.000000, 0.000000, 0.000000],
-              "Rotation" : [-0.000000, 0.000000, 0.000000],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
               "Scale" : [1.000000, 1.000000, 1.000000],
-              "Shadow Bias" : 0.020000,
+              "Shadow Bias" : 2.000000,
               "Shadow Resolution Scale" : 1.000000,
               "Shadow Sharpen" : 0.350000,
-              "Shadow Slope Bias" : 0.000000,
+              "Shadow Slope Bias" : 2.000000,
               "Visible" : true,
               "bEditorOnly" : false,
               "bTickEnable" : true
@@ -2322,76 +2517,11 @@
           "Material" : {
             "Path" : "Asset/Materials/Editor/PointLight.mat"
           },
-          "Rotation" : [-0.000000, 0.000000, 0.000000],
+          "Rotation" : [0.000000, 0.000000, 0.000000],
           "Scale" : [1.000000, 1.000000, 1.000000],
           "Visible" : true,
           "Width" : 1.000000,
           "bEditorOnly" : true,
-          "bTickEnable" : true
-        }
-      },
-      "bVisible" : true
-    }, {
-      "ClassName" : "AStaticMeshActor",
-      "NonSceneComponents" : [{
-          "ClassName" : "URotatingMovementComponent",
-          "Properties" : {
-            "Auto Register Updated" : true,
-            "Rotation Rate" : [0.000000, 90.000000, 0.000000],
-            "bEditorOnly" : false,
-            "bTickEnable" : true
-          }
-        }],
-      "PrimitiveKey" : "226",
-      "RootComponent" : {
-        "Children" : [],
-        "ClassName" : "UStaticMeshComponent",
-        "Properties" : {
-          "Element 0" : {
-            "Path" : "Asset/Materials/Auto/Eyes.mat"
-          },
-          "Element 1" : {
-            "Path" : "Asset/Materials/Auto/EyeWhites.mat"
-          },
-          "Element 10" : {
-            "Path" : "Asset/Materials/Auto/Skirt.mat"
-          },
-          "Element 11" : {
-            "Path" : "Asset/Materials/Auto/Shoes.mat"
-          },
-          "Element 12" : {
-            "Path" : "Asset/Materials/Auto/Gloves.mat"
-          },
-          "Element 2" : {
-            "Path" : "Asset/Materials/Auto/Neck.mat"
-          },
-          "Element 3" : {
-            "Path" : "Asset/Materials/Auto/Face.mat"
-          },
-          "Element 4" : {
-            "Path" : "Asset/Materials/Auto/Hair.mat"
-          },
-          "Element 5" : {
-            "Path" : "Asset/Materials/Auto/Expression.mat"
-          },
-          "Element 6" : {
-            "Path" : "Asset/Materials/Auto/Skin.mat"
-          },
-          "Element 7" : {
-            "Path" : "Asset/Materials/Auto/Clothes.mat"
-          },
-          "Element 8" : {
-            "Path" : "Asset/Materials/Auto/Pants.mat"
-          },
-          "Element 9" : {
-            "Path" : "Asset/Materials/Auto/BackAccessory.mat"
-          },
-          "Location" : [2.298661, -77.953468, 1.285870],
-          "Rotation" : [-0.000000, 89.999992, 0.000000],
-          "Scale" : [3.000000, 3.000000, 3.000000],
-          "Static Mesh" : "Data/Lumine/LumineModel.obj",
-          "Visible" : true,
-          "bEditorOnly" : false,
           "bTickEnable" : true
         }
       },
@@ -2410,12 +2540,12 @@
               "Intensity" : 2.000000,
               "LightFalloffExponent" : 1.000000,
               "Location" : [0.000000, 0.000000, 0.000000],
-              "Rotation" : [-0.000000, 0.000000, 0.000000],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
               "Scale" : [1.000000, 1.000000, 1.000000],
-              "Shadow Bias" : 0.020000,
+              "Shadow Bias" : 2.000000,
               "Shadow Resolution Scale" : 1.000000,
               "Shadow Sharpen" : 0.350000,
-              "Shadow Slope Bias" : 0.000000,
+              "Shadow Slope Bias" : 2.000000,
               "Visible" : true,
               "bEditorOnly" : false,
               "bTickEnable" : true
@@ -2428,76 +2558,11 @@
           "Material" : {
             "Path" : "Asset/Materials/Editor/PointLight.mat"
           },
-          "Rotation" : [-0.000000, 0.000000, 0.000000],
+          "Rotation" : [0.000000, 0.000000, 0.000000],
           "Scale" : [1.000000, 1.000000, 1.000000],
           "Visible" : true,
           "Width" : 1.000000,
           "bEditorOnly" : true,
-          "bTickEnable" : true
-        }
-      },
-      "bVisible" : true
-    }, {
-      "ClassName" : "AStaticMeshActor",
-      "NonSceneComponents" : [{
-          "ClassName" : "URotatingMovementComponent",
-          "Properties" : {
-            "Auto Register Updated" : true,
-            "Rotation Rate" : [0.000000, 90.000000, 0.000000],
-            "bEditorOnly" : false,
-            "bTickEnable" : true
-          }
-        }],
-      "PrimitiveKey" : "232",
-      "RootComponent" : {
-        "Children" : [],
-        "ClassName" : "UStaticMeshComponent",
-        "Properties" : {
-          "Element 0" : {
-            "Path" : "Asset/Materials/Auto/Eyes.mat"
-          },
-          "Element 1" : {
-            "Path" : "Asset/Materials/Auto/EyeWhites.mat"
-          },
-          "Element 10" : {
-            "Path" : "Asset/Materials/Auto/Skirt.mat"
-          },
-          "Element 11" : {
-            "Path" : "Asset/Materials/Auto/Shoes.mat"
-          },
-          "Element 12" : {
-            "Path" : "Asset/Materials/Auto/Gloves.mat"
-          },
-          "Element 2" : {
-            "Path" : "Asset/Materials/Auto/Neck.mat"
-          },
-          "Element 3" : {
-            "Path" : "Asset/Materials/Auto/Face.mat"
-          },
-          "Element 4" : {
-            "Path" : "Asset/Materials/Auto/Hair.mat"
-          },
-          "Element 5" : {
-            "Path" : "Asset/Materials/Auto/Expression.mat"
-          },
-          "Element 6" : {
-            "Path" : "Asset/Materials/Auto/Skin.mat"
-          },
-          "Element 7" : {
-            "Path" : "Asset/Materials/Auto/Clothes.mat"
-          },
-          "Element 8" : {
-            "Path" : "Asset/Materials/Auto/Pants.mat"
-          },
-          "Element 9" : {
-            "Path" : "Asset/Materials/Auto/BackAccessory.mat"
-          },
-          "Location" : [2.298661, -86.250053, 1.285870],
-          "Rotation" : [-0.000000, 89.999992, 0.000000],
-          "Scale" : [3.000000, 3.000000, 3.000000],
-          "Static Mesh" : "Data/Lumine/LumineModel.obj",
-          "Visible" : true,
-          "bEditorOnly" : false,
           "bTickEnable" : true
         }
       },
@@ -2516,12 +2581,12 @@
               "Intensity" : 2.000000,
               "LightFalloffExponent" : 1.000000,
               "Location" : [0.000000, 0.000000, 0.000000],
-              "Rotation" : [-0.000000, 0.000000, 0.000000],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
               "Scale" : [1.000000, 1.000000, 1.000000],
-              "Shadow Bias" : 0.020000,
+              "Shadow Bias" : 2.000000,
               "Shadow Resolution Scale" : 1.000000,
               "Shadow Sharpen" : 0.350000,
-              "Shadow Slope Bias" : 0.000000,
+              "Shadow Slope Bias" : 2.000000,
               "Visible" : true,
               "bEditorOnly" : false,
               "bTickEnable" : true
@@ -2534,76 +2599,11 @@
           "Material" : {
             "Path" : "Asset/Materials/Editor/PointLight.mat"
           },
-          "Rotation" : [-0.000000, 0.000000, 0.000000],
+          "Rotation" : [0.000000, 0.000000, 0.000000],
           "Scale" : [1.000000, 1.000000, 1.000000],
           "Visible" : true,
           "Width" : 1.000000,
           "bEditorOnly" : true,
-          "bTickEnable" : true
-        }
-      },
-      "bVisible" : true
-    }, {
-      "ClassName" : "AStaticMeshActor",
-      "NonSceneComponents" : [{
-          "ClassName" : "URotatingMovementComponent",
-          "Properties" : {
-            "Auto Register Updated" : true,
-            "Rotation Rate" : [0.000000, 90.000000, 0.000000],
-            "bEditorOnly" : false,
-            "bTickEnable" : true
-          }
-        }],
-      "PrimitiveKey" : "238",
-      "RootComponent" : {
-        "Children" : [],
-        "ClassName" : "UStaticMeshComponent",
-        "Properties" : {
-          "Element 0" : {
-            "Path" : "Asset/Materials/Auto/Eyes.mat"
-          },
-          "Element 1" : {
-            "Path" : "Asset/Materials/Auto/EyeWhites.mat"
-          },
-          "Element 10" : {
-            "Path" : "Asset/Materials/Auto/Skirt.mat"
-          },
-          "Element 11" : {
-            "Path" : "Asset/Materials/Auto/Shoes.mat"
-          },
-          "Element 12" : {
-            "Path" : "Asset/Materials/Auto/Gloves.mat"
-          },
-          "Element 2" : {
-            "Path" : "Asset/Materials/Auto/Neck.mat"
-          },
-          "Element 3" : {
-            "Path" : "Asset/Materials/Auto/Face.mat"
-          },
-          "Element 4" : {
-            "Path" : "Asset/Materials/Auto/Hair.mat"
-          },
-          "Element 5" : {
-            "Path" : "Asset/Materials/Auto/Expression.mat"
-          },
-          "Element 6" : {
-            "Path" : "Asset/Materials/Auto/Skin.mat"
-          },
-          "Element 7" : {
-            "Path" : "Asset/Materials/Auto/Clothes.mat"
-          },
-          "Element 8" : {
-            "Path" : "Asset/Materials/Auto/Pants.mat"
-          },
-          "Element 9" : {
-            "Path" : "Asset/Materials/Auto/BackAccessory.mat"
-          },
-          "Location" : [2.298661, -95.284859, 1.285870],
-          "Rotation" : [-0.000000, 89.999992, 0.000000],
-          "Scale" : [3.000000, 3.000000, 3.000000],
-          "Static Mesh" : "Data/Lumine/LumineModel.obj",
-          "Visible" : true,
-          "bEditorOnly" : false,
           "bTickEnable" : true
         }
       },
@@ -2622,12 +2622,12 @@
               "Intensity" : 2.000000,
               "LightFalloffExponent" : 1.000000,
               "Location" : [0.000000, 0.000000, 0.000000],
-              "Rotation" : [-0.000000, 0.000000, 0.000000],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
               "Scale" : [1.000000, 1.000000, 1.000000],
-              "Shadow Bias" : 0.020000,
+              "Shadow Bias" : 2.000000,
               "Shadow Resolution Scale" : 1.000000,
               "Shadow Sharpen" : 0.350000,
-              "Shadow Slope Bias" : 0.000000,
+              "Shadow Slope Bias" : 2.000000,
               "Visible" : true,
               "bEditorOnly" : false,
               "bTickEnable" : true
@@ -2640,7 +2640,7 @@
           "Material" : {
             "Path" : "Asset/Materials/Editor/PointLight.mat"
           },
-          "Rotation" : [-0.000000, 0.000000, 0.000000],
+          "Rotation" : [0.000000, 0.000000, 0.000000],
           "Scale" : [1.000000, 1.000000, 1.000000],
           "Visible" : true,
           "Width" : 1.000000,
@@ -2657,33 +2657,96 @@
   "PerspectiveCamera" : {
     "FOV" : 1.047198,
     "FarClip" : 1000.000000,
-    "Location" : [-18.790333, -4.841434, 9.391115],
+    "Location" : [-10.480479, -0.697789, 11.646647],
     "NearClip" : 0.100000,
-    "Rotation" : [0.000000, 8.118455, 5.099854]
+    "Rotation" : [0.000000, 62.753349, -0.779678]
   },
   "Primitives" : {
-    "106" : {
-      "Location" : [2.298661, 2.931827, 1.285870],
+    "101" : {
+      "Location" : [2.298661, -61.539295, 1.285870],
       "ObjStaticMeshAsset" : "Data/Lumine/LumineModel.obj",
       "Rotation" : [0.000000, -0.000000, 89.999992],
       "Scale" : [3.000000, 3.000000, 3.000000],
       "Type" : "StaticMeshComp"
     },
-    "112" : {
-      "Location" : [2.298661, 10.249503, 1.285870],
+    "103" : {
+      "Location" : [2.298661, -69.208328, 1.285870],
+      "ObjStaticMeshAsset" : "Data/Lumine/LumineModel.obj",
+      "Rotation" : [0.000000, -0.000000, 89.999992],
+      "Scale" : [3.000000, 3.000000, 3.000000],
+      "Type" : "StaticMeshComp"
+    },
+    "105" : {
+      "Location" : [2.298661, -77.953468, 1.285870],
+      "ObjStaticMeshAsset" : "Data/Lumine/LumineModel.obj",
+      "Rotation" : [0.000000, -0.000000, 89.999992],
+      "Scale" : [3.000000, 3.000000, 3.000000],
+      "Type" : "StaticMeshComp"
+    },
+    "107" : {
+      "Location" : [2.298661, -86.250053, 1.285870],
+      "ObjStaticMeshAsset" : "Data/Lumine/LumineModel.obj",
+      "Rotation" : [0.000000, -0.000000, 89.999992],
+      "Scale" : [3.000000, 3.000000, 3.000000],
+      "Type" : "StaticMeshComp"
+    },
+    "109" : {
+      "Location" : [2.298661, -95.284859, 1.285870],
+      "ObjStaticMeshAsset" : "Data/Lumine/LumineModel.obj",
+      "Rotation" : [0.000000, -0.000000, 89.999992],
+      "Scale" : [3.000000, 3.000000, 3.000000],
+      "Type" : "StaticMeshComp"
+    },
+    "111" : {
+      "Location" : [0.000000, -2.463227, 0.353965],
+      "ObjStaticMeshAsset" : "Data/BasicShape/Cube.OBJ",
+      "Rotation" : [0.000000, -0.000000, 0.000000],
+      "Scale" : [3.642592, 100.000000, 1.000000],
+      "Type" : "StaticMeshComp"
+    },
+    "116" : {
+      "Location" : [2.298661, -3.265952, 1.285870],
       "ObjStaticMeshAsset" : "Data/Lumine/LumineModel.obj",
       "Rotation" : [0.000000, -0.000000, 89.999992],
       "Scale" : [3.000000, 3.000000, 3.000000],
       "Type" : "StaticMeshComp"
     },
     "118" : {
-      "Location" : [2.298661, 17.816566, 1.285870],
+      "Location" : [4.869311, -5.369391, 0.000000],
+      "ObjStaticMeshAsset" : "Data/BasicShape/Cube.OBJ",
+      "Rotation" : [0.000000, -0.000000, 0.000000],
+      "Scale" : [1.185823, 100.000000, 7.989859],
+      "Type" : "StaticMeshComp"
+    },
+    "120" : {
+      "Location" : [24.636215, -6.427794, 0.000000],
+      "ObjStaticMeshAsset" : "Data/BasicShape/Cube.OBJ",
+      "Rotation" : [0.000000, -0.000000, -80.129379],
+      "Scale" : [1.185823, 6.202666, 7.989859],
+      "Type" : "StaticMeshComp"
+    },
+    "122" : {
+      "Location" : [2.298661, 2.931827, 1.285870],
       "ObjStaticMeshAsset" : "Data/Lumine/LumineModel.obj",
       "Rotation" : [0.000000, -0.000000, 89.999992],
       "Scale" : [3.000000, 3.000000, 3.000000],
       "Type" : "StaticMeshComp"
     },
     "124" : {
+      "Location" : [2.298661, 10.249503, 1.285870],
+      "ObjStaticMeshAsset" : "Data/Lumine/LumineModel.obj",
+      "Rotation" : [0.000000, -0.000000, 89.999992],
+      "Scale" : [3.000000, 3.000000, 3.000000],
+      "Type" : "StaticMeshComp"
+    },
+    "126" : {
+      "Location" : [2.298661, 17.816566, 1.285870],
+      "ObjStaticMeshAsset" : "Data/Lumine/LumineModel.obj",
+      "Rotation" : [0.000000, -0.000000, 89.999992],
+      "Scale" : [3.000000, 3.000000, 3.000000],
+      "Type" : "StaticMeshComp"
+    },
+    "128" : {
       "Location" : [2.298661, 25.431286, 1.285870],
       "ObjStaticMeshAsset" : "Data/Lumine/LumineModel.obj",
       "Rotation" : [0.000000, -0.000000, 89.999992],
@@ -2697,158 +2760,95 @@
       "Scale" : [3.000000, 3.000000, 3.000000],
       "Type" : "StaticMeshComp"
     },
-    "136" : {
+    "132" : {
       "Location" : [2.298661, 39.712261, 1.285870],
       "ObjStaticMeshAsset" : "Data/Lumine/LumineModel.obj",
       "Rotation" : [0.000000, -0.000000, 89.999992],
       "Scale" : [3.000000, 3.000000, 3.000000],
       "Type" : "StaticMeshComp"
     },
-    "142" : {
+    "134" : {
       "Location" : [2.298661, 48.630665, 1.285870],
       "ObjStaticMeshAsset" : "Data/Lumine/LumineModel.obj",
       "Rotation" : [0.000000, -0.000000, 89.999992],
       "Scale" : [3.000000, 3.000000, 3.000000],
       "Type" : "StaticMeshComp"
     },
-    "148" : {
+    "136" : {
       "Location" : [2.298661, 55.692783, 1.285870],
       "ObjStaticMeshAsset" : "Data/Lumine/LumineModel.obj",
       "Rotation" : [0.000000, -0.000000, 89.999992],
       "Scale" : [3.000000, 3.000000, 3.000000],
       "Type" : "StaticMeshComp"
     },
-    "154" : {
+    "138" : {
       "Location" : [2.298661, 62.221249, 1.285870],
       "ObjStaticMeshAsset" : "Data/Lumine/LumineModel.obj",
       "Rotation" : [0.000000, -0.000000, 89.999992],
       "Scale" : [3.000000, 3.000000, 3.000000],
       "Type" : "StaticMeshComp"
     },
-    "160" : {
+    "66" : {
       "Location" : [2.298661, 69.952774, 1.285870],
       "ObjStaticMeshAsset" : "Data/Lumine/LumineModel.obj",
       "Rotation" : [0.000000, -0.000000, 89.999992],
       "Scale" : [3.000000, 3.000000, 3.000000],
       "Type" : "StaticMeshComp"
     },
-    "166" : {
+    "85" : {
       "Location" : [2.298661, 76.576088, 1.285870],
       "ObjStaticMeshAsset" : "Data/Lumine/LumineModel.obj",
       "Rotation" : [0.000000, -0.000000, 89.999992],
       "Scale" : [3.000000, 3.000000, 3.000000],
       "Type" : "StaticMeshComp"
     },
-    "172" : {
+    "87" : {
       "Location" : [2.298661, 84.398857, 1.285870],
       "ObjStaticMeshAsset" : "Data/Lumine/LumineModel.obj",
       "Rotation" : [0.000000, -0.000000, 89.999992],
       "Scale" : [3.000000, 3.000000, 3.000000],
       "Type" : "StaticMeshComp"
     },
-    "178" : {
+    "89" : {
       "Location" : [2.298661, -9.892338, 1.285870],
       "ObjStaticMeshAsset" : "Data/Lumine/LumineModel.obj",
       "Rotation" : [0.000000, -0.000000, 89.999992],
       "Scale" : [3.000000, 3.000000, 3.000000],
       "Type" : "StaticMeshComp"
     },
-    "184" : {
+    "91" : {
       "Location" : [2.298661, -18.847713, 1.285870],
       "ObjStaticMeshAsset" : "Data/Lumine/LumineModel.obj",
       "Rotation" : [0.000000, -0.000000, 89.999992],
       "Scale" : [3.000000, 3.000000, 3.000000],
       "Type" : "StaticMeshComp"
     },
-    "190" : {
+    "93" : {
       "Location" : [2.298661, -27.297268, 1.285870],
       "ObjStaticMeshAsset" : "Data/Lumine/LumineModel.obj",
       "Rotation" : [0.000000, -0.000000, 89.999992],
       "Scale" : [3.000000, 3.000000, 3.000000],
       "Type" : "StaticMeshComp"
     },
-    "196" : {
+    "95" : {
       "Location" : [2.298661, -35.428654, 1.285870],
       "ObjStaticMeshAsset" : "Data/Lumine/LumineModel.obj",
       "Rotation" : [0.000000, -0.000000, 89.999992],
       "Scale" : [3.000000, 3.000000, 3.000000],
       "Type" : "StaticMeshComp"
     },
-    "202" : {
+    "97" : {
       "Location" : [2.298661, -43.866413, 1.285870],
       "ObjStaticMeshAsset" : "Data/Lumine/LumineModel.obj",
       "Rotation" : [0.000000, -0.000000, 89.999992],
       "Scale" : [3.000000, 3.000000, 3.000000],
       "Type" : "StaticMeshComp"
     },
-    "208" : {
+    "99" : {
       "Location" : [2.298661, -52.816433, 1.285870],
       "ObjStaticMeshAsset" : "Data/Lumine/LumineModel.obj",
       "Rotation" : [0.000000, -0.000000, 89.999992],
       "Scale" : [3.000000, 3.000000, 3.000000],
-      "Type" : "StaticMeshComp"
-    },
-    "214" : {
-      "Location" : [2.298661, -61.539295, 1.285870],
-      "ObjStaticMeshAsset" : "Data/Lumine/LumineModel.obj",
-      "Rotation" : [0.000000, -0.000000, 89.999992],
-      "Scale" : [3.000000, 3.000000, 3.000000],
-      "Type" : "StaticMeshComp"
-    },
-    "220" : {
-      "Location" : [2.298661, -69.208328, 1.285870],
-      "ObjStaticMeshAsset" : "Data/Lumine/LumineModel.obj",
-      "Rotation" : [0.000000, -0.000000, 89.999992],
-      "Scale" : [3.000000, 3.000000, 3.000000],
-      "Type" : "StaticMeshComp"
-    },
-    "226" : {
-      "Location" : [2.298661, -77.953468, 1.285870],
-      "ObjStaticMeshAsset" : "Data/Lumine/LumineModel.obj",
-      "Rotation" : [0.000000, -0.000000, 89.999992],
-      "Scale" : [3.000000, 3.000000, 3.000000],
-      "Type" : "StaticMeshComp"
-    },
-    "232" : {
-      "Location" : [2.298661, -86.250053, 1.285870],
-      "ObjStaticMeshAsset" : "Data/Lumine/LumineModel.obj",
-      "Rotation" : [0.000000, -0.000000, 89.999992],
-      "Scale" : [3.000000, 3.000000, 3.000000],
-      "Type" : "StaticMeshComp"
-    },
-    "238" : {
-      "Location" : [2.298661, -95.284859, 1.285870],
-      "ObjStaticMeshAsset" : "Data/Lumine/LumineModel.obj",
-      "Rotation" : [0.000000, -0.000000, 89.999992],
-      "Scale" : [3.000000, 3.000000, 3.000000],
-      "Type" : "StaticMeshComp"
-    },
-    "61" : {
-      "Location" : [0.000000, -2.463227, 0.353965],
-      "ObjStaticMeshAsset" : "Data/BasicShape/Cube.OBJ",
-      "Rotation" : [0.000000, -0.000000, 0.000000],
-      "Scale" : [3.642592, 100.000000, 1.000000],
-      "Type" : "StaticMeshComp"
-    },
-    "66" : {
-      "Location" : [2.298661, -3.265952, 1.285870],
-      "ObjStaticMeshAsset" : "Data/Lumine/LumineModel.obj",
-      "Rotation" : [0.000000, -0.000000, 89.999992],
-      "Scale" : [3.000000, 3.000000, 3.000000],
-      "Type" : "StaticMeshComp"
-    },
-    "85" : {
-      "Location" : [4.869311, -5.369391, 0.000000],
-      "ObjStaticMeshAsset" : "Data/BasicShape/Cube.OBJ",
-      "Rotation" : [0.000000, -0.000000, 0.000000],
-      "Scale" : [1.185823, 100.000000, 7.989859],
-      "Type" : "StaticMeshComp"
-    },
-    "87" : {
-      "Location" : [24.636215, -6.427794, 0.000000],
-      "ObjStaticMeshAsset" : "Data/BasicShape/Cube.OBJ",
-      "Rotation" : [0.000000, -0.000000, -80.129379],
-      "Scale" : [1.185823, 6.202666, 7.989859],
       "Type" : "StaticMeshComp"
     }
   },

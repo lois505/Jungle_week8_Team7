@@ -594,9 +594,15 @@ void FEditorPropertyWidget::RenderDirectionalLightShadowPreview(UDirectionalLigh
 	}
 
 	FGlobalDirectionalLightParams& Params = Env.GetGlobalDirectionalLightParams();
+	const FShadowRuntimeOptions& ShadowOptions = GEngine->GetRenderer().GetRuntimeOptions();
 
 	ImGui::Separator();
 	ImGui::Text("Directional Light Shadow Map");
+	bool bOverrideWithLight = DirLight->IsOverrideCameraWithLightPerspective();
+	if (ImGui::Checkbox("Override camera with light's perspective", &bOverrideWithLight))
+	{
+		DirLight->SetOverrideCameraWithLightPerspective(bOverrideWithLight);
+	}
 
 	if (!Params.ShadowData.Settings.bCastShadows)
 	{
@@ -605,6 +611,21 @@ void FEditorPropertyWidget::RenderDirectionalLightShadowPreview(UDirectionalLigh
 	}
 
 	static int PreviewSliceIndex = 0;
+	if (ShadowOptions.DirectionalShadowMode == EDirectionalShadowMode::Single)
+	{
+		PreviewSliceIndex = 0;
+	}
+	else
+	{
+		const int32 CascadeIndex = Params.ShadowData.PreviewViewIndex < 0 ? 0
+			: (Params.ShadowData.PreviewViewIndex >= FDirectionalShadowData::NUM_CASCADES
+				? FDirectionalShadowData::NUM_CASCADES - 1
+				: Params.ShadowData.PreviewViewIndex);
+		if (PreviewSliceIndex != 0)
+		{
+			PreviewSliceIndex = CascadeIndex + 1;
+		}
+	}
 	constexpr int NumDirectionalPreviewSlices = FDirectionalShadowData::NUM_CASCADES + 1;
 	const char* SliceNames[NumDirectionalPreviewSlices] = {"PSM", "Cascade 0", "Cascade 1", "Cascade 2", "Cascade 3"};
 	ImGui::Text("Slice");
@@ -618,6 +639,14 @@ void FEditorPropertyWidget::RenderDirectionalLightShadowPreview(UDirectionalLigh
 			if (ImGui::Selectable(SliceNames[i], bSelected))
 			{
 				PreviewSliceIndex = i;
+				if (i == 0)
+				{
+					Params.ShadowData.PreviewViewIndex = 0;
+				}
+				else
+				{
+					Params.ShadowData.PreviewViewIndex = i - 1;
+				}
 			}
 			if (bSelected)
 			{
@@ -658,7 +687,7 @@ void FEditorPropertyWidget::RenderPointLightShadowPreview(UPointLightComponent* 
 		return;
 	}
 
-	const FPointLightParams* Params = PointLight->GetOwner()->GetWorld()->GetScene().GetEnvironment().FindPointLight(PointLight);
+	FPointLightParams* Params = PointLight->GetOwner()->GetWorld()->GetScene().GetEnvironment().FindPointLight(PointLight);
 	if (!Params)
 	{
 		return;
@@ -666,6 +695,16 @@ void FEditorPropertyWidget::RenderPointLightShadowPreview(UPointLightComponent* 
 
 	ImGui::Separator();
 	ImGui::Text("Point Light Shadow Map");
+	bool bOverrideWithLight = PointLight->IsOverrideCameraWithLightPerspective();
+	if (ImGui::Checkbox("Override camera with light's perspective", &bOverrideWithLight))
+	{
+		PointLight->SetOverrideCameraWithLightPerspective(bOverrideWithLight);
+		Params = PointLight->GetOwner()->GetWorld()->GetScene().GetEnvironment().FindPointLight(PointLight);
+		if (!Params)
+		{
+			return;
+		}
+	}
 
 	if (!Params->ShadowData.Settings.bCastShadows)
 	{
@@ -712,7 +751,7 @@ void FEditorPropertyWidget::RenderSpotLightShadowPreview(USpotLightComponent* Sp
 		return;
 	}
 
-	const FSpotLightParams* Params = SpotLight->GetOwner()->GetWorld()->GetScene().GetEnvironment().FindSpotLight(SpotLight);
+	FSpotLightParams* Params = SpotLight->GetOwner()->GetWorld()->GetScene().GetEnvironment().FindSpotLight(SpotLight);
 	if (!Params)
 	{
 		return;
@@ -720,6 +759,16 @@ void FEditorPropertyWidget::RenderSpotLightShadowPreview(USpotLightComponent* Sp
 
 	ImGui::Separator();
 	ImGui::Text("Spot Light Shadow Map");
+	bool bOverrideWithLight = SpotLight->IsOverrideCameraWithLightPerspective();
+	if (ImGui::Checkbox("Override camera with light's perspective", &bOverrideWithLight))
+	{
+		SpotLight->SetOverrideCameraWithLightPerspective(bOverrideWithLight);
+		Params = SpotLight->GetOwner()->GetWorld()->GetScene().GetEnvironment().FindSpotLight(SpotLight);
+		if (!Params)
+		{
+			return;
+		}
+	}
 	RenderShadowMapPreviewImage(Params->ShadowData.Settings, Params->ShadowData.View);
 }
 

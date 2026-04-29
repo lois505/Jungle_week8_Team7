@@ -56,6 +56,11 @@ namespace
 
 void UDirectionalLightComponent::ContributeSelectedVisuals(FScene& Scene) const
 {
+	if (IsOverrideCameraWithLightPerspective())
+	{
+		return;
+	}
+
 	FVector WorldPos = GetWorldLocation();
 	AddDirectionalLightArrow(Scene, WorldPos, GetForwardVector());
 }
@@ -99,7 +104,7 @@ void UDirectionalLightComponent::PushToScene()
 	Params.ShadowData.Settings.ShadowBias = ShadowBias;
 	Params.ShadowData.Settings.ShadowSlopeBias = ShadowSlopeBias;
 	Params.ShadowData.Settings.ShadowSharpen = ShadowSharpen;
-	//	bOverrideCameraWithLight는 나중에 고려
+	Params.ShadowData.bOverrideCameraWithLight = IsOverrideCameraWithLightPerspective();
 	
 	//	TODO : View, Proj, ViewProj 넣기
 	

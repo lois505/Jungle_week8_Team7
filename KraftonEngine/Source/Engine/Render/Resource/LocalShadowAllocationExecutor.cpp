@@ -115,7 +115,7 @@ void FLocalShadowAllocationExecutor::PruneInvalidOrEmptyPointFaceRequests(FScene
 
 		const FPointShadowData& PointShadow = Environment.GetPointLight(Request.LightIndex).ShadowData;
 		const FShadowViewData& FaceView = PointShadow.View[Request.FaceIndex];
-		if (!HasAnyCasterInShadowView(Scene, FaceView))
+		if (!Request.bForceRenderPriority && !HasAnyCasterInShadowView(Scene, FaceView))
 		{
 			Request.bNeedsRender = false;
 		}
@@ -311,7 +311,11 @@ void FLocalShadowAllocationExecutor::AllocateViews(
 	const uint32 ViewBudgetLimit = (MaxLocalShadowViewsPerFrame > 0) ? MaxLocalShadowViewsPerFrame : UINT32_MAX;
 
 	TArray<FLocalShadowRequest*> CandidateRequests;
+	TArray<FLocalShadowRequest*> ForcedRequests;
+	TArray<FLocalShadowRequest*> NormalRequests;
 	CandidateRequests.reserve(InOutRequests.size());
+	ForcedRequests.reserve(InOutRequests.size());
+	NormalRequests.reserve(InOutRequests.size());
 	for (FLocalShadowRequest& Request : InOutRequests)
 	{
 		if (!Request.bNeedsRender)
@@ -322,27 +326,55 @@ void FLocalShadowAllocationExecutor::AllocateViews(
 		Request.Resolution.AppliedResolution = 0;
 		Request.bAllocated = false;
 		CandidateRequests.push_back(&Request);
+		if (Request.bForceRenderPriority)
+		{
+			ForcedRequests.push_back(&Request);
+		}
+		else
+		{
+			NormalRequests.push_back(&Request);
+		}
 	}
 
-	uint32 AdmittedCount = static_cast<uint32>(CandidateRequests.size());
-	if (AdmittedCount > ViewBudgetLimit)
+	uint32 AdmittedNormalCount = static_cast<uint32>(NormalRequests.size());
+	if (ViewBudgetLimit != UINT32_MAX)
 	{
-		AdmittedCount = ViewBudgetLimit;
+		const uint32 RemainingViewBudget = (ViewBudgetLimit > static_cast<uint32>(ForcedRequests.size()))
+			? (ViewBudgetLimit - static_cast<uint32>(ForcedRequests.size()))
+			: 0u;
+		if (AdmittedNormalCount > RemainingViewBudget)
+		{
+			AdmittedNormalCount = RemainingViewBudget;
+		}
 	}
 
+	for (FLocalShadowRequest* ForcedRequest : ForcedRequests)
+	{
+		ForcedRequest->Resolution.AppliedResolution = PlanningMinResolution;
+	}
+
+	uint32 AdmittedCount = static_cast<uint32>(ForcedRequests.size()) + AdmittedNormalCount;
 	if (PlanningMinResolutionArea > 0)
 	{
 		const uint64 AreaAdmitLimit = static_cast<uint64>(AreaBudgetLimit / PlanningMinResolutionArea);
 		if (AdmittedCount > AreaAdmitLimit)
 		{
-			AdmittedCount = static_cast<uint32>(AreaAdmitLimit);
+			const uint32 ForcedCount = static_cast<uint32>(ForcedRequests.size());
+			if (AreaAdmitLimit > ForcedCount)
+			{
+				AdmittedNormalCount = static_cast<uint32>(AreaAdmitLimit) - ForcedCount;
+			}
+			else
+			{
+				AdmittedNormalCount = 0;
+			}
 		}
 	}
 
-	for (uint32 RequestIndex = 0; RequestIndex < static_cast<uint32>(CandidateRequests.size()); ++RequestIndex)
+	for (uint32 RequestIndex = 0; RequestIndex < static_cast<uint32>(NormalRequests.size()); ++RequestIndex)
 	{
-		FLocalShadowRequest& Request = *CandidateRequests[RequestIndex];
-		if (RequestIndex < AdmittedCount)
+		FLocalShadowRequest& Request = *NormalRequests[RequestIndex];
+		if (RequestIndex < AdmittedNormalCount)
 		{
 			Request.Resolution.AppliedResolution = PlanningMinResolution;
 		}
@@ -352,13 +384,18 @@ void FLocalShadowAllocationExecutor::AllocateViews(
 		}
 	}
 
+	AdmittedCount = static_cast<uint32>(ForcedRequests.size()) + AdmittedNormalCount;
 	uint64 PlannedUsedArea = static_cast<uint64>(AdmittedCount) * PlanningMinResolutionArea;
 	uint64 RemainingUpgradeArea = (PlannedUsedArea < AreaBudgetLimit) ? (AreaBudgetLimit - PlannedUsedArea) : 0;
 	if (AdmittedCount > 0 && RemainingUpgradeArea > 0)
 	{
-		for (uint32 RequestIndex = 0; RequestIndex < AdmittedCount; ++RequestIndex)
+		for (FLocalShadowRequest* CandidateRequest : CandidateRequests)
 		{
-			FLocalShadowRequest& Request = *CandidateRequests[RequestIndex];
+			FLocalShadowRequest& Request = *CandidateRequest;
+			if (Request.Resolution.AppliedResolution == 0)
+			{
+				continue;
+			}
 			const uint32 TargetResolution = ClampAndAlignResolution(Request.Resolution.RequestedResolution, LocalResolutionPolicy);
 			uint32 CurrentResolution = Request.Resolution.AppliedResolution;
 			if (CurrentResolution == 0 || CurrentResolution >= TargetResolution)
@@ -408,6 +445,11 @@ void FLocalShadowAllocationExecutor::AllocateViews(
 	std::stable_sort(AllocationRequests.begin(), AllocationRequests.end(),
 		[](const FLocalShadowRequest* A, const FLocalShadowRequest* B)
 		{
+			if (A->bForceRenderPriority != B->bForceRenderPriority)
+			{
+				return A->bForceRenderPriority;
+			}
+
 			if (A->Resolution.AppliedResolution != B->Resolution.AppliedResolution)
 			{
 				return A->Resolution.AppliedResolution > B->Resolution.AppliedResolution;

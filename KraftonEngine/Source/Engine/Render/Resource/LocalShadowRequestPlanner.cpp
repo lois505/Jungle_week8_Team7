@@ -98,7 +98,8 @@ void FLocalShadowRequestPlanner::BuildRequests(
 	{
 		const FSpotLightParams& SpotLight = Environment.GetSpotLight(LightIndex);
 		const FSpotShadowData& Shadow = SpotLight.ShadowData;
-		if (!Shadow.Settings.bCastShadows || !IsLocalLightRelevantToCameraView(Frame, SpotLight.Position, SpotLight.AttenuationRadius))
+		const bool bForceRenderPriority = Shadow.bOverrideCameraWithLight;
+		if (!Shadow.Settings.bCastShadows || (!bForceRenderPriority && !IsLocalLightRelevantToCameraView(Frame, SpotLight.Position, SpotLight.AttenuationRadius)))
 		{
 			continue;
 		}
@@ -115,6 +116,7 @@ void FLocalShadowRequestPlanner::BuildRequests(
 			Request.RequestType,
 			SpotLight.Intensity,
 			CameraDistanceTerm);
+		Request.bForceRenderPriority = bForceRenderPriority;
 		Request.bNeedsRender = true;
 		Request.bAllocated = false;
 		OutRequests.push_back(Request);
@@ -125,12 +127,14 @@ void FLocalShadowRequestPlanner::BuildRequests(
 	{
 		const FPointLightParams& PointLight = Environment.GetPointLight(LightIndex);
 		const FPointShadowData& Shadow = PointLight.ShadowData;
-		if (!Shadow.Settings.bCastShadows || !IsLocalLightRelevantToCameraView(Frame, PointLight.Position, PointLight.AttenuationRadius))
+		const bool bForceLightRenderPriority = Shadow.bOverrideCameraWithLight;
+		if (!Shadow.Settings.bCastShadows || (!bForceLightRenderPriority && !IsLocalLightRelevantToCameraView(Frame, PointLight.Position, PointLight.AttenuationRadius)))
 		{
 			continue;
 		}
 
 		const uint32 Requested = ComputeRequestedResolution(Shadow.Settings, LocalResolutionPolicy);
+		const uint32 ForcedFaceIndex = static_cast<uint32>((Shadow.PreviewViewIndex < 0) ? 0 : ((Shadow.PreviewViewIndex > 5) ? 5 : Shadow.PreviewViewIndex));
 		for (uint32 FaceIndex = 0; FaceIndex < 6; ++FaceIndex)
 		{
 			FLocalShadowRequest Request = {};
@@ -145,6 +149,7 @@ void FLocalShadowRequestPlanner::BuildRequests(
 				Request.RequestType,
 				PointLight.Intensity,
 				CameraDistanceTerm);
+			Request.bForceRenderPriority = bForceLightRenderPriority && (FaceIndex == ForcedFaceIndex);
 			Request.bNeedsRender = true;
 			Request.bAllocated = false;
 			OutRequests.push_back(Request);
@@ -156,6 +161,11 @@ void FLocalShadowRequestPlanner::SortRequests(TArray<FLocalShadowRequest>& InOut
 {
 	auto CompareRequests = [](const FLocalShadowRequest& A, const FLocalShadowRequest& B)
 	{
+		if (A.bForceRenderPriority != B.bForceRenderPriority)
+		{
+			return A.bForceRenderPriority;
+		}
+
 		if (A.Priority != B.Priority)
 		{
 			return A.Priority > B.Priority;
