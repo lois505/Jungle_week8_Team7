@@ -693,7 +693,7 @@ bool FEditorViewportClient::TryApplyDirectionalLightOverride(AActor* SelectedAct
 	int32 SelectedCascadeIndex = Directional.ShadowData.PreviewViewIndex;
 	if (bPSMMode)
 	{
-		SelectedCascadeIndex = -1;
+		SelectedCascadeIndex = 0;
 	}
 	else if (SelectedCascadeIndex < 0)
 	{
@@ -704,9 +704,9 @@ bool FEditorViewportClient::TryApplyDirectionalLightOverride(AActor* SelectedAct
 		SelectedCascadeIndex = ActiveCascadeCount - 1;
 	}
 
-	const FShadowViewData& LiveView = bPSMMode
-		? Directional.ShadowData.PSMView
-		: Directional.ShadowData.View[SelectedCascadeIndex];
+	// PSM projection itself is post-perspective and does not map cleanly to an editor camera.
+	// For override inspection, use the single-cascade directional ortho view so it behaves like CSM.
+	const FShadowViewData& LiveView = Directional.ShadowData.View[SelectedCascadeIndex];
 	auto IsFiniteMatrix = [](const FMatrix& Matrix) -> bool
 	{
 		for (int32 Row = 0; Row < 4; ++Row)
@@ -780,8 +780,6 @@ bool FEditorViewportClient::TryApplyDirectionalLightOverride(AActor* SelectedAct
 	SnapshotView.LightView = DirectionalOverrideSnapshotLightView;
 	SnapshotView.LightProj = DirectionalOverrideSnapshotLightProj;
 	SnapshotView.LightViewProj = DirectionalOverrideSnapshotLightViewProj;
-	// PSM uses a post-perspective light camera, so an exact editor camera view is not representable.
-	// For inspection, view from the generated virtual PSM light as an orthographic camera.
 	ApplyCameraFromShadowView(SnapshotView, true);
 	return true;
 }
