@@ -21,8 +21,10 @@ ShadowVSOutput VS(VS_Input_PNCT input)
 
     float4 world = mul(float4(input.position, 1.0f), Model);
     float4 mainClip = mul(world, ShadowPSMMainViewProjection);
+    float invMainW = abs(mainClip.w) > 0.0001f ? rcp(mainClip.w) : 0.0f;
+    float4 mainPP = float4(mainClip.xyz * invMainW, 1.0f);
 
-    output.position = mul(mainClip, ShadowPSMLightViewProjection);
+    output.position = mul(mainPP, ShadowPSMLightViewProjection);
     return output;
 }
 

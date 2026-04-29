@@ -304,7 +304,7 @@ namespace
 			Forward = FVector(0.0f, 0.0f, 1.0f);
 		}
 
-		FVector UpCandidate(0.0f, 1.0f, 0.0f);
+		FVector UpCandidate(0.0f, 0.0f, 1.0f);
 		if (std::abs(Forward.Dot(UpCandidate)) > 0.99f)
 		{
 			UpCandidate = FVector(1.0f, 0.0f, 0.0f);
@@ -315,143 +315,12 @@ namespace
 		return FMatrix::MakeViewMatrix(Forward, Right, Up, Location);
 	}
 
-	FMatrix MakeOrthoFitToPoints(const FMatrix& View, const TArray<FVector4>& Points)
-	{
-		float MinX = FLT_MAX, MaxX = -FLT_MAX;
-		float MinY = FLT_MAX, MaxY = -FLT_MAX;
-		float MinZ = FLT_MAX, MaxZ = -FLT_MAX;
-
-		for (const FVector4& Point : Points)
-		{
-			const FVector4 ViewPoint = View.TransformVector4(Point);
-			MinX = std::min(MinX, ViewPoint.X); MaxX = std::max(MaxX, ViewPoint.X);
-			MinY = std::min(MinY, ViewPoint.Y); MaxY = std::max(MaxY, ViewPoint.Y);
-			MinZ = std::min(MinZ, ViewPoint.Z); MaxZ = std::max(MaxZ, ViewPoint.Z);
-		}
-
-		constexpr float MinExtent = 0.001f;
-		if (MaxX - MinX < MinExtent)
-		{
-			const float Center = (MinX + MaxX) * 0.5f;
-			MinX = Center - MinExtent;
-			MaxX = Center + MinExtent;
-		}
-		if (MaxY - MinY < MinExtent)
-		{
-			const float Center = (MinY + MaxY) * 0.5f;
-			MinY = Center - MinExtent;
-			MaxY = Center + MinExtent;
-		}
-		if (MaxZ - MinZ < MinExtent)
-		{
-			const float Center = (MinZ + MaxZ) * 0.5f;
-			MinZ = Center - MinExtent;
-			MaxZ = Center + MinExtent;
-		}
-
-		return FMatrix::MakeOrtho(MinX, MaxX, MinY, MaxY, MinZ, MaxZ);
-	}
-
-	struct FPSMBoundingCone
-	{
-		FMatrix View = FMatrix::Identity;
-		float FovX = 0.0f;
-		float FovY = 0.0f;
-		float NearZ = 0.001f;
-		float FarZ = 1.0f;
-		bool bValid = false;
-	};
-
-	FPSMBoundingCone BuildBoundingCone(const TArray<FVector4>& Points, const FVector& Apex)
-	{
-		FPSMBoundingCone Cone;
-		if (Points.empty())
-		{
-			return Cone;
-		}
-
-		const FVector Center = ComputeCenter(Points);
-		FVector Direction = Center - Apex;
-		if (Direction.Length() <= 1e-4f)
-		{
-			Direction = FVector(0.0f, 0.0f, 1.0f);
-		}
-		Direction.Normalize();
-
-		Cone.View = MakeViewFromLocationAndTarget(Apex, Apex + Direction);
-		float MaxAbsXOverZ = 0.0f;
-		float MaxAbsYOverZ = 0.0f;
-		Cone.NearZ = FLT_MAX;
-		Cone.FarZ = -FLT_MAX;
-
-		for (const FVector4& Point : Points)
-		{
-			const FVector4 ViewPoint = Cone.View.TransformVector4(Point);
-			if (ViewPoint.Z <= 1e-4f)
-			{
-				continue;
-			}
-
-			MaxAbsXOverZ = std::max(MaxAbsXOverZ, std::abs(ViewPoint.X / ViewPoint.Z));
-			MaxAbsYOverZ = std::max(MaxAbsYOverZ, std::abs(ViewPoint.Y / ViewPoint.Z));
-			Cone.NearZ = std::min(Cone.NearZ, ViewPoint.Z);
-			Cone.FarZ = std::max(Cone.FarZ, ViewPoint.Z);
-		}
-
-		if (MaxAbsXOverZ <= 1e-6f || MaxAbsYOverZ <= 1e-6f || Cone.NearZ == FLT_MAX || Cone.FarZ <= Cone.NearZ)
-		{
-			return Cone;
-		}
-
-		Cone.FovX = std::atan(MaxAbsXOverZ);
-		Cone.FovY = std::atan(MaxAbsYOverZ);
-		Cone.bValid = true;
-		return Cone;
-	}
-
-	FMatrix MakeReversedInversePerspectiveFitToPoints(const FMatrix& View, const TArray<FVector4>& Points)
-	{
-		float MaxAbsXOverZ = 0.0f;
-		float MaxAbsYOverZ = 0.0f;
-		float MinAbsZ = FLT_MAX;
-
-		for (const FVector4& Point : Points)
-		{
-			const FVector4 ViewPoint = View.TransformVector4(Point);
-			const float AbsZ = std::abs(ViewPoint.Z);
-			if (AbsZ <= 1e-4f)
-			{
-				continue;
-			}
-
-			MaxAbsXOverZ = std::max(MaxAbsXOverZ, std::abs(ViewPoint.X / ViewPoint.Z));
-			MaxAbsYOverZ = std::max(MaxAbsYOverZ, std::abs(ViewPoint.Y / ViewPoint.Z));
-			MinAbsZ = std::min(MinAbsZ, AbsZ);
-		}
-
-		if (MaxAbsXOverZ <= 1e-6f || MaxAbsYOverZ <= 1e-6f || MinAbsZ == FLT_MAX)
-		{
-			return MakeOrthoFitToPoints(View, Points);
-		}
-
-		const float ScaleX = 1.0f / MaxAbsXOverZ;
-		const float ScaleY = 1.0f / MaxAbsYOverZ;
-		const float A = std::max(0.001f, MinAbsZ * 0.3f);
-
-		// Reversed-Z variant of the PracticalPSM inverse projection.
-		// z = -A maps to 1, both infinities map to 0.5, and z = +A maps to 0.
-		return FMatrix(
-			ScaleX, 0.0f,   0.0f,      0.0f,
-			0.0f,   ScaleY, 0.0f,      0.0f,
-			0.0f,   0.0f,   0.5f,      1.0f,
-			0.0f,   0.0f,  -0.5f * A,  0.0f
-		);
-	}
-
 	void BuildPSMViewProjection(const FFrameContext& MainFrame, const FScene& Scene, const FVector& LightDirection,
 		FMatrix& OutVirtualCameraViewProjection, FMatrix& OutPSMLightView, FMatrix& OutPSMLightProj)
 	{
+		//View Frustum안에 들어오는 Bound들의 Merged Bound
 		const FBoundingBox ReceiverBounds = BuildShadowReceiverBounds(Scene, MainFrame);
+		//World Space에서 Bound에 가장 가까운 Near를 구한다.
 		const float CameraFitNear = ComputeCameraFitNear(MainFrame, ReceiverBounds);
 
 		const float AspectRatio = (MainFrame.ViewportHeight > 1.0f)
@@ -459,30 +328,34 @@ namespace
 			: 1.0f;
 		const float FovY = 2.0f * std::atan(1.0f / MainFrame.Proj.M[1][1]);
 		const float VirtualSlideBack = MainFrame.bIsOrtho ? 0.0f : GPSMVirtualSlideBack;
+		const FVector VirtualCamPos = MainFrame.CameraPosition - MainFrame.CameraForward.Normalized() * VirtualSlideBack;
+		//카메라가 VirtualSlideBack만큼 멀어질테니 Near를 그만큼 밀어준다 
 		const float VirtualNear = std::max(0.001f, CameraFitNear + VirtualSlideBack);
 		const float VirtualFar = std::max(VirtualNear + 1.0f, MainFrame.FarClip + VirtualSlideBack);
 
 		const FMatrix VirtualCameraView = MainFrame.bIsOrtho
 			? MainFrame.View
 			: FMatrix::MakeViewMatrix(
-				MainFrame.CameraForward.Normalized(),
-				MainFrame.CameraRight.Normalized(),
-				MainFrame.CameraUp.Normalized(),
-				MainFrame.CameraPosition - MainFrame.CameraForward.Normalized() * VirtualSlideBack);
-		const FMatrix VirtualCameraProj = MainFrame.bIsOrtho
-			? MainFrame.Proj
+				MainFrame.CameraForward.Normalized(),MainFrame.CameraRight.Normalized(),MainFrame.CameraUp.Normalized(),
+				VirtualCamPos);
+		const FMatrix VirtualCameraProj = MainFrame.bIsOrtho? MainFrame.Proj
 			: FMatrix::MakeProjectionMatrix(FovY, VirtualNear, VirtualFar, AspectRatio);
 
 		OutVirtualCameraViewProjection = VirtualCameraView * VirtualCameraProj;
 
+		//PostPerspectiveReceiverPoints -> PP공간에서 Receiver들의 BB의 Corner점들을 모아놓음
 		const TArray<FVector4> PostPerspectiveReceiverPoints =
 			BuildPostPerspectiveReceiverPoints(Scene, MainFrame, OutVirtualCameraViewProjection);
+		//PP공간에서 Receiver들의 BB의 Corner점들의 평균을 구함
 		const FVector PPCenter = ComputeCenter(PostPerspectiveReceiverPoints);
+		//PP공간에서 PP Center와 가장 먼 점까지의 거리를 구함
 		const float PPRadius = ComputeBoundingSphereRadius(PostPerspectiveReceiverPoints, PPCenter);
 
+		//World에서의 Light방향
 		const FVector LightToSceneDirection = LightDirection.Normalized();
 		const FVector SceneToLightDirection = -LightToSceneDirection;
 		const FVector4 EyeLightDirection = VirtualCameraView.TransformVector4(FVector4(SceneToLightDirection, 0.0f));
+		//Light의 View공간에서 z성분이 없었다는건(거의 없었다는건) 빛의 방향과 카메라가 바라보는 방향이 수직이라는 것.(LightPP)  
 		const FVector4 LightPP = VirtualCameraProj.TransformVector4(EyeLightDirection);
 		const bool bLightAtInfinity = std::abs(LightPP.W) <= 0.001f;
 		const bool bLightBehindEye = LightPP.W < 0.0f;
@@ -498,39 +371,41 @@ namespace
 
 			const FVector LightPositionPP = PPCenter + LightDirectionPP * (PPRadius * 2.0f);
 			OutPSMLightView = MakeViewFromLocationAndTarget(LightPositionPP, PPCenter);
-			OutPSMLightProj = MakeOrthoFitToPoints(OutPSMLightView, PostPerspectiveReceiverPoints);
+
+			const float DistanceToCenter = std::max(0.001f, FVector::Distance(LightPositionPP, PPCenter));
+			const float FovPP = 2.0f * std::atan(PPRadius / DistanceToCenter);
+			const float AspectPP = 1.0f;
+			const float NearPP = std::max(0.001f, DistanceToCenter - PPRadius);
+			const float FarPP = std::max(NearPP + 0.001f, DistanceToCenter + PPRadius);
+			OutPSMLightProj = FMatrix::MakeProjectionMatrix(FovPP, NearPP, FarPP, AspectPP);
 			return;
 		}
 
 		const float InvLightW = 1.0f / LightPP.W;
 		const FVector LightPositionPP(LightPP.X * InvLightW, LightPP.Y * InvLightW, LightPP.Z * InvLightW);
 		const float DistanceToCenter = FVector::Distance(LightPositionPP, PPCenter);
-		const FPSMBoundingCone ReceiverCone = BuildBoundingCone(PostPerspectiveReceiverPoints, LightPositionPP);
+		//PP공간에서 PPCeter->LightPosition의 거리
 
-		OutPSMLightView = ReceiverCone.bValid
-			? ReceiverCone.View
-			: MakeViewFromLocationAndTarget(LightPositionPP, PPCenter);
+		OutPSMLightView = MakeViewFromLocationAndTarget(LightPositionPP, PPCenter);
 
-		if (bLightBehindEye || DistanceToCenter <= PPRadius * 1.05f)
+		if (bLightBehindEye)
 		{
-			OutPSMLightProj = bLightBehindEye
-				? MakeReversedInversePerspectiveFitToPoints(OutPSMLightView, PostPerspectiveReceiverPoints)
-				: MakeOrthoFitToPoints(OutPSMLightView, PostPerspectiveReceiverPoints);
+			const float SafeDistanceToCenter = std::max(0.001f, DistanceToCenter);
+			const float FovPP = 2.0f * std::atan(PPRadius / SafeDistanceToCenter);
+			const float AspectPP = 1.0f;
+			const float NearPP = std::max(0.1f, SafeDistanceToCenter - PPRadius);
+
+			OutPSMLightProj = FMatrix::MakeProjectionMatrix(FovPP, -NearPP, NearPP, AspectPP);
 			return;
 		}
 
-		const float FovPP = ReceiverCone.bValid
-			? std::min(2.8f, ReceiverCone.FovY * 2.0f)
-			: std::min(2.8f, 2.0f * std::atan(PPRadius / DistanceToCenter));
-		const float AspectPP = ReceiverCone.bValid
-			? std::max(0.001f, std::tan(ReceiverCone.FovX) / std::max(std::tan(ReceiverCone.FovY), 0.001f))
-			: 1.0f;
-		const float NearPP = ReceiverCone.bValid
-			? std::max(0.001f, ReceiverCone.NearZ * 0.6f)
-			: std::max(0.001f, DistanceToCenter - PPRadius);
-		const float FarPP = ReceiverCone.bValid
-			? std::max(NearPP + 0.001f, ReceiverCone.FarZ)
-			: std::max(NearPP + 0.001f, DistanceToCenter + PPRadius);
+		// PP공간에서 Receiver들을 감싸는 Bounding Sphere를 Light Camera에 담는다.
+		// Sphere 기반이므로 x/y 범위는 동일하게 보고 AspectPP는 1.0으로 둔다.
+		const float SafeDistanceToCenter = std::max(0.001f, DistanceToCenter);
+		const float FovPP = 2.0f * std::atan(PPRadius / SafeDistanceToCenter);
+		const float AspectPP = 1.0f;
+		const float NearPP = std::max(0.001f, SafeDistanceToCenter - PPRadius);
+		const float FarPP = std::max(NearPP + 0.001f, SafeDistanceToCenter + PPRadius);
 		OutPSMLightProj = FMatrix::MakeProjectionMatrix(FovPP, NearPP, FarPP, AspectPP);
 	}
 
@@ -907,7 +782,10 @@ bool FShadowRenderer::RenderShadowView(FD3DDevice& Device, FSystemResources& Res
 	Resources.SetRasterizerState(Device, bUsePSMShader ? ERasterizerState::SolidNoCull : ERasterizerState::SolidBackCull);
 
 	Builder.BeginBuild(Scene.GetProxyCount());
-	Builder.SetCullingViewProjection(PassContext.ViewProj, true);
+	// PSM shadow shaders transform World -> MainVP -> perspective divide -> PSMLightVP.
+	// PSMLightVP alone is not a valid world-space culling matrix, so CPU frustum culling
+	// can incorrectly drop casters for some camera/light directions.
+	Builder.SetCullingViewProjection(PassContext.ViewProj, !bUsePSMShader);
 	Builder.BuildCommands(Scene);
 
 	BindShadowFrameConstants(Device, Resources, PassContext);

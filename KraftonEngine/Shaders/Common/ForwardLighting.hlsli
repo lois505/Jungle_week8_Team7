@@ -339,7 +339,12 @@ float CalcDirectionalPSMShadow(float3 worldPos, float3 worldNormal)
     float finalBias = max(userBias * texelSize, (0.25f + 0.25f * slopeFactor) * texelSize);
 
     float4 mainClip = mul(float4(worldPos, 1.0f), PSMMainViewProjection);
-    float4 lightClip = mul(mainClip, PSMLightViewProjection);
+    if (abs(mainClip.w) <= 0.0001f)
+    {
+        return 1.0f;
+    }
+    float4 mainPP = float4(mainClip.xyz / mainClip.w, 1.0f);
+    float4 lightClip = mul(mainPP, PSMLightViewProjection);
     if (abs(lightClip.w) <= 0.0001f)
     {
         return 1.0f;
@@ -362,7 +367,12 @@ float CalcDirectionalPSMShadow(float3 worldPos, float3 worldNormal)
     float worldBias = max(userBias * 0.02f, 0.0015f + 0.0015f * slopeFactor);
     float3 biasedWorldPos = worldPos + sceneToLight * worldBias;
     float4 biasedMainClip = mul(float4(biasedWorldPos, 1.0f), PSMMainViewProjection);
-    float4 biasedLightClip = mul(biasedMainClip, PSMLightViewProjection);
+    float4 biasedLightClip = float4(0.0f, 0.0f, 0.0f, 0.0f);
+    if (abs(biasedMainClip.w) > 0.0001f)
+    {
+        float4 biasedMainPP = float4(biasedMainClip.xyz / biasedMainClip.w, 1.0f);
+        biasedLightClip = mul(biasedMainPP, PSMLightViewProjection);
+    }
     float currentDepth = ndc.z;
     if (abs(biasedLightClip.w) > 0.0001f)
     {
