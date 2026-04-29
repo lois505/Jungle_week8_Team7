@@ -13,6 +13,8 @@
 
 namespace
 {
+	constexpr float GPSMVirtualSlideBack = 10.0f;
+
 	//	Shadow Map을 그린 후 Main Viewport의 상태를 복구함 (다음 Pass를 위해)
 	void RestoreMainViewport(FD3DDevice& Device, const FFrameContext& MainFrame)
 	{
@@ -427,12 +429,17 @@ namespace
 			? MainFrame.ViewportWidth / MainFrame.ViewportHeight
 			: 1.0f;
 		const float FovY = 2.0f * std::atan(1.0f / MainFrame.Proj.M[1][1]);
-		const float VirtualNear = std::max(0.001f, CameraFitNear);
-		const float VirtualFar = std::max(VirtualNear + 1.0f, MainFrame.FarClip);
+		const float VirtualSlideBack = MainFrame.bIsOrtho ? 0.0f : GPSMVirtualSlideBack;
+		const float VirtualNear = std::max(0.001f, CameraFitNear + VirtualSlideBack);
+		const float VirtualFar = std::max(VirtualNear + 1.0f, MainFrame.FarClip + VirtualSlideBack);
 
 		const FMatrix VirtualCameraView = MainFrame.bIsOrtho
 			? MainFrame.View
-			: MainFrame.View;
+			: FMatrix::MakeViewMatrix(
+				MainFrame.CameraForward.Normalized(),
+				MainFrame.CameraRight.Normalized(),
+				MainFrame.CameraUp.Normalized(),
+				MainFrame.CameraPosition - MainFrame.CameraForward.Normalized() * VirtualSlideBack);
 		const FMatrix VirtualCameraProj = MainFrame.bIsOrtho
 			? MainFrame.Proj
 			: FMatrix::MakeProjectionMatrix(FovY, VirtualNear, VirtualFar, AspectRatio);
