@@ -1,4 +1,4 @@
-#include "ShadowRenderer.h"
+﻿#include "ShadowRenderer.h"
 
 #include "FrameContext.h"
 #include "ShadowPassContext.h"
@@ -162,17 +162,20 @@ namespace
 			}
 
 			float Resolution = ShadowData.Settings.ShadowResolutionScale * 1024.0f;
-			float WorldUnitsPerTexel = (MaxX - MinX) / Resolution;
+			
+			float WorldUnitsPerTexelX = (MaxX - MinX) / Resolution;
+			float RangeX = MaxX - MinX;
+			MinX = std::floor(MinX / WorldUnitsPerTexelX) * WorldUnitsPerTexelX;
+			MaxX = MinX + RangeX;
 
-			MinX = std::floor(MinX / WorldUnitsPerTexel) * WorldUnitsPerTexel;
-			MaxX = MinX + (MaxX - MinX);
-
-			MinY = std::floor(MinY / WorldUnitsPerTexel) * WorldUnitsPerTexel;
-			MaxY = MinY + (MaxY - MinY);
+			float WorldUnitsPerTexelY = (MaxY - MinY) / Resolution;
+			float RangeY = MaxY - MinY;
+			MinY = std::floor(MinY / WorldUnitsPerTexelY) * WorldUnitsPerTexelY;
+			MaxY = MinY + RangeY;
 
 			FShadowViewData& View = ShadowData.View[i];
 			View.LightView = LightView;
-			View.LightProj = FMatrix::MakeOrtho(MinX, MaxX, MinY, MaxY, MinZ, MaxZ);
+			View.LightProj = FMatrix::MakeOrtho(MinX, MaxX, MinY, MaxY, MinZ - 20.0f, MaxZ);
 			View.LightViewProj = View.LightView * View.LightProj;
 
 			FVector4 VClip = MainFrame.Proj.TransformVector4(FVector4(0.0f, 0.0f, Zf, 1.0f));

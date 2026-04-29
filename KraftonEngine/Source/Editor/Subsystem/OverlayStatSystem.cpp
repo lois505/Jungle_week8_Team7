@@ -186,7 +186,6 @@ void FOverlayStatSystem::BuildLines(const UEditorEngine& Editor, TArray<FOverlay
 		const FRenderer& Renderer = Editor.GetRenderer();
 		const FShadowRuntimeOptions& ShadowOptions = Renderer.GetRuntimeOptions();
 		const FShadowTelemetry& Telemetry = Renderer.GetShadowTelemetry();
-		const FShadowAtlasResource& Atlas = Renderer.GetShadowAtlas();
 		const FDirectionalShadowArray& DirectionalArray = Renderer.GetDirShadowArray();
 
 		char Buffer[192] = {};
@@ -214,29 +213,7 @@ void FOverlayStatSystem::BuildLines(const UEditorEngine& Editor, TArray<FOverlay
 		AppendLine(OutLines, CurrentY, FString(Buffer));
 		CurrentY += Layout.LineHeight;
 
-		uint64 EstimatedShadowVRAM = 0;
-		EstimatedShadowVRAM += static_cast<uint64>(Atlas.Map.Width) * static_cast<uint64>(Atlas.Map.Height) * 4ull;
-		if (Atlas.Map.Texture)
-		{
-			EstimatedShadowVRAM += static_cast<uint64>(Atlas.Map.Width) * static_cast<uint64>(Atlas.Map.Height) * 8ull;
-		}
-		if (Atlas.FilterTempMap.Texture)
-		{
-			EstimatedShadowVRAM += static_cast<uint64>(Atlas.FilterTempMap.Width) * static_cast<uint64>(Atlas.FilterTempMap.Height) * 8ull;
-		}
-
-		const uint64 DirectionalSliceCount = DirectionalArray.Texture ? static_cast<uint64>(DirectionalArray.NumElements + 1) : 0ull;
-		EstimatedShadowVRAM += static_cast<uint64>(DirectionalArray.Width) * static_cast<uint64>(DirectionalArray.Height) * DirectionalSliceCount * 4ull;
-		if (DirectionalArray.MomentTexture)
-		{
-			EstimatedShadowVRAM += static_cast<uint64>(DirectionalArray.Width) * static_cast<uint64>(DirectionalArray.Height) * DirectionalSliceCount * 8ull;
-		}
-		if (DirectionalArray.MomentFilterTempTexture)
-		{
-			EstimatedShadowVRAM += static_cast<uint64>(DirectionalArray.Width) * static_cast<uint64>(DirectionalArray.Height) * DirectionalSliceCount * 8ull;
-		}
-
-		FormatBytes(Buffer, sizeof(Buffer), "Estimated Shadow VRAM", EstimatedShadowVRAM);
+		FormatBytes(Buffer, sizeof(Buffer), "Estimated Shadow VRAM", Telemetry.EstimatedShadowVRAMBytes);
 		AppendLine(OutLines, CurrentY, FString(Buffer));
 		CurrentY += Layout.LineHeight + Layout.GroupSpacing;
 
@@ -246,10 +223,15 @@ void FOverlayStatSystem::BuildLines(const UEditorEngine& Editor, TArray<FOverlay
 			AppendLine(OutLines, CurrentY, FString(Buffer));
 			CurrentY += Layout.LineHeight;
 
-			snprintf(Buffer, sizeof(Buffer), "Directional Array : %.0f x %.0f, slices=%u",
+			snprintf(Buffer, sizeof(Buffer), "Directional Array : %.0f x %.0f, CSM slices=%u, total slices=%u",
 				DirectionalArray.Width,
 				DirectionalArray.Height,
-				DirectionalArray.NumElements + 1);
+				Telemetry.DirectionalShadowCascadeSliceCount,
+				Telemetry.DirectionalShadowArraySliceCount);
+			AppendLine(OutLines, CurrentY, FString(Buffer));
+			CurrentY += Layout.LineHeight;
+
+			FormatBytes(Buffer, sizeof(Buffer), "Directional Shadow VRAM", Telemetry.EstimatedDirectionalShadowVRAMBytes);
 			AppendLine(OutLines, CurrentY, FString(Buffer));
 			CurrentY += Layout.LineHeight;
 

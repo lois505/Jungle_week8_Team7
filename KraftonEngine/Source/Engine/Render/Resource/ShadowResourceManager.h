@@ -17,6 +17,11 @@ struct FShadowTelemetry
 	uint32 FailedShadowViewCount = 0;
 	uint64 UsedLocalShadowAtlasAreaPerFrame = 0;
 	uint64 LocalAtlasTotalArea = 0;
+	uint64 EstimatedLocalShadowVRAMBytes = 0;
+	uint64 EstimatedDirectionalShadowVRAMBytes = 0;
+	uint64 EstimatedShadowVRAMBytes = 0;
+	uint32 DirectionalShadowCascadeSliceCount = 0;
+	uint32 DirectionalShadowArraySliceCount = 0;
 	uint32 NumDirectionalLights = 0;
 	uint32 NumPointLights = 0;
 	uint32 NumSpotLights = 0;
@@ -62,7 +67,7 @@ private:
 	void EnsureSpotShadow(FSpotShadowData& Shadow, uint32 BaseResolution, const FShadowRuntimeOptions& ShadowOptions);
 	void EnsurePointShadow(FPointShadowData& Shadow, uint32 BaseResolution, const FShadowRuntimeOptions& ShadowOptions);
 
-	void UpdateTelemetry(const FSceneEnvironment& Environment, const FShadowRuntimeOptions& ShadowOptions);
+	void UpdateTelemetry(const FSceneEnvironment& Environment);
 
 	bool ClearAtlasTextures(const FShadowRuntimeOptions& ShadowOptions);
 	void ResetAtlasAllocationState();
