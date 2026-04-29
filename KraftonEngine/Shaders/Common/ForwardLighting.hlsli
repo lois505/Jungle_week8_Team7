@@ -50,10 +50,9 @@ float SampleShadowAtlasVSM(float4 rect, float2 localUV, float currentDepth, floa
 
 float SampleShadowAtlasESM(float4 rect, float2 localUV, float currentDepth, float bias, float2 atlasTileSize)
 {
-    const float exponent = 150.f;
     float2 atlasUV = rect.xy + localUV * rect.zw;
     float avgExpDepth = ShadowMapAtlasTexture.SampleLevel(PointClampSampler, atlasUV, 0).x;
-    float receiverExpDepth = exp(exponent * saturate(currentDepth + bias));
+    float receiverExpDepth = exp(LocalESMExponent * saturate(currentDepth + bias));
 
     return saturate(receiverExpDepth / max(avgExpDepth, 0.000001f));
 }
@@ -189,7 +188,13 @@ float SampleDirectionalVSM(int indx, float2 uv, float currentDepth, float bias, 
 
 float SampleDirectionalESM(int indx, float2 uv, float currentDepth, float bias, float2 shadowMapSize)
 {
-    const float exponent = 150.f;
+    float exponent = DirectionalESMExponentPSM;
+    if (indx > 0)
+    {
+        int cascadeIdx = clamp(indx - 1, 0, 3);
+        exponent = DirectionalESMExponentCSM[cascadeIdx];
+    }
+
     float avgExpDepth = SampleDirectionalMoments(indx, uv).x;
     float receiverExpDepth = exp(exponent * saturate(currentDepth + bias));
     return saturate(receiverExpDepth / max(avgExpDepth, 0.000001f));

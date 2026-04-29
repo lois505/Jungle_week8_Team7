@@ -39,7 +39,7 @@ static const char* GetDirectionalShadowModeName(EDirectionalShadowMode Mode)
 {
 	switch (Mode)
 	{
-	case EDirectionalShadowMode::Single: return "Single";
+	case EDirectionalShadowMode::PSM: return "PSM";
 	case EDirectionalShadowMode::CSM: return "CSM";
 	default: return "Unknown";
 	}

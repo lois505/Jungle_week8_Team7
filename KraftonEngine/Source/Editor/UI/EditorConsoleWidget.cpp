@@ -347,7 +347,7 @@ void FEditorConsoleWidget::Initialize(UEditorEngine* InEditorEngine)
 				std::transform(Value.begin(), Value.end(), Value.begin(), ::tolower);
 
 				EDirectionalShadowMode NewMode = Settings.DirectionalShadowMode;
-				if (Value == "single") NewMode = EDirectionalShadowMode::Single;
+				if (Value == "psm") NewMode = EDirectionalShadowMode::PSM;
 				else if (Value == "csm") NewMode = EDirectionalShadowMode::CSM;
 				else
 				{

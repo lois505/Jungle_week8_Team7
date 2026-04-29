@@ -111,7 +111,8 @@ cbuffer LightingBuffer : register(b4)
     uint ShadowFilterMode;
     uint DebugCascades;
     uint EnableShadows;
-    uint2 _Pad0;
+    float LocalESMExponent;
+    uint _Pad0;
 };
 
 cbuffer DirectionalShadowBuffer : register(b5)
@@ -125,7 +126,9 @@ cbuffer DirectionalShadowBuffer : register(b5)
     float4x4 PSMMainViewProjection;
     float4x4 PSMLightViewProjection;
     uint UsePSMShadow;
-    float3 DirectionalShadowPadding;
+    float DirectionalESMExponentPSM;
+    float2 DirectionalShadowPadding0;
+    float4 DirectionalESMExponentCSM;
 }
 
 // ── Structured Buffers (t8~t10) ──
