@@ -1,4 +1,4 @@
-#include "ShadowResourceManager.h"
+﻿#include "ShadowResourceManager.h"
 
 #include "Render/Pipeline/RenderConstants.h"
 #include "Render/Proxy/SceneEnvironment.h"
@@ -183,7 +183,7 @@ void FShadowResourceManager::Initialize(ID3D11Device* Device, ID3D11DeviceContex
 
 	DirectionalResolutionPolicy.BaseResolution = 1024;
 	DirectionalResolutionPolicy.MinResolution = 1024;
-	DirectionalResolutionPolicy.MaxResolution = 2048;
+	DirectionalResolutionPolicy.MaxResolution = 4096;
 	DirectionalResolutionPolicy.Alignment = 256;
 
 	LocalResolutionPolicy.BaseResolution = 512;
