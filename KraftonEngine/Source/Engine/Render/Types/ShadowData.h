@@ -85,7 +85,7 @@ struct FDirectionalShadowData : FShadowCommonData
 {
 	static constexpr  int NUM_CASCADES = 4;
 
-	float DistributeExponent = 0.65f;
+	float DistributeExponent = 0.85f;
 	int32 PreviewViewIndex = 0;
 	FShadowViewData PSMView;
 	FMatrix MainViewProjection = FMatrix::Identity;
