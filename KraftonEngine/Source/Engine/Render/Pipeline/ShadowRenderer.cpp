@@ -29,7 +29,7 @@ namespace
 
 	constexpr float GPSMVirtualSlideBack = 10.0f;
 	constexpr float GLocalESMExponent = 1000.0f;
-	constexpr float GDirectionalESMExponent = 40.0f;
+	constexpr float GDirectionalESMExponent = 80.0f;
 	constexpr float GDirectionalCascadeESMExponents[4] = { 40.0f, 60.0f, 80.0f, 300.0f };
 
 	float GetDirectionalCascadeESMExponent(uint32 CascadeIndex)

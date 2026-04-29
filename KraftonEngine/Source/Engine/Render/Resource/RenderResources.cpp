@@ -10,7 +10,7 @@
 namespace
 {
 	constexpr float kLocalESMExponent = 1000.0f;
-	constexpr float kDirectionalPSMESMExponent = 40.0f;
+	constexpr float kDirectionalPSMESMExponent = 80.0f;
 	constexpr float kDirectionalCSMESMExponent[4] = { 40.0f, 60.0f, 80.0f, 300.0f };
 }
 

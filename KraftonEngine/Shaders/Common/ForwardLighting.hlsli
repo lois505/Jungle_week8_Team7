@@ -27,6 +27,26 @@ float SampleShadowAtlas(float2 uv)
     return ShadowMapAtlasTexture.SampleLevel(PointClampSampler, uv, 0).r;
 }
 
+float ReduceVSMLightBleeding(float visibility, float amount)
+{
+    return saturate((visibility - amount) / max(1.0f - amount, 0.0001f));
+}
+
+float ComputeVSMVisibility(float mean, float meanSq, float receiverDepth)
+{
+    if (receiverDepth >= mean)
+    {
+        return 1.0f;
+    }
+
+    float variance = max(meanSq - mean * mean, 0.000005f);
+    variance *= 0.35f;
+
+    float depthDelta = mean - receiverDepth;
+    float visibility = variance / (variance + depthDelta * depthDelta);
+    return ReduceVSMLightBleeding(visibility, 0.15f);
+}
+
 float SampleShadowAtlasVSM(float4 rect, float2 localUV, float currentDepth, float bias, float2 atlasTileSize)
 {
     float2 atlasUV = rect.xy + localUV * rect.zw;
@@ -35,16 +55,7 @@ float SampleShadowAtlasVSM(float4 rect, float2 localUV, float currentDepth, floa
     float meanSq = moments.y;
     float receiverDepth = currentDepth + bias;
 
-    if (receiverDepth >= mean)
-    {
-        return 1.0f;
-    }
-
-    float variance = max(meanSq - mean * mean, 0.00002f);
-    float depthDelta = mean - receiverDepth;
-    float visibility = variance / (variance + depthDelta * depthDelta);
-
-    return saturate(visibility);
+    return ComputeVSMVisibility(mean, meanSq, receiverDepth);
 }
 
 float SampleShadowAtlasESM(float4 rect, float2 localUV, float currentDepth, float bias, float2 atlasTileSize)
@@ -174,15 +185,7 @@ float SampleDirectionalVSM(int indx, float2 uv, float currentDepth, float bias, 
     float meanSq = moments.y;
     float receiverDepth = currentDepth + bias;
 
-    if (receiverDepth >= mean)
-    {
-        return 1.0f;
-    }
-
-    float variance = max(meanSq - mean * mean, 0.00002f);
-    float depthDelta = mean - receiverDepth;
-    float visibility = variance / (variance + depthDelta * depthDelta);
-    return saturate(visibility);
+    return ComputeVSMVisibility(mean, meanSq, receiverDepth);
 }
 
 float SampleDirectionalESM(int indx, float2 uv, float currentDepth, float bias, float2 shadowMapSize)

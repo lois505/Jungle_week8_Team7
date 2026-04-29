@@ -2,7 +2,7 @@
   "Actors" : [{
       "ClassName" : "AStaticMeshActor",
       "NonSceneComponents" : [],
-      "PrimitiveKey" : "67",
+      "PrimitiveKey" : "310",
       "RootComponent" : {
         "Children" : [],
         "ClassName" : "UStaticMeshComponent",
@@ -23,7 +23,7 @@
     }, {
       "ClassName" : "AStaticMeshActor",
       "NonSceneComponents" : [],
-      "PrimitiveKey" : "72",
+      "PrimitiveKey" : "312",
       "RootComponent" : {
         "Children" : [],
         "ClassName" : "UStaticMeshComponent",
@@ -99,10 +99,10 @@
               "Location" : [0.000000, 0.000000, 0.000000],
               "Rotation" : [0.000000, 0.000000, 0.000000],
               "Scale" : [1.000000, 1.000000, 1.000000],
-              "Shadow Bias" : 0.500000,
+              "Shadow Bias" : 2.000000,
               "Shadow Resolution Scale" : 4.000000,
               "Shadow Sharpen" : 0.350000,
-              "Shadow Slope Bias" : 0.100000,
+              "Shadow Slope Bias" : 2.000000,
               "Visible" : true,
               "bEditorOnly" : false,
               "bTickEnable" : true
@@ -115,7 +115,7 @@
           "Material" : {
             "Path" : "Asset/Materials/Editor/DirectionalLight.mat"
           },
-          "Rotation" : [138.662354, 0.000000, 0.000000],
+          "Rotation" : [89.900002, 0.000000, 0.000000],
           "Scale" : [1.000000, 1.000000, 1.000000],
           "Visible" : true,
           "Width" : 1.000000,
@@ -132,19 +132,19 @@
   "PerspectiveCamera" : {
     "FOV" : 1.047198,
     "FarClip" : 1000.000000,
-    "Location" : [9.667510, -8.128222, 12.140729],
+    "Location" : [8.921951, -8.185402, 12.790752],
     "NearClip" : 0.100000,
-    "Rotation" : [-0.000002, 40.815552, 134.558563]
+    "Rotation" : [-0.000001, 41.415649, 140.108536]
   },
   "Primitives" : {
-    "67" : {
+    "310" : {
       "Location" : [0.000000, 0.000000, -0.118394],
       "ObjStaticMeshAsset" : "Data/BasicShape/Cube.OBJ",
       "Rotation" : [0.000000, -0.000000, 0.000000],
       "Scale" : [7.000000, 7.000000, 1.000000],
       "Type" : "StaticMeshComp"
     },
-    "72" : {
+    "312" : {
       "Location" : [0.000000, 0.000000, 0.924253],
       "ObjStaticMeshAsset" : "Data/Lumine/LumineModel.obj",
       "Rotation" : [0.000000, -0.000000, -94.198067],
