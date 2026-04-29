@@ -35,7 +35,7 @@ public:
 
 	// Renderer-wide shadow options
 	EShadowFilterMode ShadowFilterMode = EShadowFilterMode::None;
-	EDirectionalShadowMode DirectionalShadowMode = EDirectionalShadowMode::Single;
+	EDirectionalShadowMode DirectionalShadowMode = EDirectionalShadowMode::PSM;
 	bool bSkipShadowPassInUnlit = true;
 	bool bDebugCascades = false;
 	int32 MaxLocalShadowViewsPerFrame = 0; // 0 means no budget cap

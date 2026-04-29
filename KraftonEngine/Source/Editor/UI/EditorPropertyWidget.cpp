@@ -611,7 +611,7 @@ void FEditorPropertyWidget::RenderDirectionalLightShadowPreview(UDirectionalLigh
 	}
 
 	static int PreviewSliceIndex = 0;
-	if (ShadowOptions.DirectionalShadowMode == EDirectionalShadowMode::Single)
+	if (ShadowOptions.DirectionalShadowMode == EDirectionalShadowMode::PSM)
 	{
 		PreviewSliceIndex = 0;
 	}

@@ -61,7 +61,7 @@ enum class EShadowFilterMode : uint8
 //	Directional 전용 - console과 연동
 enum class EDirectionalShadowMode : uint8
 {
-	Single,
+	PSM,
 	CSM,
 };
 
@@ -69,7 +69,7 @@ enum class EDirectionalShadowMode : uint8
 struct FShadowRuntimeOptions
 {
 	EShadowFilterMode ShadowFilterMode = EShadowFilterMode::None;
-	EDirectionalShadowMode DirectionalShadowMode = EDirectionalShadowMode::Single;
+	EDirectionalShadowMode DirectionalShadowMode = EDirectionalShadowMode::PSM;
 	bool bSkipShadowPassInUnlit = true;
 	bool bDebugCascades = false;
 };

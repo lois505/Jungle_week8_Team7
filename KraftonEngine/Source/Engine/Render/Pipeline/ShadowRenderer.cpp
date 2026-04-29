@@ -28,8 +28,19 @@ namespace
 	};
 
 	constexpr float GPSMVirtualSlideBack = 10.0f;
+	constexpr float GLocalESMExponent = 150.0f;
+	constexpr float GDirectionalESMExponent = 40.0f;
+	constexpr float GDirectionalCascadeESMExponents[4] = { 40.0f, 30.0f, 80.0f, 300.0f };
 
-	//	Shadow Map??洹몃┛ ??Main Viewport???곹깭瑜?蹂듦뎄??(?ㅼ쓬 Pass瑜??꾪빐)
+	float GetDirectionalCascadeESMExponent(uint32 CascadeIndex)
+	{
+		if (CascadeIndex < 4u)
+		{
+			return GDirectionalCascadeESMExponents[CascadeIndex];
+		}
+		return GDirectionalCascadeESMExponents[3];
+	}
+	
 	void RestoreMainViewport(FD3DDevice& Device, const FFrameContext& MainFrame)
 	{
 		ID3D11DeviceContext* DeviceContext = Device.GetDeviceContext();
@@ -79,7 +90,7 @@ namespace
 
 	uint32 GetActiveDirectionalCascadeCount(const FShadowRuntimeOptions& ShadowOptions, uint32 MaxCascadeCount)
 	{
-		if (ShadowOptions.DirectionalShadowMode == EDirectionalShadowMode::Single)
+		if (ShadowOptions.DirectionalShadowMode == EDirectionalShadowMode::PSM)
 		{
 			return (MaxCascadeCount > 0) ? 1u : 0u;
 		}
@@ -89,7 +100,7 @@ namespace
 
 	uint32 GetDirectionalShadowSliceIndex(const FShadowRuntimeOptions& ShadowOptions, uint32 CascadeIndex)
 	{
-		if (ShadowOptions.DirectionalShadowMode == EDirectionalShadowMode::Single)
+		if (ShadowOptions.DirectionalShadowMode == EDirectionalShadowMode::PSM)
 		{
 			return 0u; // PSM slice
 		}
@@ -424,7 +435,7 @@ namespace
 
 	void UpdateCascades(FDirectionalShadowData& ShadowData, const FVector& LightDirection, const FFrameContext& MainFrame, const FShadowRuntimeOptions& ShadowOptions)
 	{
-		const bool bSingleMode = (ShadowOptions.DirectionalShadowMode == EDirectionalShadowMode::Single);
+		const bool bSingleMode = (ShadowOptions.DirectionalShadowMode == EDirectionalShadowMode::PSM);
 		const int32 ActiveCascadeCount = bSingleMode ? 1 : ShadowData.NUM_CASCADES;
 
 		if (ShadowData.bOverrideCameraWithLight && HasValidDirectionalViews(ShadowData, ActiveCascadeCount))
@@ -605,7 +616,7 @@ FShadowRenderer::FShadowRenderResult FShadowRenderer::RenderDirectionalShadow(FD
 	UpdateCascades(Light.ShadowData, Light.Direction, MainFrame, ShadowOptions);
 	const FDirectionalShadowArray& DirectionalArray = Resources.ShadowResourceManager.GetShadowArray();
 
-	if (ShadowOptions.DirectionalShadowMode == EDirectionalShadowMode::Single)
+	if (ShadowOptions.DirectionalShadowMode == EDirectionalShadowMode::PSM)
 	{
 		FShadowMapResource& DepthMap = Light.ShadowData.PSMView.DepthMap;
 		DepthMap.DSV = DirectionalArray.DSVs[0];
@@ -627,7 +638,7 @@ FShadowRenderer::FShadowRenderResult FShadowRenderer::RenderDirectionalShadow(FD
 		DepthMap.Width = static_cast<uint32>(DirectionalArray.Width);
 		DepthMap.Height = static_cast<uint32>(DirectionalArray.Height);
 
-		if (!RenderShadowView(Device, Resources, Light.ShadowData.PSMView, Scene, true, &Light.ShadowData.MainViewProjection))
+		if (!RenderShadowView(Device, Resources, Light.ShadowData.PSMView, Scene, true, &Light.ShadowData.MainViewProjection, GDirectionalESMExponent))
 		{
 			++Result.InvalidViewCount;
 			return Result;
@@ -661,7 +672,7 @@ FShadowRenderer::FShadowRenderResult FShadowRenderer::RenderDirectionalShadow(FD
 		DepthMap.Width = static_cast<uint32>(DirectionalArray.Width);
 		DepthMap.Height = static_cast<uint32>(DirectionalArray.Height);
 
-		if (!RenderShadowView(Device, Resources, Light.ShadowData.View[i], Scene))
+		if (!RenderShadowView(Device, Resources, Light.ShadowData.View[i], Scene, false, nullptr, GetDirectionalCascadeESMExponent(i)))
 		{
 			++Result.InvalidViewCount;
 			continue;
@@ -690,7 +701,7 @@ FShadowRenderer::FShadowRenderResult FShadowRenderer::RenderPointShadow(FD3DDevi
 			continue;
 		}
 
-		if (!RenderShadowView(Device, Resources, Light.ShadowData.View[i], Scene))
+		if (!RenderShadowView(Device, Resources, Light.ShadowData.View[i], Scene, false, nullptr, GLocalESMExponent))
 		{
 			++Result.InvalidViewCount;
 			continue;
@@ -710,7 +721,7 @@ FShadowRenderer::FShadowRenderResult FShadowRenderer::RenderSpotShadow(FD3DDevic
 		return Result;
 	}
 
-	if (!RenderShadowView(Device, Resources, Light.ShadowData.View, Scene))
+	if (!RenderShadowView(Device, Resources, Light.ShadowData.View, Scene, false, nullptr, GLocalESMExponent))
 	{
 		++Result.InvalidViewCount;
 		return Result;
@@ -722,7 +733,7 @@ FShadowRenderer::FShadowRenderResult FShadowRenderer::RenderSpotShadow(FD3DDevic
 
 //	媛곴컖??View Rendering
 bool FShadowRenderer::RenderShadowView(FD3DDevice& Device, FSystemResources& Resources, FShadowViewData& View, FScene& Scene,
-	bool bUsePSMShader, const FMatrix* PSMMainViewProjection)
+	bool bUsePSMShader, const FMatrix* PSMMainViewProjection, float LocalESMExponentForPass)
 {
 	//	Preparing for Rendering
 	ID3D11DeviceContext* DeviceContext = Device.GetDeviceContext();
@@ -806,7 +817,7 @@ bool FShadowRenderer::RenderShadowView(FD3DDevice& Device, FSystemResources& Res
 	Builder.SetCullingViewProjection(PassContext.ViewProj, !bUsePSMShader);
 	Builder.BuildCommands(Scene);
 
-	BindShadowFrameConstants(Device, Resources, PassContext);
+	BindShadowFrameConstants(Device, Resources, PassContext, LocalESMExponentForPass);
 
 	if (bUsePSMShader && PSMMainViewProjection)
 	{
@@ -1147,7 +1158,7 @@ void FShadowRenderer::UnbindShadowWriteTargets(FD3DDevice& Device)
 
 //	RenderResources.cpp??UpdateFrameBuffer() 李멸퀬
 void FShadowRenderer::BindShadowFrameConstants(FD3DDevice& Device, FSystemResources& Resources,
-	const FShadowPassContext& Context)
+	const FShadowPassContext& Context, float LocalESMExponentForPass)
 {
 	ID3D11DeviceContext* DeviceContext = Device.GetDeviceContext();
 
@@ -1170,6 +1181,7 @@ void FShadowRenderer::BindShadowFrameConstants(FD3DDevice& Device, FSystemResour
 
 	FLightingCBData ShadowPassLightingData = {};
 	ShadowPassLightingData.ShadowFilterMode = static_cast<uint32>(ShadowOptions.ShadowFilterMode);
+	ShadowPassLightingData.LocalESMExponent = LocalESMExponentForPass;
 	Resources.LightingConstantBuffer.Update(DeviceContext, &ShadowPassLightingData, sizeof(FLightingCBData));
 
 	ID3D11Buffer* b4 = Resources.LightingConstantBuffer.GetBuffer();

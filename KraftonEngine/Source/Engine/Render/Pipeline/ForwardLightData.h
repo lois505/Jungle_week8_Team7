@@ -101,7 +101,8 @@ struct FLightingCBData
 	uint32  ShadowFilterMode;                  //  4B  | offset 124
 	uint32  DebugCascades;                     //  4B  | offset 128
 	uint32  EnableShadows;                     //  4B  | offset 132
-	uint32  _Pad0[2];                          //  8B  | offset 136 → 합계 144B
+	float   LocalESMExponent;                  //  4B  | offset 136
+	uint32  _Pad0;                             //  4B  | offset 140 → 합계 144B
 };
 static_assert(sizeof(FLightingCBData) % 16 == 0, "FLightingCBData must be 16-byte aligned");
 static_assert(sizeof(FLightingCBData) == 144, "FLightingCBData size mismatch with HLSL");

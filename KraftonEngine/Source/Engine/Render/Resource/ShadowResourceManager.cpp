@@ -250,7 +250,7 @@ void FShadowResourceManager::EnsureDirectionalShadow(FDirectionalShadowData& Sha
 	}
 
 	const uint32 Resolution = ComputeRequestedResolution(Shadow.Settings, DirectionalResolutionPolicy);
-	const int32 DesiredNumCascades = (ShadowOptions.DirectionalShadowMode == EDirectionalShadowMode::Single) ? 0 : Shadow.NUM_CASCADES;
+	const int32 DesiredNumCascades = (ShadowOptions.DirectionalShadowMode == EDirectionalShadowMode::PSM) ? 0 : Shadow.NUM_CASCADES;
 	const bool bUseMomentResources = (ShadowOptions.ShadowFilterMode == EShadowFilterMode::VSM || ShadowOptions.ShadowFilterMode == EShadowFilterMode::ESM);
 	ResizeDirectionalShadowArray(Resolution, DesiredNumCascades, bUseMomentResources);
 }

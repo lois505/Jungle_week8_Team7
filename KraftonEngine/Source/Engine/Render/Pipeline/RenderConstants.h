@@ -169,7 +169,9 @@ struct FDirectionalConstants
 	FMatrixPOD PSMMainViewProjection;
 	FMatrixPOD PSMLightViewProj;
 	uint32 UsePSMShadow;
-	float _pad[3];
+	float DirectionalESMExponentPSM;
+	float _pad0[2];
+	float DirectionalESMExponentCSM[4];
 };
 
 struct FPSMShadowConstants

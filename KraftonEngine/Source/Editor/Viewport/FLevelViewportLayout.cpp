@@ -1122,7 +1122,7 @@ void FLevelViewportLayout::RenderPaneToolbar(int32 SlotIndex)
 				}
 
 				int32 DirectionalShadowMode = static_cast<int32>(ShadowOptions.DirectionalShadowMode);
-				ImGui::RadioButton("Single##DirectionalShadowMode", &DirectionalShadowMode, static_cast<int32>(EDirectionalShadowMode::Single));
+				ImGui::RadioButton("PSM##DirectionalShadowMode", &DirectionalShadowMode, static_cast<int32>(EDirectionalShadowMode::PSM));
 				ImGui::SameLine();
 				ImGui::RadioButton("CSM##DirectionalShadowMode", &DirectionalShadowMode, static_cast<int32>(EDirectionalShadowMode::CSM));
 

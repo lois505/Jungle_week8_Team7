@@ -7,6 +7,13 @@
 #include "Engine/Runtime/Engine.h"
 #include "Profiling/Timer.h"
 
+namespace
+{
+	constexpr float kLocalESMExponent = 150.0f;
+	constexpr float kDirectionalPSMESMExponent = 40.0f;
+	constexpr float kDirectionalCSMESMExponent[4] = { 40.0f, 30.0f, 80.0f, 300.0f };
+}
+
 void FTileCullingResource::Create(ID3D11Device* Dev, uint32 InTileCountX, uint32 InTileCountY)
 {
 	Release();
@@ -165,7 +172,7 @@ void FSystemResources::UpdateLightAndShadowBuffer(FD3DDevice& Device, const FSce
 		{
 			const FDirectionalShadowData& ShadowData = DirLightParams.ShadowData;
 			FDirectionalConstants DirectionalCB = {};
-			DirectionalCB.NumcasCade = (ShadowOptions.DirectionalShadowMode == EDirectionalShadowMode::Single) ? 1 : ShadowData.NUM_CASCADES;
+			DirectionalCB.NumcasCade = (ShadowOptions.DirectionalShadowMode == EDirectionalShadowMode::PSM) ? 1 : ShadowData.NUM_CASCADES;
 
 			for (int i = 0; i < DirectionalCB.NumcasCade; i++)
 			{
@@ -179,7 +186,12 @@ void FSystemResources::UpdateLightAndShadowBuffer(FD3DDevice& Device, const FSce
 			DirectionalCB.ShadowSharpen = DirLightParams.ShadowData.Settings.ShadowSharpen;
 			DirectionalCB.PSMMainViewProjection = ShadowData.MainViewProjection.ConvertToPOD();
 			DirectionalCB.PSMLightViewProj = ShadowData.PSMView.LightViewProj.ConvertToPOD();
-			DirectionalCB.UsePSMShadow = (ShadowOptions.DirectionalShadowMode == EDirectionalShadowMode::Single) ? 1u : 0u;
+			DirectionalCB.UsePSMShadow = (ShadowOptions.DirectionalShadowMode == EDirectionalShadowMode::PSM) ? 1u : 0u;
+			DirectionalCB.DirectionalESMExponentPSM = kDirectionalPSMESMExponent;
+			for (int32 Cascade = 0; Cascade < 4; ++Cascade)
+			{
+				DirectionalCB.DirectionalESMExponentCSM[Cascade] = kDirectionalCSMESMExponent[Cascade];
+			}
 
 			// 추가 팁: 셰이더에서 texelSize를 계산할 수 있도록 해상도 정보를 CB에 포함하세요.
 			// 현재 Resolution이 2048이라면, 셰이더는 이 값을 받아 PCF 필터링 보폭을 정하게 됩니다.
@@ -231,6 +243,7 @@ void FSystemResources::UpdateLightAndShadowBuffer(FD3DDevice& Device, const FSce
 	GlobalLightingData.VisualizeLightCulling = Frame.RenderOptions.ViewMode == EViewMode::LightCulling ? 1u : 0u;
 	GlobalLightingData.HeatMapMax = Frame.RenderOptions.HeatMapMax;
 	GlobalLightingData.ShadowFilterMode = static_cast<uint32>(ShadowOptions.ShadowFilterMode);
+	GlobalLightingData.LocalESMExponent = kLocalESMExponent;
 	GlobalLightingData.DebugCascades = ShadowOptions.bDebugCascades ? 1u : 0u;
 	GlobalLightingData.EnableShadows = Frame.RenderOptions.ShowFlags.bShadow ? 1u : 0u;
 	

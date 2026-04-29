@@ -40,11 +40,11 @@ private:
 	FShadowRenderResult RenderSpotShadow(FD3DDevice& Device, FSystemResources& Resources, FSpotLightParams& Light, FScene& Scene);
 
 	bool RenderShadowView(FD3DDevice& Device, FSystemResources& Resources, FShadowViewData& View, FScene& Scene,
-		bool bUsePSMShader = false, const FMatrix* PSMMainViewProjection = nullptr);
+		bool bUsePSMShader = false, const FMatrix* PSMMainViewProjection = nullptr, float LocalESMExponentForPass = 150.0f);
 	void UnbindShadowReadResourcesForWrite(FD3DDevice& Device);
 	void UnbindShadowWriteTargets(FD3DDevice& Device);
 
-	void BindShadowFrameConstants(FD3DDevice& Device, FSystemResources& Resources, const FShadowPassContext& Context);
+	void BindShadowFrameConstants(FD3DDevice& Device, FSystemResources& Resources, const FShadowPassContext& Context, float LocalESMExponentForPass);
 	void RenderAtlasMomentBlurPass(FD3DDevice& Device, FSystemResources& Resources, const FSceneEnvironment& Environment);
 	void RenderDirectionalMomentBlurPass(FD3DDevice& Device, FSystemResources& Resources, const FSceneEnvironment& Environment);
 

@@ -687,7 +687,7 @@ bool FEditorViewportClient::TryApplyDirectionalLightOverride(AActor* SelectedAct
 	}
 
 	const FShadowRuntimeOptions& ShadowOptions = GEngine->GetRenderer().GetRuntimeOptions();
-	const int32 ActiveCascadeCount = (ShadowOptions.DirectionalShadowMode == EDirectionalShadowMode::Single)
+	const int32 ActiveCascadeCount = (ShadowOptions.DirectionalShadowMode == EDirectionalShadowMode::PSM)
 		? 1
 		: FDirectionalShadowData::NUM_CASCADES;
 
