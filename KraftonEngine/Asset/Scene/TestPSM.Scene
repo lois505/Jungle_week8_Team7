@@ -1,0 +1,157 @@
+{
+  "Actors" : [{
+      "ClassName" : "AStaticMeshActor",
+      "NonSceneComponents" : [],
+      "PrimitiveKey" : "70",
+      "RootComponent" : {
+        "Children" : [],
+        "ClassName" : "UStaticMeshComponent",
+        "Properties" : {
+          "Element 0" : {
+            "Path" : "Asset/Materials/Auto/DollByeok.mat"
+          },
+          "Location" : [0.000000, 0.000000, -0.118394],
+          "Rotation" : [-0.000000, 0.000000, 0.000000],
+          "Scale" : [7.000000, 7.000000, 1.000000],
+          "Static Mesh" : "Data/BasicShape/Cube.OBJ",
+          "Visible" : true,
+          "bEditorOnly" : false,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
+      "ClassName" : "AStaticMeshActor",
+      "NonSceneComponents" : [{
+          "ClassName" : "URotatingMovementComponent",
+          "Properties" : {
+            "Auto Register Updated" : true,
+            "Rotation Rate" : [0.000000, 90.000000, 0.000000],
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
+        }],
+      "PrimitiveKey" : "80",
+      "RootComponent" : {
+        "Children" : [],
+        "ClassName" : "UStaticMeshComponent",
+        "Properties" : {
+          "Element 0" : {
+            "Path" : "Asset/Materials/Auto/Eyes.mat"
+          },
+          "Element 1" : {
+            "Path" : "Asset/Materials/Auto/EyeWhites.mat"
+          },
+          "Element 10" : {
+            "Path" : "Asset/Materials/Auto/Skirt.mat"
+          },
+          "Element 11" : {
+            "Path" : "Asset/Materials/Auto/Shoes.mat"
+          },
+          "Element 12" : {
+            "Path" : "Asset/Materials/Auto/Gloves.mat"
+          },
+          "Element 2" : {
+            "Path" : "Asset/Materials/Auto/Neck.mat"
+          },
+          "Element 3" : {
+            "Path" : "Asset/Materials/Auto/Face.mat"
+          },
+          "Element 4" : {
+            "Path" : "Asset/Materials/Auto/Hair.mat"
+          },
+          "Element 5" : {
+            "Path" : "Asset/Materials/Auto/Expression.mat"
+          },
+          "Element 6" : {
+            "Path" : "Asset/Materials/Auto/Skin.mat"
+          },
+          "Element 7" : {
+            "Path" : "Asset/Materials/Auto/Clothes.mat"
+          },
+          "Element 8" : {
+            "Path" : "Asset/Materials/Auto/Pants.mat"
+          },
+          "Element 9" : {
+            "Path" : "Asset/Materials/Auto/BackAccessory.mat"
+          },
+          "Location" : [0.000000, 0.000000, 0.924253],
+          "Rotation" : [0.000000, -94.198067, 0.000000],
+          "Scale" : [3.000000, 3.000000, 3.000000],
+          "Static Mesh" : "Data/Lumine/LumineModel.obj",
+          "Visible" : true,
+          "bEditorOnly" : false,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
+      "ClassName" : "ADirectionalLightActor",
+      "NonSceneComponents" : [],
+      "RootComponent" : {
+        "Children" : [{
+            "Children" : [],
+            "ClassName" : "UDirectionalLightComponent",
+            "Properties" : {
+              "Cast Shadows" : true,
+              "Color" : [1.000000, 1.000000, 1.000000, 1.000000],
+              "Intensity" : 1.000000,
+              "Location" : [0.000000, 0.000000, 0.000000],
+              "Rotation" : [-0.000000, 0.000000, 0.000000],
+              "Scale" : [1.000000, 1.000000, 1.000000],
+              "Shadow Bias" : 0.100000,
+              "Shadow Resolution Scale" : 1.000000,
+              "Shadow Sharpen" : 0.350000,
+              "Shadow Slope Bias" : 0.100000,
+              "Visible" : true,
+              "bEditorOnly" : false,
+              "bTickEnable" : true
+            }
+          }],
+        "ClassName" : "UBillboardComponent",
+        "Properties" : {
+          "Height" : 1.000000,
+          "Location" : [7.871356, 0.000000, 3.940434],
+          "Material" : {
+            "Path" : "Asset/Materials/Editor/DirectionalLight.mat"
+          },
+          "Rotation" : [135.889221, 0.000000, 0.000000],
+          "Scale" : [1.000000, 1.000000, 1.000000],
+          "Visible" : true,
+          "Width" : 1.000000,
+          "bEditorOnly" : true,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }],
+  "ClassName" : "UWorld",
+  "ContextHandle" : "NewScene",
+  "ContextName" : "New Scene",
+  "Name" : "TestPSM",
+  "PerspectiveCamera" : {
+    "FOV" : 1.047198,
+    "FarClip" : 1000.000000,
+    "Location" : [11.066679, -12.152046, 19.619162],
+    "NearClip" : 0.100000,
+    "Rotation" : [0.000003, 49.814938, 136.057434]
+  },
+  "Primitives" : {
+    "70" : {
+      "Location" : [0.000000, 0.000000, -0.118394],
+      "ObjStaticMeshAsset" : "Data/BasicShape/Cube.OBJ",
+      "Rotation" : [0.000000, -0.000000, 0.000000],
+      "Scale" : [7.000000, 7.000000, 1.000000],
+      "Type" : "StaticMeshComp"
+    },
+    "80" : {
+      "Location" : [0.000000, 0.000000, 0.924253],
+      "ObjStaticMeshAsset" : "Data/Lumine/LumineModel.obj",
+      "Rotation" : [0.000000, -0.000000, -94.198395],
+      "Scale" : [3.000031, 3.000031, 3.000000],
+      "Type" : "StaticMeshComp"
+    }
+  },
+  "Version" : 2,
+  "WorldType" : "Editor"
+}
