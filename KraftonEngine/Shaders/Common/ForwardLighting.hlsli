@@ -50,7 +50,7 @@ float SampleShadowAtlasVSM(float4 rect, float2 localUV, float currentDepth, floa
 
 float SampleShadowAtlasESM(float4 rect, float2 localUV, float currentDepth, float bias, float2 atlasTileSize)
 {
-    const float exponent = 40.0f;
+    const float exponent = 100.f;
     float2 atlasUV = rect.xy + localUV * rect.zw;
     float avgExpDepth = ShadowMapAtlasTexture.SampleLevel(PointClampSampler, atlasUV, 0).x;
     float receiverExpDepth = exp(exponent * saturate(currentDepth + bias));
@@ -189,7 +189,7 @@ float SampleDirectionalVSM(int indx, float2 uv, float currentDepth, float bias, 
 
 float SampleDirectionalESM(int indx, float2 uv, float currentDepth, float bias, float2 shadowMapSize)
 {
-    const float exponent = 40.0f;
+    const float exponent = 100.f;
     float avgExpDepth = SampleDirectionalMoments(indx, uv).x;
     float receiverExpDepth = exp(exponent * saturate(currentDepth + bias));
     return saturate(receiverExpDepth / max(avgExpDepth, 0.000001f));
@@ -239,7 +239,7 @@ float CalcAtlasShadowFromView(FLocalShadowInfo shadow, uint viewIndex, float3 wo
 
     //  Bias Calculate
     float slope = 1.0f - saturate(dot(normalize(N), normalize(L)));
-    float bias = shadow.Bias + shadow.SlopeBias * slope;
+    float bias = (shadow.Bias / 1000.0f) + (shadow.SlopeBias / 1000.0f) * slope;
 
     float shadowVisibility = 0.0f;
     if (ShadowFilterMode == SHADOW_FILTER_VSM)
