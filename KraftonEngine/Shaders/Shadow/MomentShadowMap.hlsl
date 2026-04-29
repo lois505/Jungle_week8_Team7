@@ -22,7 +22,7 @@ float2 PS(ShadowVSOutput input) : SV_Target0
 
     if (ShadowFilterMode == SHADOW_FILTER_ESM)
     {
-        const float exponent = 40.0f;
+        const float exponent = 100.f;
         return float2(exp(exponent * depth), 0.0f);
     }
 

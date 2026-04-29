@@ -236,7 +236,6 @@ void FShadowResourceManager::UpdateShadowResources(FSceneEnvironment& Environmen
 		EnsureSpotShadow(Environment.GetSpotLight(i).ShadowData, GBaseShadowResolution, ShadowOptions);
 	}
 
-	UpdateTelemetry(Environment, ShadowOptions);
 }
 
 void FShadowResourceManager::EnsureDirectionalShadow(FDirectionalShadowData& Shadow, uint32 BaseResolution, const FShadowRuntimeOptions& ShadowOptions)
@@ -291,7 +290,7 @@ void FShadowResourceManager::EnsurePointShadow(FPointShadowData& Shadow, uint32 
 	}
 }
 
-void FShadowResourceManager::UpdateTelemetry(const FSceneEnvironment& Environment, const FShadowRuntimeOptions& ShadowOptions)
+void FShadowResourceManager::UpdateTelemetry(const FSceneEnvironment& Environment)
 {
 	Telemetry.NumDirectionalLights = Environment.HasGlobalDirectionalLight() ? 1u : 0u;
 	Telemetry.NumPointLights = Environment.GetNumPointLights();
@@ -318,7 +317,40 @@ void FShadowResourceManager::UpdateTelemetry(const FSceneEnvironment& Environmen
 
 	Telemetry.FailedShadowViewCount = Telemetry.RequestedLocalViewCount - Telemetry.AllocatedLocalViewCount;
 	Telemetry.LocalAtlasTotalArea = static_cast<uint64>(Atlas.Map.Width) * static_cast<uint64>(Atlas.Map.Height);
-	(void)ShadowOptions;
+
+	Telemetry.EstimatedLocalShadowVRAMBytes = 0;
+	if (Atlas.Map.DepthTexture)
+	{
+		Telemetry.EstimatedLocalShadowVRAMBytes += static_cast<uint64>(Atlas.Map.Width) * static_cast<uint64>(Atlas.Map.Height) * 4ull;
+	}
+	if (Atlas.Map.Texture)
+	{
+		Telemetry.EstimatedLocalShadowVRAMBytes += static_cast<uint64>(Atlas.Map.Width) * static_cast<uint64>(Atlas.Map.Height) * 8ull;
+	}
+	if (Atlas.FilterTempMap.Texture)
+	{
+		Telemetry.EstimatedLocalShadowVRAMBytes += static_cast<uint64>(Atlas.FilterTempMap.Width) * static_cast<uint64>(Atlas.FilterTempMap.Height) * 8ull;
+	}
+
+	Telemetry.DirectionalShadowCascadeSliceCount = DirShadowArray.NumElements;
+	Telemetry.DirectionalShadowArraySliceCount = DirShadowArray.Texture ? DirShadowArray.NumElements + 1u : 0u;
+
+	Telemetry.EstimatedDirectionalShadowVRAMBytes = 0;
+	if (DirShadowArray.Texture)
+	{
+		const uint64 DirectionalSliceCount = static_cast<uint64>(Telemetry.DirectionalShadowArraySliceCount);
+		Telemetry.EstimatedDirectionalShadowVRAMBytes += static_cast<uint64>(DirShadowArray.Width) * static_cast<uint64>(DirShadowArray.Height) * DirectionalSliceCount * 4ull;
+		if (DirShadowArray.MomentTexture)
+		{
+			Telemetry.EstimatedDirectionalShadowVRAMBytes += static_cast<uint64>(DirShadowArray.Width) * static_cast<uint64>(DirShadowArray.Height) * DirectionalSliceCount * 8ull;
+		}
+		if (DirShadowArray.MomentFilterTempTexture)
+		{
+			Telemetry.EstimatedDirectionalShadowVRAMBytes += static_cast<uint64>(DirShadowArray.Width) * static_cast<uint64>(DirShadowArray.Height) * DirectionalSliceCount * 8ull;
+		}
+	}
+
+	Telemetry.EstimatedShadowVRAMBytes = Telemetry.EstimatedLocalShadowVRAMBytes + Telemetry.EstimatedDirectionalShadowVRAMBytes;
 }
 
 uint32 FShadowResourceManager::ComputeRequestedResolution(const FLightShadowSettings& Settings, const FShadowResolutionPolicy& Policy) const
@@ -797,6 +829,8 @@ void FShadowResourceManager::AllocateLocalShadowViews(FSceneEnvironment& Environ
 		Atlas,
 		LocalAtlasAllocator,
 		LocalShadowRequests);
+
+	UpdateTelemetry(Environment);
 }
 
 void FShadowResourceManager::SetLocalShadowAlignment(uint32 InAlignment)
