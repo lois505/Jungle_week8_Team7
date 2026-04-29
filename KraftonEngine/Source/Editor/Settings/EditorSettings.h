@@ -36,6 +36,11 @@ public:
 	// Renderer-wide shadow options
 	EShadowFilterMode ShadowFilterMode = EShadowFilterMode::None;
 	EDirectionalShadowMode DirectionalShadowMode = EDirectionalShadowMode::Single;
+	bool bSkipShadowPassInUnlit = true;
+	bool bDebugCascades = false;
+	int32 MaxLocalShadowViewsPerFrame = 0; // 0 means no budget cap
+	uint64 MaxLocalShadowAtlasAreaPerFrame = 0; // 0 means no area budget cap
+	int32 LocalShadowAlignment = 256;
 
 	// File paths
 	FString EditorStartLevel;  // 비어있으면 빈 씬, 씬 파일명(확장자 제외)이면 자동 로드

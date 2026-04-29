@@ -69,6 +69,7 @@ namespace EShaderPath
 	inline constexpr const char* UberLit = "Shaders/Geometry/UberLit.hlsl";
 	inline constexpr const char* CommonShadowMap = "Shaders/Shadow/CommonShadowMap.hlsl";
 	inline constexpr const char* MomentShadowMap = "Shaders/Shadow/MomentShadowMap.hlsl";
+	inline constexpr const char* ShadowMomentBlur = "Shaders/Shadow/ShadowMomentBlur.hlsl";
 	inline constexpr const char* Decal = "Shaders/Geometry/Decal.hlsl";
 
 	inline constexpr const char* Editor = "Shaders/Editor/Editor.hlsl";

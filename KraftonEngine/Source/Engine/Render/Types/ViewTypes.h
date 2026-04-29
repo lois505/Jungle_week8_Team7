@@ -35,6 +35,7 @@ struct FShowFlags
 	bool bOctree = false;
 	bool bFog = true;
 	bool bFXAA = false;
+	bool bShadow = true;
 	bool bViewLightCulling = false;
 	bool bVisualize25DCulling = false;
 };

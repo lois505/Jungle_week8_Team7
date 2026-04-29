@@ -162,9 +162,9 @@ void FSystemResources::UpdateLightAndShadowBuffer(FD3DDevice& Device, const FSce
 		{
 			const FDirectionalShadowData& ShadowData = DirLightParams.ShadowData;
 			FDirectionalConstants DirectionalCB = {};
-			DirectionalCB.NumcasCade = ShadowData.NUM_CASCADES;
+			DirectionalCB.NumcasCade = (ShadowOptions.DirectionalShadowMode == EDirectionalShadowMode::Single) ? 1 : ShadowData.NUM_CASCADES;
 
-			for (int i = 0; i < ShadowData.NUM_CASCADES; i++)
+			for (int i = 0; i < DirectionalCB.NumcasCade; i++)
 			{
 				const FShadowViewData& View = ShadowData.View[i];
 				DirectionalCB.DirLightViewProj[i] = View.LightViewProj.ConvertToPOD();
@@ -225,6 +225,8 @@ void FSystemResources::UpdateLightAndShadowBuffer(FD3DDevice& Device, const FSce
 	GlobalLightingData.VisualizeLightCulling = Frame.RenderOptions.ViewMode == EViewMode::LightCulling ? 1u : 0u;
 	GlobalLightingData.HeatMapMax = Frame.RenderOptions.HeatMapMax;
 	GlobalLightingData.ShadowFilterMode = static_cast<uint32>(ShadowOptions.ShadowFilterMode);
+	GlobalLightingData.DebugCascades = ShadowOptions.bDebugCascades ? 1u : 0u;
+	GlobalLightingData.EnableShadows = Frame.RenderOptions.ShowFlags.bShadow ? 1u : 0u;
 	
 	if (ClusterState)
 	{
@@ -302,9 +304,9 @@ void FSystemResources::SetRasterizerState(FD3DDevice& Device, ERasterizerState I
 	RasterizerStateManager.Set(Device.GetDeviceContext(), InState);
 }
 
-void FSystemResources::UpdateShadowResources(FScene& Scene, const FShadowRuntimeOptions& ShadowOptions)
+void FSystemResources::UpdateShadowResources(FScene& Scene, const FShadowRuntimeOptions& ShadowOptions, const FFrameContext& Frame)
 {
-	ShadowResourceManager.UpdateShadowResources(Scene.GetEnvironment(), ShadowOptions);
+	ShadowResourceManager.UpdateShadowResources(Scene.GetEnvironment(), ShadowOptions, Frame);
 }
 
 void FSystemResources::ResetRenderStateCache()

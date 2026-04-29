@@ -361,6 +361,8 @@
     <ClCompile Include="Source\Engine\Render\Resource\BlendStateManager.cpp" />
     <ClCompile Include="Source\Engine\Render\Resource\Buffer.cpp" />
     <ClCompile Include="Source\Engine\Render\Resource\DepthStencilStateManager.cpp" />
+    <ClCompile Include="Source\Engine\Render\Resource\LocalShadowAllocationExecutor.cpp" />
+    <ClCompile Include="Source\Engine\Render\Resource\LocalShadowRequestPlanner.cpp" />
     <ClCompile Include="Source\Engine\Render\Resource\MeshBufferManager.cpp" />
     <ClCompile Include="Source\Engine\Render\Resource\RasterizerStateManager.cpp" />
     <ClCompile Include="Source\Engine\Render\Resource\RenderResources.cpp" />
@@ -544,6 +546,10 @@
     <ClInclude Include="Source\Engine\Render\Resource\BlendStateManager.h" />
     <ClInclude Include="Source\Engine\Render\Resource\Buffer.h" />
     <ClInclude Include="Source\Engine\Render\Resource\DepthStencilStateManager.h" />
+    <ClInclude Include="Source\Engine\Render\Resource\LocalShadowAllocationExecutor.h" />
+    <ClInclude Include="Source\Engine\Render\Resource\LocalShadowAtlasAllocator.h" />
+    <ClInclude Include="Source\Engine\Render\Resource\LocalShadowRequestPlanner.h" />
+    <ClInclude Include="Source\Engine\Render\Resource\LocalShadowTypes.h" />
     <ClInclude Include="Source\Engine\Render\Resource\MeshBufferManager.h" />
     <ClInclude Include="Source\Engine\Render\Resource\RasterizerStateManager.h" />
     <ClInclude Include="Source\Engine\Render\Resource\RenderResources.h" />

@@ -22,6 +22,29 @@ static int FormatBytes(char* Buffer, int32 BufferSize, const char* Label, uint64
 	return snprintf(Buffer, BufferSize, "%s : %llu B", Label, static_cast<unsigned long long>(Bytes));
 }
 
+static const char* GetShadowFilterName(EShadowFilterMode Mode)
+{
+	switch (Mode)
+	{
+	case EShadowFilterMode::None: return "None";
+	case EShadowFilterMode::PCF_BOX: return "PCF_BOX";
+	case EShadowFilterMode::VSM: return "VSM";
+	case EShadowFilterMode::ESM: return "ESM";
+	case EShadowFilterMode::PCF_POISSON: return "PCF_POI";
+	default: return "Unknown";
+	}
+}
+
+static const char* GetDirectionalShadowModeName(EDirectionalShadowMode Mode)
+{
+	switch (Mode)
+	{
+	case EDirectionalShadowMode::Single: return "Single";
+	case EDirectionalShadowMode::CSM: return "CSM";
+	default: return "Unknown";
+	}
+}
+
 void FOverlayStatSystem::AppendLine(TArray<FOverlayStatLine>& OutLines, float Y, const FString& Text) const
 {
 	FOverlayStatLine Line;
@@ -52,7 +75,15 @@ void FOverlayStatSystem::BuildLines(const UEditorEngine& Editor, TArray<FOverlay
 	}
 	if (bShowMemory)
 	{
+		EstimatedLineCount += 20;
+	}
+	if (bShowShadow)
+	{
 		EstimatedLineCount += 8;
+	}
+	if (bShowCascadeShadow)
+	{
+		EstimatedLineCount += 5;
 	}
 	OutLines.reserve(EstimatedLineCount);
 
@@ -145,6 +176,86 @@ void FOverlayStatSystem::BuildLines(const UEditorEngine& Editor, TArray<FOverlay
 			FormatBytes(Buffer, sizeof(Buffer), Entry.Label, Entry.Bytes);
 			AppendLine(OutLines, CurrentY, FString(Buffer));
 			CurrentY += Layout.LineHeight;
+		}
+
+		(void)Editor;
+	}
+
+	if (bShowShadow || bShowCascadeShadow)
+	{
+		const FRenderer& Renderer = Editor.GetRenderer();
+		const FShadowRuntimeOptions& ShadowOptions = Renderer.GetRuntimeOptions();
+		const FShadowTelemetry& Telemetry = Renderer.GetShadowTelemetry();
+		const FShadowAtlasResource& Atlas = Renderer.GetShadowAtlas();
+		const FDirectionalShadowArray& DirectionalArray = Renderer.GetDirShadowArray();
+
+		char Buffer[192] = {};
+		snprintf(Buffer, sizeof(Buffer), "Shadow Filter : %s", GetShadowFilterName(ShadowOptions.ShadowFilterMode));
+		AppendLine(OutLines, CurrentY, FString(Buffer));
+		CurrentY += Layout.LineHeight;
+
+		snprintf(Buffer, sizeof(Buffer), "Lights : Directional %u / Point %u / Spot %u",
+			Telemetry.NumDirectionalLights,
+			Telemetry.NumPointLights,
+			Telemetry.NumSpotLights);
+		AppendLine(OutLines, CurrentY, FString(Buffer));
+		CurrentY += Layout.LineHeight;
+
+		snprintf(Buffer, sizeof(Buffer), "Local Shadow Views : %u requested / %u allocated / %u failed",
+			Telemetry.RequestedLocalViewCount,
+			Telemetry.AllocatedLocalViewCount,
+			Telemetry.FailedShadowViewCount);
+		AppendLine(OutLines, CurrentY, FString(Buffer));
+		CurrentY += Layout.LineHeight;
+
+		snprintf(Buffer, sizeof(Buffer), "Local Atlas Area : %llu / %llu px",
+			static_cast<unsigned long long>(Telemetry.UsedLocalShadowAtlasAreaPerFrame),
+			static_cast<unsigned long long>(Telemetry.LocalAtlasTotalArea));
+		AppendLine(OutLines, CurrentY, FString(Buffer));
+		CurrentY += Layout.LineHeight;
+
+		uint64 EstimatedShadowVRAM = 0;
+		EstimatedShadowVRAM += static_cast<uint64>(Atlas.Map.Width) * static_cast<uint64>(Atlas.Map.Height) * 4ull;
+		if (Atlas.Map.Texture)
+		{
+			EstimatedShadowVRAM += static_cast<uint64>(Atlas.Map.Width) * static_cast<uint64>(Atlas.Map.Height) * 8ull;
+		}
+		if (Atlas.FilterTempMap.Texture)
+		{
+			EstimatedShadowVRAM += static_cast<uint64>(Atlas.FilterTempMap.Width) * static_cast<uint64>(Atlas.FilterTempMap.Height) * 8ull;
+		}
+
+		const uint64 DirectionalSliceCount = DirectionalArray.Texture ? static_cast<uint64>(DirectionalArray.NumElements + 1) : 0ull;
+		EstimatedShadowVRAM += static_cast<uint64>(DirectionalArray.Width) * static_cast<uint64>(DirectionalArray.Height) * DirectionalSliceCount * 4ull;
+		if (DirectionalArray.MomentTexture)
+		{
+			EstimatedShadowVRAM += static_cast<uint64>(DirectionalArray.Width) * static_cast<uint64>(DirectionalArray.Height) * DirectionalSliceCount * 8ull;
+		}
+		if (DirectionalArray.MomentFilterTempTexture)
+		{
+			EstimatedShadowVRAM += static_cast<uint64>(DirectionalArray.Width) * static_cast<uint64>(DirectionalArray.Height) * DirectionalSliceCount * 8ull;
+		}
+
+		FormatBytes(Buffer, sizeof(Buffer), "Estimated Shadow VRAM", EstimatedShadowVRAM);
+		AppendLine(OutLines, CurrentY, FString(Buffer));
+		CurrentY += Layout.LineHeight + Layout.GroupSpacing;
+
+		if (bShowCascadeShadow)
+		{
+			snprintf(Buffer, sizeof(Buffer), "Directional Shadow Mode : %s", GetDirectionalShadowModeName(ShadowOptions.DirectionalShadowMode));
+			AppendLine(OutLines, CurrentY, FString(Buffer));
+			CurrentY += Layout.LineHeight;
+
+			snprintf(Buffer, sizeof(Buffer), "Directional Array : %.0f x %.0f, slices=%u",
+				DirectionalArray.Width,
+				DirectionalArray.Height,
+				DirectionalArray.NumElements + 1);
+			AppendLine(OutLines, CurrentY, FString(Buffer));
+			CurrentY += Layout.LineHeight;
+
+			snprintf(Buffer, sizeof(Buffer), "Cascade Debug : %s", ShadowOptions.bDebugCascades ? "On" : "Off");
+			AppendLine(OutLines, CurrentY, FString(Buffer));
+			CurrentY += Layout.LineHeight + Layout.GroupSpacing;
 		}
 	}
 }

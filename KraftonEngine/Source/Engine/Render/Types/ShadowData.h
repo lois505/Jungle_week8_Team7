@@ -17,6 +17,10 @@ struct FLightShadowSettings
 
 struct FShadowViewData
 {
+	// Local/Directional shadow view payload.
+	// - PCF path: DepthTexture/DSV/SRV fields are used.
+	// - VSM/ESM path: color Moment texture(RTV/SRV) and DepthTexture/DSV can coexist.
+	// This container is intentionally reused for both paths.
 	FShadowMapResource DepthMap;
 
 	FMatrix LightView = FMatrix::Identity;
@@ -34,15 +38,22 @@ struct FShadowViewData
 struct FDirectionalShadowArray
 {
 	ID3D11Texture2D* Texture = nullptr;
+
 	ID3D11DepthStencilView* DSVs[5] = {};
 	ID3D11ShaderResourceView* SRV = nullptr;
+
 	ID3D11ShaderResourceView* PreviewSRVs[5] = {};
+
 	ID3D11Texture2D* MomentTexture = nullptr;
 	ID3D11RenderTargetView* MomentRTVs[5] = {};
 	ID3D11ShaderResourceView* MomentSRV = nullptr;
+	ID3D11Texture2D* MomentFilterTempTexture = nullptr;
+	ID3D11RenderTargetView* MomentFilterTempRTVs[5] = {};
+	ID3D11ShaderResourceView* MomentFilterTempSRV = nullptr;
 
 	float Width = 0.0f;
 	float Height = 0.0f;
+
 	uint32 NumElements = 0;
 };
 
@@ -103,7 +114,6 @@ public:
 			const FShadowViewData& ViewData = View[FaceIndex];
 			Info.LightViewProj[FaceIndex] = ViewData.LightViewProj.ConvertToPOD();
 			Info.AtlasRect[FaceIndex] = MakeAtlasRect(ViewData, Atlas);
-			Info.CastShadow &= ViewData.bAtlasAllocated ? 1u : 0u;
 		}
 
 		return Info;

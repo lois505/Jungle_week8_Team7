@@ -27,32 +27,11 @@ float SampleShadowAtlas(float2 uv)
     return ShadowMapAtlasTexture.SampleLevel(PointClampSampler, uv, 0).r;
 }
 
-float2 SampleShadowAtlasGaussian3x3(float4 rect, float2 localUV, float2 atlasTileSize)
-{
-    float2 texelInTile = 1.0f / atlasTileSize;
-    float2 output = float2(0.0f, 0.0f);
-
-    [unroll]
-    for (int y = -1; y <= 1; y++)
-    {
-        [unroll]
-        for (int x = -1; x <= 1; x++)
-        {
-            float weight = ((x == 0) ? 2.0f : 1.0f) * ((y == 0) ? 2.0f : 1.0f);
-            float2 sampleLocalUV = localUV + float2(x, y) * texelInTile;
-            sampleLocalUV = clamp(sampleLocalUV, texelInTile * 0.5f, 1.0f - texelInTile * 0.5f);
-
-            float2 uv = rect.xy + sampleLocalUV * rect.zw;
-            output += ShadowMapAtlasTexture.SampleLevel(PointClampSampler, uv, 0).rg * weight;
-        }
-    }
-
-    return output / 16.0f;
-}
 
 float SampleShadowAtlasVSM(float4 rect, float2 localUV, float currentDepth, float bias, float2 atlasTileSize)
 {
-    float2 moments = SampleShadowAtlasGaussian3x3(rect, localUV, atlasTileSize);
+    float2 atlasUV = rect.xy + localUV * rect.zw;
+    float2 moments = ShadowMapAtlasTexture.SampleLevel(PointClampSampler, atlasUV, 0).rg;
     float mean = moments.x;
     float meanSq = moments.y;
     float receiverDepth = currentDepth + bias;
@@ -72,7 +51,8 @@ float SampleShadowAtlasVSM(float4 rect, float2 localUV, float currentDepth, floa
 float SampleShadowAtlasESM(float4 rect, float2 localUV, float currentDepth, float bias, float2 atlasTileSize)
 {
     const float exponent = 40.0f;
-    float avgExpDepth = SampleShadowAtlasGaussian3x3(rect, localUV, atlasTileSize).x;
+    float2 atlasUV = rect.xy + localUV * rect.zw;
+    float avgExpDepth = ShadowMapAtlasTexture.SampleLevel(PointClampSampler, atlasUV, 0).x;
     float receiverExpDepth = exp(exponent * saturate(currentDepth + bias));
 
     return saturate(receiverExpDepth / max(avgExpDepth, 0.000001f));
@@ -189,29 +169,9 @@ float2 SampleDirectionalMoments(int indx, float2 uv)
     return DirectionalShadowArray.SampleLevel(PointClampSampler, float3(uv, (float)indx), 0).rg;
 }
 
-float2 SampleDirectionalGaussian3x3(int indx, float2 uv, float2 shadowMapSize)
-{
-    float2 texel = 1.0f / shadowMapSize;
-    float2 output = float2(0.0f, 0.0f);
-
-    [unroll]
-    for (int y = -1; y <= 1; ++y)
-    {
-        [unroll]
-        for (int x = -1; x <= 1; ++x)
-        {
-            float weight = ((x == 0) ? 2.0f : 1.0f) * ((y == 0) ? 2.0f : 1.0f);
-            float2 sampleUV = clamp(uv + float2(x, y) * texel, texel * 0.5f, 1.0f - texel * 0.5f);
-            output += SampleDirectionalMoments(indx, sampleUV) * weight;
-        }
-    }
-
-    return output / 16.0f;
-}
-
 float SampleDirectionalVSM(int indx, float2 uv, float currentDepth, float bias, float2 shadowMapSize)
 {
-    float2 moments = SampleDirectionalGaussian3x3(indx, uv, shadowMapSize);
+    float2 moments = SampleDirectionalMoments(indx, uv);
     float mean = moments.x;
     float meanSq = moments.y;
     float receiverDepth = currentDepth + bias;
@@ -230,7 +190,7 @@ float SampleDirectionalVSM(int indx, float2 uv, float currentDepth, float bias, 
 float SampleDirectionalESM(int indx, float2 uv, float currentDepth, float bias, float2 shadowMapSize)
 {
     const float exponent = 40.0f;
-    float avgExpDepth = SampleDirectionalGaussian3x3(indx, uv, shadowMapSize).x;
+    float avgExpDepth = SampleDirectionalMoments(indx, uv).x;
     float receiverExpDepth = exp(exponent * saturate(currentDepth + bias));
     return saturate(receiverExpDepth / max(avgExpDepth, 0.000001f));
 }
@@ -324,6 +284,11 @@ uint SelectPointShadowFace(float3 lightToPixel)
 
 float CalcLocalShadow(uint lightIndex, FLightInfo light, float3 worldPos, float3 N)
 {
+    if (EnableShadows == 0)
+    {
+        return 1.0f;
+    }
+
     FLocalShadowInfo shadow = LocalLights[lightIndex];
     if (shadow.CastShadow == 0)
     {
@@ -363,6 +328,11 @@ int GetCascadeIndex(float4 screenPos)
 
 float CalcDirectionalShadow(float3 worldPos, float3 worldNormal, float4 screenPos)
 {
+    if (EnableShadows == 0)
+    {
+        return 1.0f;
+    }
+
     if (NumCascades <= 0)
     {
         return 1.0f;
@@ -396,7 +366,7 @@ float CalcDirectionalShadow(float3 worldPos, float3 worldNormal, float4 screenPo
     float2 halfTexel = 0.5f / shadowMapSize;
     localUV = clamp(localUV, halfTexel, 1.0f - halfTexel);
 
-    const int directionalSlice = cascadeIndex + 1;
+    const int directionalSlice = (NumCascades <= 1) ? 0 : (cascadeIndex + 1);
 
     float directionalShadowPCFBox = 0.0f;
     {
@@ -736,10 +706,11 @@ float3 AccumulateDiffuse(float3 worldPos, float3 N, float4 screenPos)
                                      DirectionalLight.Intensity, N) * dirShadow;
     AccumulatePointSpotDiffuse(worldPos, N, screenPos, result);
 
-#if defined(DEBUG_CASCADES) && DEBUG_CASCADES
-    float3 cascadeColor = GetCascadeDebugColor(screenPos);
-    result = lerp(result, cascadeColor, 0.5f);
-#endif
+    if (DebugCascades != 0)
+    {
+        float3 cascadeColor = GetCascadeDebugColor(screenPos);
+        result = lerp(result, cascadeColor, 0.5f);
+    }
 
     return result;
 }

@@ -3,11 +3,24 @@
 #include "FrameContext.h"
 #include "ShadowPassContext.h"
 #include "Render/Proxy/FScene.h"
+#include "Render/Pipeline/RenderConstants.h"
 #include "Render/Resource/RenderResources.h"
 #include "Render/Resource/ShaderManager.h"
+#include "Profiling/Stats.h"
 
 namespace
 {
+	struct FShadowFilterConstants
+	{
+		float InvTextureSize[2] = { 0.0f, 0.0f };
+		float BlurDirection[2] = { 0.0f, 0.0f };
+		float RectMin[2] = { 0.0f, 0.0f };
+		float RectSize[2] = { 1.0f, 1.0f };
+		uint32 SourceKind = 0; // 0: local atlas(t21), 1: directional array(t22)
+		uint32 SourceSlice = 0;
+		uint32 _Pad0 = 0;
+		uint32 _Pad1 = 0;
+	};
 	//	Shadow Map을 그린 후 Main Viewport의 상태를 복구함 (다음 Pass를 위해)
 	void RestoreMainViewport(FD3DDevice& Device, const FFrameContext& MainFrame)
 	{
@@ -56,18 +69,31 @@ namespace
 		return Atlas.Map.DepthTexture && Atlas.Map.DSV && Atlas.Map.SRV && Atlas.Map.Width > 0 && Atlas.Map.Height > 0;
 	}
 
-	void AssignAtlasRect(FShadowViewData& View, const FAtlasResourceInfo& Info)
+	uint32 GetActiveDirectionalCascadeCount(const FShadowRuntimeOptions& ShadowOptions, uint32 MaxCascadeCount)
 	{
-		View.AtlasOffsetX = Info.OffsetX;
-		View.AtlasOffsetY = Info.OffsetY;
-		View.AtlasSizeX = Info.Width;
-		View.AtlasSizeY = Info.Height;
-		View.AtlasIndex = Info.Index;
-		View.bAtlasAllocated = Info.bAllocated;
+		if (ShadowOptions.DirectionalShadowMode == EDirectionalShadowMode::Single)
+		{
+			return (MaxCascadeCount > 0) ? 1u : 0u;
+		}
+
+		return MaxCascadeCount;
 	}
 
-	void UpdateCacades(FDirectionalShadowData& ShadowData, const FVector& LightDirection, const FFrameContext& MainFrame)
+	uint32 GetDirectionalShadowSliceIndex(const FShadowRuntimeOptions& ShadowOptions, uint32 CascadeIndex)
 	{
+		if (ShadowOptions.DirectionalShadowMode == EDirectionalShadowMode::Single)
+		{
+			return 0u; // PSM slice
+		}
+
+		return CascadeIndex + 1u; // CSM slices
+	}
+
+	void UpdateCascades(FDirectionalShadowData& ShadowData, const FVector& LightDirection, const FFrameContext& MainFrame, const FShadowRuntimeOptions& ShadowOptions)
+	{
+		const bool bSingleMode = (ShadowOptions.DirectionalShadowMode == EDirectionalShadowMode::Single);
+		const int32 ActiveCascadeCount = bSingleMode ? 1 : ShadowData.NUM_CASCADES;
+
 		FVector F = LightDirection.Normalized();
 
 		FVector worldUp = FVector(0.0f, 0.0f, 1.0f);
@@ -96,7 +122,16 @@ namespace
 				+ (1.0f - ShadowData.DistributeExponent) * uniform;
 		}
 
-		for (int i = 0; i < ShadowData.NUM_CASCADES; i++)
+		if (bSingleMode)
+		{
+			ShadowData.CasCadeEnds[1] = MainFrame.FarClip;
+			for (int i = 2; i <= ShadowData.NUM_CASCADES; ++i)
+			{
+				ShadowData.CasCadeEnds[i] = MainFrame.FarClip;
+			}
+		}
+
+		for (int i = 0; i < ActiveCascadeCount; i++)
 		{
 			float Zn = ShadowData.CasCadeEnds[i];
 			float Zf = ShadowData.CasCadeEnds[i + 1];
@@ -143,83 +178,87 @@ namespace
 			FVector4 VClip = MainFrame.Proj.TransformVector4(FVector4(0.0f, 0.0f, Zf, 1.0f));
 			ShadowData.CascadeEndClipZ[i] = VClip.Z / VClip.W;
 		}
+
+		for (int i = ActiveCascadeCount; i < ShadowData.NUM_CASCADES; ++i)
+		{
+			ShadowData.CascadeEndClipZ[i] = ShadowData.CascadeEndClipZ[ActiveCascadeCount - 1];
+		}
 	}
 }
 
 void FShadowRenderer::Create(ID3D11Device* Device, ID3D11DeviceContext* DeviceContext)
 {
 	Builder.Create(Device, DeviceContext);
+	ShadowFilterConstantBuffer.Create(Device, sizeof(FShadowFilterConstants));
 }
 
 void FShadowRenderer::Release()
 {
+	ShadowFilterConstantBuffer.Release();
 	Builder.Release();
 }
 
 void FShadowRenderer::RenderShadows(FD3DDevice& Device, FSystemResources& Resources, FScene& Scene,
 	const FFrameContext& MainFrame)
 {
-	if (MainFrame.RenderOptions.ViewMode == EViewMode::Unlit)
-	{
-		return;
-	}
-
 	FSceneEnvironment& Env = Scene.GetEnvironment();
+	ShadowDrawCallCountThisFrame = 0;
+	Resources.ShadowResourceManager.AllocateLocalShadowViews(Env, Scene);
+	uint32 InvalidViewCount = 0;
+	uint32 SubmittedShadowViewCount = 0;
 
 	if (Scene.GetEnvironment().HasGlobalDirectionalLight())
 	{
 		if (Env.GetGlobalDirectionalLightParams().ShadowData.Settings.bCastShadows)
 		{
-			RenderDirectionalShadow(Device, Resources, Env.GetGlobalDirectionalLightParams(), Scene, MainFrame);
+			const FShadowRenderResult Result = RenderDirectionalShadow(Device, Resources, Env.GetGlobalDirectionalLightParams(), Scene, MainFrame);
+			SubmittedShadowViewCount += Result.SubmittedViewCount;
+			InvalidViewCount += Result.InvalidViewCount;
 		}
 	}
 
 	for (uint32 i = 0; i < Env.GetNumPointLights(); i++)
 	{
-		FPointLightParams& Params = Env.GetPointLight(i);
-		if (Params.ShadowData.Settings.bCastShadows)
-		{
-			for (int32 FaceIndex = 0; FaceIndex < 6; ++FaceIndex)
-			{
-				//Get Available Atals Infomation(Offset, Size) From ShadowResourceManager. After that, Assign to PointLightParam
-				AssignAtlasRect(Params.ShadowData.View[FaceIndex], Resources.ShadowResourceManager.AllocateFromAtlas());
-			}
-		}
-		//Draw To Shadow Atlas | (Inside) RenderShadowView Decide if Light will drawn to Atals or just single DSV
-		RenderPointShadow(Device, Resources, Env.GetPointLight(i), Scene);
+		// Draw To Shadow Atlas | (Inside) RenderShadowView Decide if Light will drawn to Atlas or just single DSV
+		const FShadowRenderResult Result = RenderPointShadow(Device, Resources, Env.GetPointLight(i), Scene);
+		SubmittedShadowViewCount += Result.SubmittedViewCount;
+		InvalidViewCount += Result.InvalidViewCount;
 	}
 
 	for (uint32 i = 0; i < Env.GetNumSpotLights(); i++)
 	{
-		FSpotLightParams& Params = Env.GetSpotLight(i);
-		if (Params.ShadowData.Settings.bCastShadows)
-		{
-			//Get Available Atals Infomation(Offset, Size) From ShadowResourceManager and Assign to SpotLightParams
-			AssignAtlasRect(Params.ShadowData.View, Resources.ShadowResourceManager.AllocateFromAtlas());
-		}
-		//Draw To Shadow Atlas | (Inside)  RenderShadowView Decide if Light will drawn to Atals or just single DSV
-		RenderSpotShadow(Device, Resources, Env.GetSpotLight(i), Scene);
+		// Draw To Shadow Atlas | (Inside) RenderShadowView Decide if Light will drawn to Atlas or just single DSV
+		const FShadowRenderResult Result = RenderSpotShadow(Device, Resources, Env.GetSpotLight(i), Scene);
+		SubmittedShadowViewCount += Result.SubmittedViewCount;
+		InvalidViewCount += Result.InvalidViewCount;
 	}
 
 	//	RS의 RT 원상태 복구
+	RenderDirectionalMomentBlurPass(Device, Resources, Env);
+	RenderAtlasMomentBlurPass(Device, Resources, Env);
 	RestoreMainViewport(Device, MainFrame);
+	(void)SubmittedShadowViewCount;
+	(void)InvalidViewCount;
 }
 
-void FShadowRenderer::RenderDirectionalShadow(FD3DDevice& Device, FSystemResources& Resources, FGlobalDirectionalLightParams& Light, FScene& Scene, const FFrameContext MainFrame)
+FShadowRenderer::FShadowRenderResult FShadowRenderer::RenderDirectionalShadow(FD3DDevice& Device, FSystemResources& Resources, FGlobalDirectionalLightParams& Light, FScene& Scene, const FFrameContext MainFrame)
 {
-	UpdateCacades(Light.ShadowData, Light.Direction, MainFrame);
+	UpdateCascades(Light.ShadowData, Light.Direction, MainFrame, ShadowOptions);
 	const FDirectionalShadowArray& DirectionalArray = Resources.ShadowResourceManager.GetShadowArray();
+	FShadowRenderResult Result = {};
+	const uint32 ActiveCascadeCount = GetActiveDirectionalCascadeCount(ShadowOptions, Light.ShadowData.NUM_CASCADES);
 
-	for (int i = 0; i < Light.ShadowData.NUM_CASCADES; i++)
+	for (uint32 i = 0; i < ActiveCascadeCount; ++i)
 	{
+		const uint32 SliceIndex = GetDirectionalShadowSliceIndex(ShadowOptions, i);
 		FShadowMapResource& DepthMap = Light.ShadowData.View[i].DepthMap;
-		DepthMap.DSV = DirectionalArray.DSVs[i + 1]; // slices 1~4, slot 0 reserved for PSM
+		DepthMap.DSV = DirectionalArray.DSVs[SliceIndex];
 		DepthMap.DepthTexture = DirectionalArray.Texture;
 
 		if (ShadowOptions.ShadowFilterMode == EShadowFilterMode::VSM || ShadowOptions.ShadowFilterMode == EShadowFilterMode::ESM)
 		{
 			DepthMap.Texture = DirectionalArray.MomentTexture;
-			DepthMap.RTV = DirectionalArray.MomentRTVs[i + 1];
+			DepthMap.RTV = DirectionalArray.MomentRTVs[SliceIndex];
 			DepthMap.SRV = DirectionalArray.MomentSRV;
 		}
 		else
@@ -232,43 +271,71 @@ void FShadowRenderer::RenderDirectionalShadow(FD3DDevice& Device, FSystemResourc
 		DepthMap.Width = static_cast<uint32>(DirectionalArray.Width);
 		DepthMap.Height = static_cast<uint32>(DirectionalArray.Height);
 
-		RenderShadowView(Device, Resources, Light.ShadowData.View[i], Scene);
+		if (!RenderShadowView(Device, Resources, Light.ShadowData.View[i], Scene))
+		{
+			++Result.InvalidViewCount;
+			continue;
+		}
+
+		++Result.SubmittedViewCount;
 	}
+
+	return Result;
 }
 
 
-void FShadowRenderer::RenderPointShadow(FD3DDevice& Device, FSystemResources& Resources, FPointLightParams& Light, FScene& Scene)
+FShadowRenderer::FShadowRenderResult FShadowRenderer::RenderPointShadow(FD3DDevice& Device, FSystemResources& Resources, FPointLightParams& Light, FScene& Scene)
 {
+	FShadowRenderResult Result = {};
 	if (!Light.ShadowData.Settings.bCastShadows)
 	{
-		return;
+		return Result;
 	}
 
 	for (int32 i = 0; i < 6; i++)
 	{
 		if (!IsShadowViewReady(Light.ShadowData.View[i], ShadowOptions))
 		{
+			++Result.InvalidViewCount;
 			continue;
 		}
 
-		RenderShadowView(Device, Resources, Light.ShadowData.View[i], Scene);
+		if (!RenderShadowView(Device, Resources, Light.ShadowData.View[i], Scene))
+		{
+			++Result.InvalidViewCount;
+			continue;
+		}
+
+		++Result.SubmittedViewCount;
 	}
+
+	return Result;
 }
 
-void FShadowRenderer::RenderSpotShadow(FD3DDevice& Device, FSystemResources& Resources, FSpotLightParams& Light, FScene& Scene)
+FShadowRenderer::FShadowRenderResult FShadowRenderer::RenderSpotShadow(FD3DDevice& Device, FSystemResources& Resources, FSpotLightParams& Light, FScene& Scene)
 {
+	FShadowRenderResult Result = {};
 	if (!Light.ShadowData.Settings.bCastShadows)
 	{
-		return;
+		return Result;
 	}
-	RenderShadowView(Device, Resources, Light.ShadowData.View, Scene);
+
+	if (!RenderShadowView(Device, Resources, Light.ShadowData.View, Scene))
+	{
+		++Result.InvalidViewCount;
+		return Result;
+	}
+
+	++Result.SubmittedViewCount;
+	return Result;
 }
 
 //	각각의 View Rendering
-void FShadowRenderer::RenderShadowView(FD3DDevice& Device, FSystemResources& Resources, FShadowViewData& View, FScene& Scene)
+bool FShadowRenderer::RenderShadowView(FD3DDevice& Device, FSystemResources& Resources, FShadowViewData& View, FScene& Scene)
 {
 	//	Preparing for Rendering
 	ID3D11DeviceContext* DeviceContext = Device.GetDeviceContext();
+	UnbindShadowReadResourcesForWrite(Device);
 
 	FShadowPassContext PassContext = {};
 	PassContext.View = View.LightView;
@@ -280,12 +347,12 @@ void FShadowRenderer::RenderShadowView(FD3DDevice& Device, FSystemResources& Res
 
 	if (View.bAtlasAllocated && !bUseAtlas)
 	{
-		return;
+		return false;
 	}
 
 	if (!bUseAtlas && !IsShadowViewReady(View, ShadowOptions))
 	{
-		return;
+		return false;
 	}
 
 	//아틀라스를 쓰냐 마냐에 따라 Viewport가 바뀜
@@ -342,6 +409,7 @@ void FShadowRenderer::RenderShadowView(FD3DDevice& Device, FSystemResources& Res
 	Resources.SetRasterizerState(Device, ERasterizerState::SolidBackCull);
 
 	Builder.BeginBuild(Scene.GetProxyCount());
+	Builder.SetCullingViewProjection(PassContext.ViewProj, true);
 	Builder.BuildCommands(Scene);
 
 	BindShadowFrameConstants(Device, Resources, PassContext);
@@ -358,7 +426,317 @@ void FShadowRenderer::RenderShadowView(FD3DDevice& Device, FSystemResources& Res
 	for (const FShadowDrawCommand& Cmd : Builder.GetCommands())
 	{
 		SubmitShadowCommand(Device, Cmd);
+		++ShadowDrawCallCountThisFrame;
 	}
+
+	UnbindShadowWriteTargets(Device);
+	return true;
+}
+
+void FShadowRenderer::RenderAtlasMomentBlurPass(FD3DDevice& Device, FSystemResources& Resources, const FSceneEnvironment& Environment)
+{
+	SCOPE_STAT_CAT("Shadow.LocalBlur", "4_ExecutePass");
+
+	if (ShadowOptions.ShadowFilterMode != EShadowFilterMode::VSM
+		&& ShadowOptions.ShadowFilterMode != EShadowFilterMode::ESM)
+	{
+		return;
+	}
+
+	FShadowAtlasResource& Atlas = Resources.ShadowResourceManager.GetAtlas();
+	if (!Atlas.bUsePingPongFilterPath
+		|| !Atlas.Map.RTV || !Atlas.Map.SRV
+		|| !Atlas.FilterTempMap.RTV || !Atlas.FilterTempMap.SRV
+		|| Atlas.Map.Width == 0 || Atlas.Map.Height == 0)
+	{
+		return;
+	}
+
+	struct FBlurRect
+	{
+		uint32 OffsetX = 0;
+		uint32 OffsetY = 0;
+		uint32 SizeX = 0;
+		uint32 SizeY = 0;
+	};
+
+	const TArray<FLocalShadowRequest>& Requests = Resources.ShadowResourceManager.GetLocalShadowRequests();
+	TArray<FBlurRect> BlurRects;
+	BlurRects.reserve(Requests.size());
+	for (const FLocalShadowRequest& Request : Requests)
+	{
+		if (!Request.bAllocated)
+		{
+			continue;
+		}
+
+		const FShadowViewData* View = nullptr;
+		if (Request.RequestType == ELocalShadowRequestType::Spot)
+		{
+			if (Request.LightIndex >= Environment.GetNumSpotLights())
+			{
+				continue;
+			}
+
+			View = &Environment.GetSpotLight(Request.LightIndex).ShadowData.View;
+		}
+		else
+		{
+			if (Request.LightIndex >= Environment.GetNumPointLights() || Request.FaceIndex >= 6)
+			{
+				continue;
+			}
+
+			View = &Environment.GetPointLight(Request.LightIndex).ShadowData.View[Request.FaceIndex];
+		}
+
+		if (!View || !View->bAtlasAllocated || View->AtlasSizeX == 0 || View->AtlasSizeY == 0)
+		{
+			continue;
+		}
+
+		FBlurRect Rect = {};
+		Rect.OffsetX = View->AtlasOffsetX;
+		Rect.OffsetY = View->AtlasOffsetY;
+		Rect.SizeX = View->AtlasSizeX;
+		Rect.SizeY = View->AtlasSizeY;
+		BlurRects.push_back(Rect);
+	}
+
+	if (BlurRects.empty())
+	{
+		return;
+	}
+
+	ID3D11DeviceContext* DeviceContext = Device.GetDeviceContext();
+	FShader* BlurShader = FShaderManager::Get().GetOrCreate(EShaderPath::ShadowMomentBlur);
+	if (!BlurShader)
+	{
+		return;
+	}
+
+	Resources.SetDepthStencilState(Device, EDepthStencilState::NoDepth);
+	Resources.SetBlendState(Device, EBlendState::Opaque);
+	Resources.SetRasterizerState(Device, ERasterizerState::SolidNoCull);
+
+	ID3D11Buffer* BlurCB = ShadowFilterConstantBuffer.GetBuffer();
+	if (!BlurCB)
+	{
+		return;
+	}
+
+	BlurShader->Bind(DeviceContext);
+	DeviceContext->PSSetConstantBuffers(ECBSlot::PerShader0, 1, &BlurCB);
+	DeviceContext->IASetInputLayout(nullptr);
+	DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	DeviceContext->IASetVertexBuffers(0, 0, nullptr, nullptr, nullptr);
+	DeviceContext->IASetIndexBuffer(nullptr, DXGI_FORMAT_UNKNOWN, 0);
+
+	FShadowFilterConstants BlurParams = {};
+	BlurParams.InvTextureSize[0] = 1.0f / static_cast<float>(Atlas.Map.Width);
+	BlurParams.InvTextureSize[1] = 1.0f / static_cast<float>(Atlas.Map.Height);
+	BlurParams.SourceKind = 0;
+	BlurParams.SourceSlice = 0;
+
+	{
+		SCOPE_STAT_CAT("Shadow.LocalBlur.H", "4_ExecutePass");
+		UnbindShadowReadResourcesForWrite(Device);
+		ID3D11RenderTargetView* HorizontalRTV = Atlas.FilterTempMap.RTV;
+		DeviceContext->OMSetRenderTargets(1, &HorizontalRTV, nullptr);
+		ID3D11ShaderResourceView* HorizontalSource = Atlas.Map.SRV;
+		DeviceContext->PSSetShaderResources(ESystemTexSlot::ShadowMapAtlas, 1, &HorizontalSource);
+		for (const FBlurRect& Rect : BlurRects)
+		{
+			D3D11_VIEWPORT RectViewport = {};
+			RectViewport.TopLeftX = static_cast<float>(Rect.OffsetX);
+			RectViewport.TopLeftY = static_cast<float>(Rect.OffsetY);
+			RectViewport.Width = static_cast<float>(Rect.SizeX);
+			RectViewport.Height = static_cast<float>(Rect.SizeY);
+			RectViewport.MinDepth = 0.0f;
+			RectViewport.MaxDepth = 1.0f;
+			DeviceContext->RSSetViewports(1, &RectViewport);
+
+			BlurParams.BlurDirection[0] = 1.0f;
+			BlurParams.BlurDirection[1] = 0.0f;
+			BlurParams.RectMin[0] = static_cast<float>(Rect.OffsetX) * BlurParams.InvTextureSize[0];
+			BlurParams.RectMin[1] = static_cast<float>(Rect.OffsetY) * BlurParams.InvTextureSize[1];
+			BlurParams.RectSize[0] = static_cast<float>(Rect.SizeX) * BlurParams.InvTextureSize[0];
+			BlurParams.RectSize[1] = static_cast<float>(Rect.SizeY) * BlurParams.InvTextureSize[1];
+			ShadowFilterConstantBuffer.Update(DeviceContext, &BlurParams, sizeof(FShadowFilterConstants));
+			DeviceContext->Draw(3, 0);
+		}
+	}
+
+	ID3D11ShaderResourceView* NullSRV = nullptr;
+	DeviceContext->PSSetShaderResources(ESystemTexSlot::ShadowMapAtlas, 1, &NullSRV);
+
+	{
+		SCOPE_STAT_CAT("Shadow.LocalBlur.V", "4_ExecutePass");
+		UnbindShadowReadResourcesForWrite(Device);
+		ID3D11RenderTargetView* VerticalRTV = Atlas.Map.RTV;
+		DeviceContext->OMSetRenderTargets(1, &VerticalRTV, nullptr);
+		ID3D11ShaderResourceView* VerticalSource = Atlas.FilterTempMap.SRV;
+		DeviceContext->PSSetShaderResources(ESystemTexSlot::ShadowMapAtlas, 1, &VerticalSource);
+		for (const FBlurRect& Rect : BlurRects)
+		{
+			D3D11_VIEWPORT RectViewport = {};
+			RectViewport.TopLeftX = static_cast<float>(Rect.OffsetX);
+			RectViewport.TopLeftY = static_cast<float>(Rect.OffsetY);
+			RectViewport.Width = static_cast<float>(Rect.SizeX);
+			RectViewport.Height = static_cast<float>(Rect.SizeY);
+			RectViewport.MinDepth = 0.0f;
+			RectViewport.MaxDepth = 1.0f;
+			DeviceContext->RSSetViewports(1, &RectViewport);
+
+			BlurParams.BlurDirection[0] = 0.0f;
+			BlurParams.BlurDirection[1] = 1.0f;
+			BlurParams.RectMin[0] = static_cast<float>(Rect.OffsetX) * BlurParams.InvTextureSize[0];
+			BlurParams.RectMin[1] = static_cast<float>(Rect.OffsetY) * BlurParams.InvTextureSize[1];
+			BlurParams.RectSize[0] = static_cast<float>(Rect.SizeX) * BlurParams.InvTextureSize[0];
+			BlurParams.RectSize[1] = static_cast<float>(Rect.SizeY) * BlurParams.InvTextureSize[1];
+			ShadowFilterConstantBuffer.Update(DeviceContext, &BlurParams, sizeof(FShadowFilterConstants));
+			DeviceContext->Draw(3, 0);
+		}
+	}
+
+	DeviceContext->PSSetShaderResources(ESystemTexSlot::ShadowMapAtlas, 1, &NullSRV);
+	UnbindShadowWriteTargets(Device);
+}
+
+void FShadowRenderer::RenderDirectionalMomentBlurPass(FD3DDevice& Device, FSystemResources& Resources, const FSceneEnvironment& Environment)
+{
+	SCOPE_STAT_CAT("Shadow.DirectionalBlur", "4_ExecutePass");
+
+	if (ShadowOptions.ShadowFilterMode != EShadowFilterMode::VSM
+		&& ShadowOptions.ShadowFilterMode != EShadowFilterMode::ESM)
+	{
+		return;
+	}
+
+	if (!Environment.HasGlobalDirectionalLight())
+	{
+		return;
+	}
+
+	const FGlobalDirectionalLightParams& DirLight = Environment.GetGlobalDirectionalLightParams();
+	if (!DirLight.ShadowData.Settings.bCastShadows)
+	{
+		return;
+	}
+
+	FDirectionalShadowArray& DirArray = Resources.ShadowResourceManager.GetShadowArray();
+	if (!DirArray.MomentTexture || !DirArray.MomentSRV
+		|| !DirArray.MomentFilterTempTexture || !DirArray.MomentFilterTempSRV
+		|| DirArray.Width <= 0.0f || DirArray.Height <= 0.0f)
+	{
+		return;
+	}
+
+	ID3D11DeviceContext* DeviceContext = Device.GetDeviceContext();
+	FShader* BlurShader = FShaderManager::Get().GetOrCreate(EShaderPath::ShadowMomentBlur);
+	if (!BlurShader)
+	{
+		return;
+	}
+
+	Resources.SetDepthStencilState(Device, EDepthStencilState::NoDepth);
+	Resources.SetBlendState(Device, EBlendState::Opaque);
+	Resources.SetRasterizerState(Device, ERasterizerState::SolidNoCull);
+
+	ID3D11Buffer* BlurCB = ShadowFilterConstantBuffer.GetBuffer();
+	if (!BlurCB)
+	{
+		return;
+	}
+
+	BlurShader->Bind(DeviceContext);
+	DeviceContext->PSSetConstantBuffers(ECBSlot::PerShader0, 1, &BlurCB);
+	DeviceContext->IASetInputLayout(nullptr);
+	DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	DeviceContext->IASetVertexBuffers(0, 0, nullptr, nullptr, nullptr);
+	DeviceContext->IASetIndexBuffer(nullptr, DXGI_FORMAT_UNKNOWN, 0);
+
+	FShadowFilterConstants BlurParams = {};
+	BlurParams.InvTextureSize[0] = 1.0f / DirArray.Width;
+	BlurParams.InvTextureSize[1] = 1.0f / DirArray.Height;
+	BlurParams.RectMin[0] = 0.0f;
+	BlurParams.RectMin[1] = 0.0f;
+	BlurParams.RectSize[0] = 1.0f;
+	BlurParams.RectSize[1] = 1.0f;
+	BlurParams.SourceKind = 1;
+
+	D3D11_VIEWPORT Viewport = {};
+	Viewport.TopLeftX = 0.0f;
+	Viewport.TopLeftY = 0.0f;
+	Viewport.Width = DirArray.Width;
+	Viewport.Height = DirArray.Height;
+	Viewport.MinDepth = 0.0f;
+	Viewport.MaxDepth = 1.0f;
+	DeviceContext->RSSetViewports(1, &Viewport);
+
+	const uint32 ActiveCascadeCount = GetActiveDirectionalCascadeCount(ShadowOptions, DirLight.ShadowData.NUM_CASCADES);
+	for (uint32 CascadeIndex = 0; CascadeIndex < ActiveCascadeCount; ++CascadeIndex)
+	{
+		const uint32 SliceIndex = GetDirectionalShadowSliceIndex(ShadowOptions, CascadeIndex);
+		if (!DirArray.MomentRTVs[SliceIndex] || !DirArray.MomentFilterTempRTVs[SliceIndex])
+		{
+			continue;
+		}
+
+		{
+			SCOPE_STAT_CAT("Shadow.DirectionalBlur.H", "4_ExecutePass");
+			UnbindShadowReadResourcesForWrite(Device);
+			ID3D11RenderTargetView* HorizontalRTV = DirArray.MomentFilterTempRTVs[SliceIndex];
+			DeviceContext->OMSetRenderTargets(1, &HorizontalRTV, nullptr);
+			ID3D11ShaderResourceView* HorizontalSource = DirArray.MomentSRV;
+			DeviceContext->PSSetShaderResources(ESystemTexSlot::DirectionalShadowArray, 1, &HorizontalSource);
+			BlurParams.BlurDirection[0] = 1.0f;
+			BlurParams.BlurDirection[1] = 0.0f;
+			BlurParams.SourceSlice = SliceIndex;
+			ShadowFilterConstantBuffer.Update(DeviceContext, &BlurParams, sizeof(FShadowFilterConstants));
+			DeviceContext->Draw(3, 0);
+		}
+
+		ID3D11ShaderResourceView* NullDirSRV = nullptr;
+		DeviceContext->PSSetShaderResources(ESystemTexSlot::DirectionalShadowArray, 1, &NullDirSRV);
+
+		{
+			SCOPE_STAT_CAT("Shadow.DirectionalBlur.V", "4_ExecutePass");
+			UnbindShadowReadResourcesForWrite(Device);
+			ID3D11RenderTargetView* VerticalRTV = DirArray.MomentRTVs[SliceIndex];
+			DeviceContext->OMSetRenderTargets(1, &VerticalRTV, nullptr);
+			ID3D11ShaderResourceView* VerticalSource = DirArray.MomentFilterTempSRV;
+			DeviceContext->PSSetShaderResources(ESystemTexSlot::DirectionalShadowArray, 1, &VerticalSource);
+			BlurParams.BlurDirection[0] = 0.0f;
+			BlurParams.BlurDirection[1] = 1.0f;
+			BlurParams.SourceSlice = SliceIndex;
+			ShadowFilterConstantBuffer.Update(DeviceContext, &BlurParams, sizeof(FShadowFilterConstants));
+			DeviceContext->Draw(3, 0);
+		}
+
+		DeviceContext->PSSetShaderResources(ESystemTexSlot::DirectionalShadowArray, 1, &NullDirSRV);
+	}
+
+	UnbindShadowWriteTargets(Device);
+}
+
+void FShadowRenderer::UnbindShadowReadResourcesForWrite(FD3DDevice& Device)
+{
+	ID3D11DeviceContext* DeviceContext = Device.GetDeviceContext();
+
+	ID3D11ShaderResourceView* NullSystemSRV = nullptr;
+	DeviceContext->PSSetShaderResources(ESystemTexSlot::ShadowMapAtlas, 1, &NullSystemSRV);
+	DeviceContext->PSSetShaderResources(ESystemTexSlot::DirectionalShadowArray, 1, &NullSystemSRV);
+	DeviceContext->VSSetShaderResources(ESystemTexSlot::ShadowMapAtlas, 1, &NullSystemSRV);
+	DeviceContext->VSSetShaderResources(ESystemTexSlot::DirectionalShadowArray, 1, &NullSystemSRV);
+	DeviceContext->CSSetShaderResources(ESystemTexSlot::ShadowMapAtlas, 1, &NullSystemSRV);
+	DeviceContext->CSSetShaderResources(ESystemTexSlot::DirectionalShadowArray, 1, &NullSystemSRV);
+}
+
+void FShadowRenderer::UnbindShadowWriteTargets(FD3DDevice& Device)
+{
+	ID3D11DeviceContext* DeviceContext = Device.GetDeviceContext();
+	DeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
 }
 
 

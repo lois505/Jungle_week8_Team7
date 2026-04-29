@@ -4,6 +4,7 @@
 
 #include <fstream>
 #include <filesystem>
+#include <algorithm>
 
 namespace Key
 {
@@ -45,6 +46,11 @@ namespace Key
 	// Shadow
 	constexpr const char* ShadowFilterMode = "ShadowFilterMode";
 	constexpr const char* DirectionalShadowMode = "DirectionalShadowMode";
+	constexpr const char* SkipShadowPassInUnlit = "SkipShadowPassInUnlit";
+	constexpr const char* DebugCascades = "DebugCascades";
+	constexpr const char* MaxLocalShadowViewsPerFrame = "MaxLocalShadowViewsPerFrame";
+	constexpr const char* MaxLocalShadowAtlasAreaPerFrame = "MaxLocalShadowAtlasAreaPerFrame";
+	constexpr const char* LocalShadowAlignment = "LocalShadowAlignment";
 
 	// Layout
 	constexpr const char* Layout = "Layout";
@@ -100,6 +106,11 @@ void FEditorSettings::SaveToFile(const FString& Path) const
 	JSON ShadowObj = Object();
 	ShadowObj[Key::ShadowFilterMode] = static_cast<int32>(ShadowFilterMode);
 	ShadowObj[Key::DirectionalShadowMode] = static_cast<int32>(DirectionalShadowMode);
+	ShadowObj[Key::SkipShadowPassInUnlit] = bSkipShadowPassInUnlit;
+	ShadowObj[Key::DebugCascades] = bDebugCascades;
+	ShadowObj[Key::MaxLocalShadowViewsPerFrame] = MaxLocalShadowViewsPerFrame;
+	ShadowObj[Key::MaxLocalShadowAtlasAreaPerFrame] = static_cast<double>(MaxLocalShadowAtlasAreaPerFrame);
+	ShadowObj[Key::LocalShadowAlignment] = LocalShadowAlignment;
 	Root[Key::Shadow] = ShadowObj;
 
 	// Layout
@@ -123,6 +134,7 @@ void FEditorSettings::SaveToFile(const FString& Path) const
 		SlotObj[Key::bDebugDraw] = Opts.ShowFlags.bDebugDraw;
 		SlotObj[Key::bOctree] = Opts.ShowFlags.bOctree;
 		SlotObj[Key::bFog] = Opts.ShowFlags.bFog;
+		SlotObj["bShadow"] = Opts.ShowFlags.bShadow;
 		SlotObj[Key::GridSpacing] = Opts.GridSpacing;
 		SlotObj[Key::GridHalfLineCount] = Opts.GridHalfLineCount;
 		SlotObj[Key::CameraMoveSensitivity] = Opts.CameraMoveSensitivity;
@@ -240,6 +252,25 @@ void FEditorSettings::LoadFromFile(const FString& Path)
 			ShadowFilterMode = static_cast<EShadowFilterMode>(ShadowObj[Key::ShadowFilterMode].ToInt());
 		if (ShadowObj.hasKey(Key::DirectionalShadowMode))
 			DirectionalShadowMode = static_cast<EDirectionalShadowMode>(ShadowObj[Key::DirectionalShadowMode].ToInt());
+		if (ShadowObj.hasKey(Key::SkipShadowPassInUnlit))
+			bSkipShadowPassInUnlit = ShadowObj[Key::SkipShadowPassInUnlit].ToBool();
+		if (ShadowObj.hasKey(Key::DebugCascades))
+			bDebugCascades = ShadowObj[Key::DebugCascades].ToBool();
+		if (ShadowObj.hasKey(Key::MaxLocalShadowViewsPerFrame))
+		{
+			const int32 RequestedMaxViews = static_cast<int32>(ShadowObj[Key::MaxLocalShadowViewsPerFrame].ToInt());
+			MaxLocalShadowViewsPerFrame = (RequestedMaxViews < 0) ? 0 : RequestedMaxViews;
+		}
+		if (ShadowObj.hasKey(Key::MaxLocalShadowAtlasAreaPerFrame))
+		{
+			const double RequestedMaxArea = ShadowObj[Key::MaxLocalShadowAtlasAreaPerFrame].ToFloat();
+			MaxLocalShadowAtlasAreaPerFrame = (RequestedMaxArea <= 0.0) ? 0ull : static_cast<uint64>(RequestedMaxArea);
+		}
+		if (ShadowObj.hasKey(Key::LocalShadowAlignment))
+		{
+			const int32 RequestedAlignment = static_cast<int32>(ShadowObj[Key::LocalShadowAlignment].ToInt());
+			LocalShadowAlignment = (RequestedAlignment < 1) ? 1 : RequestedAlignment;
+		}
 	}
 
 	// Layout
@@ -279,6 +310,8 @@ void FEditorSettings::LoadFromFile(const FString& Path)
 					Opts.ShowFlags.bOctree = S[Key::bOctree].ToBool();
 				if (S.hasKey(Key::bFog))
 					Opts.ShowFlags.bFog = S[Key::bFog].ToBool();
+				if (S.hasKey("bShadow"))
+					Opts.ShowFlags.bShadow = S["bShadow"].ToBool();
 				if (S.hasKey(Key::GridSpacing))
 					Opts.GridSpacing = static_cast<float>(S[Key::GridSpacing].ToFloat());
 				if (S.hasKey(Key::GridHalfLineCount))

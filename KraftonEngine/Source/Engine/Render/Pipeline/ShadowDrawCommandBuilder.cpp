@@ -30,6 +30,15 @@ void FShadowDrawCommandBuilder::BeginBuild(uint32 MaxProxyCount)
 	}
 }
 
+void FShadowDrawCommandBuilder::SetCullingViewProjection(const FMatrix& ViewProjection, bool bEnable)
+{
+	bUseCullingVolume = bEnable;
+	if (bUseCullingVolume)
+	{
+		CullingVolume.UpdateFromMatrix(ViewProjection);
+	}
+}
+
 void FShadowDrawCommandBuilder::BuildCommands(const FScene& Scene)
 {
 	for (FPrimitiveSceneProxy* Proxy : Scene.GetAllProxies())
@@ -74,6 +83,11 @@ bool FShadowDrawCommandBuilder::CheckBuildForProxy(const FPrimitiveSceneProxy& P
 	}
 
 	if (Proxy.GetSectionDraws().empty())
+	{
+		return false;
+	}
+
+	if (bUseCullingVolume && !CullingVolume.IntersectAABB(Proxy.GetCachedBounds()))
 	{
 		return false;
 	}

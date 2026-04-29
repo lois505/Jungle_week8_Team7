@@ -23,9 +23,9 @@ struct FShadowMapResource
 struct FShadowAtlasResource
 {
 	FShadowMapResource Map;
-
-	uint32 CursorX = 0;
-	uint32 CursorY = 0;
+	// Phase 2 placeholder: Moment Ping-Pong temp atlas (B). Not allocated in Phase 1.
+	FShadowMapResource FilterTempMap;
+	bool bUsePingPongFilterPath = false;
 };
 
 struct FAtlasResourceInfo

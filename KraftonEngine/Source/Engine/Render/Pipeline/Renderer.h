@@ -45,6 +45,8 @@ public:
 	FTileBasedLightCulling&   GetTileBaseCulling()     { return TileBasedCulling; }
 	const FShadowAtlasResource& GetShadowAtlas() const { return Resources.ShadowResourceManager.GetAtlas(); }
 	const FDirectionalShadowArray& GetDirShadowArray() const { return Resources.ShadowResourceManager.GetShadowArray(); }
+	const FShadowTelemetry& GetShadowTelemetry() const { return Resources.ShadowResourceManager.GetTelemetry(); }
+	const TArray<FLocalShadowRequest>& GetLocalShadowRequests() const { return Resources.ShadowResourceManager.GetLocalShadowRequests(); }
 
 	void BindTileCullingResources() { Resources.BindTileCullingBuffers(Device); }
 	void UnbindTileCullingResources() { Resources.UnbindTileCullingBuffers(Device); }
@@ -57,6 +59,14 @@ public:
 	
 	void SetShadowFilterMode(EShadowFilterMode ShadowFilterMode) { ShadowRenderer.SetShadowFilterMode(ShadowFilterMode); }
 	void SetDirectionalShadowMode(EDirectionalShadowMode ShadowMode) { ShadowRenderer.SetDirectionalShadowMode(ShadowMode); }
+	void SetSkipShadowPassInUnlit(bool bSkip) { ShadowRenderer.SetSkipShadowPassInUnlit(bSkip); }
+	void SetDebugCascades(bool bEnable) { ShadowRenderer.SetDebugCascades(bEnable); }
+	void SetMaxLocalShadowViewsPerFrame(uint32 MaxViewsPerFrame) { Resources.ShadowResourceManager.SetMaxLocalShadowViewsPerFrame(MaxViewsPerFrame); }
+	uint32 GetMaxLocalShadowViewsPerFrame() const { return Resources.ShadowResourceManager.GetMaxLocalShadowViewsPerFrame(); }
+	void SetMaxLocalShadowAtlasAreaPerFrame(uint64 MaxAreaPerFrame) { Resources.ShadowResourceManager.SetMaxLocalShadowAtlasAreaPerFrame(MaxAreaPerFrame); }
+	uint64 GetMaxLocalShadowAtlasAreaPerFrame() const { return Resources.ShadowResourceManager.GetMaxLocalShadowAtlasAreaPerFrame(); }
+	void SetLocalShadowAlignment(uint32 InAlignment) { Resources.ShadowResourceManager.SetLocalShadowAlignment(InAlignment); }
+	uint32 GetLocalShadowAlignment() const { return Resources.ShadowResourceManager.GetLocalShadowAlignment(); }
 
 private:
 	// 패스 루프 종료 후 시스템 텍스처 언바인딩 + 캐시 정리

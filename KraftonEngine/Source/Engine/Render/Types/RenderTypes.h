@@ -70,6 +70,8 @@ struct FShadowRuntimeOptions
 {
 	EShadowFilterMode ShadowFilterMode = EShadowFilterMode::None;
 	EDirectionalShadowMode DirectionalShadowMode = EDirectionalShadowMode::Single;
+	bool bSkipShadowPassInUnlit = true;
+	bool bDebugCascades = false;
 };
 
 
