@@ -31,7 +31,6 @@
 
 - 측정 환경: Release, Intel Core i7-14700 (2.10 GHz)
 - 모델: 정점 1,054개, 면 2,014개
-- 발표 자료의 피킹 10회 결과를 기재했으며, SAH 캡처의 `PICK TOTAL`은 0.019600 ms입니다.
 
 ![전수 검사, Median Split BVH, SAH BVH의 피킹 10회 성능 비교](Docs/Images/bvh-sah-performance.png)
 
@@ -46,7 +45,7 @@
 
 - 장면 구성: 큐브 1,000개(10 × 10 × 10), 광원 150개(6 × 5 × 5)
 - GPU: NVIDIA GeForce RTX 5060 8 GB
-- 제시된 측정값 기준 FPS 약 **2.70배 향상** — 발표 자료에서는 약 3배로 표기
+- 측정값 기준 FPS 약 **2.70배 향상**
 
 ![Clustered Light Culling 적용 전후 FPS 비교](Docs/Images/clustered-light-culling-performance.png)
 
