@@ -48,5 +48,3 @@
 - 측정값 기준 FPS 약 **2.70배 향상**
 
 ![Clustered Light Culling 적용 전후 FPS 비교](Docs/Images/clustered-light-culling-performance.png)
-
-> 위 수치는 첨부된 발표 자료의 실험 조건과 측정 결과를 정리한 것으로, 이번 README 작성 과정에서 벤치마크를 다시 실행한 결과는 아닙니다.
