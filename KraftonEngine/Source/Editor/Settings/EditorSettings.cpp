@@ -37,6 +37,7 @@ namespace Key
 	constexpr const char* CameraRotateSensitivity = "CameraRotateSensitivity";
 	constexpr const char* LightCullingMode = "LightCullingMode";
 	constexpr const char* HeatMapMax = "HeatMapMax";
+	constexpr const char* UseClusterTopN = "UseClusterTopN";
 	constexpr const char* Enable25DCulling = "Enable25DCulling";
 
 	// Paths
@@ -141,6 +142,7 @@ void FEditorSettings::SaveToFile(const FString& Path) const
 		SlotObj[Key::CameraRotateSensitivity] = Opts.CameraRotateSensitivity;
 		SlotObj[Key::LightCullingMode] = static_cast<int32>(Opts.LightCullingMode);
 		SlotObj[Key::HeatMapMax] = Opts.HeatMapMax;
+		SlotObj[Key::UseClusterTopN] = Opts.UseClusterTopN;
 		SlotObj[Key::Enable25DCulling] = Opts.Enable25DCulling;
 		SlotsArr.append(SlotObj);
 	}
@@ -324,6 +326,8 @@ void FEditorSettings::LoadFromFile(const FString& Path)
 					Opts.LightCullingMode = static_cast<ELightCullingMode>(S[Key::LightCullingMode].ToInt());
 				if (S.hasKey(Key::HeatMapMax))
 					Opts.HeatMapMax = static_cast<float>(S[Key::HeatMapMax].ToFloat());
+				if (S.hasKey(Key::UseClusterTopN))
+					Opts.UseClusterTopN = S[Key::UseClusterTopN].ToBool();
 				if (S.hasKey(Key::Enable25DCulling))
 					Opts.Enable25DCulling = S[Key::Enable25DCulling].ToBool();
 			}

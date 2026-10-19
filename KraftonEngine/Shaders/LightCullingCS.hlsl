@@ -15,6 +15,11 @@ RWStructuredBuffer<uint> gGlobalCounter : register(u3);
 groupshared uint gsLightIndices[256];
 groupshared uint gsHitCount;
 groupshared float4 gsClusterPlanes[6];
+groupshared float3 gsClusterCenter;
+groupshared uint gsCandidateIndices[256];
+groupshared float gsCandidateScores[256];
+groupshared float gsHeapScores[256];
+groupshared uint gsHeapCount;
 
 float SliceToViewDepth(uint zSlice)
 {
@@ -78,6 +83,92 @@ bool SphereOverlapsClusterPlanes(float3 center, float radius)
     return true;
 }
 
+float ComputeLightImportance(FLightInfo light, float3 viewLightPos)
+{
+    float dist = length(viewLightPos - gsClusterCenter);
+    float ratio = saturate(dist / max(light.AttenuationRadius, 0.0001f));
+    float attenuation = pow(1.0f - ratio, light.FalloffExponent);
+    float luminance = dot(light.Color.rgb, float3(0.299f, 0.587f, 0.114f));
+    return max(luminance * light.Intensity * attenuation, 0.0f);
+}
+
+// The heap root is always the least important retained light. Equal scores use
+// the light index as a stable tie breaker so the selected set is deterministic.
+bool IsLessImportant(float scoreA, uint indexA, float scoreB, uint indexB)
+{
+    return scoreA < scoreB || (scoreA == scoreB && indexA > indexB);
+}
+
+void SwapHeapEntries(uint a, uint b)
+{
+    float score = gsHeapScores[a];
+    uint index = gsLightIndices[a];
+    gsHeapScores[a] = gsHeapScores[b];
+    gsLightIndices[a] = gsLightIndices[b];
+    gsHeapScores[b] = score;
+    gsLightIndices[b] = index;
+}
+
+void InsertTopLight(uint lightIndex, float score, uint capacity)
+{
+    if (gsHeapCount < capacity)
+    {
+        uint cursor = gsHeapCount++;
+        gsHeapScores[cursor] = score;
+        gsLightIndices[cursor] = lightIndex;
+
+        while (cursor > 0)
+        {
+            uint parent = (cursor - 1) >> 1;
+            if (!IsLessImportant(gsHeapScores[cursor], gsLightIndices[cursor],
+                                 gsHeapScores[parent], gsLightIndices[parent]))
+            {
+                break;
+            }
+
+            SwapHeapEntries(cursor, parent);
+            cursor = parent;
+        }
+        return;
+    }
+
+    if (!IsLessImportant(gsHeapScores[0], gsLightIndices[0], score, lightIndex))
+    {
+        return;
+    }
+
+    gsHeapScores[0] = score;
+    gsLightIndices[0] = lightIndex;
+
+    uint cursor = 0;
+    while (true)
+    {
+        uint left = cursor * 2 + 1;
+        if (left >= gsHeapCount)
+        {
+            break;
+        }
+
+        uint right = left + 1;
+        uint leastImportant = left;
+        if (right < gsHeapCount &&
+            IsLessImportant(gsHeapScores[right], gsLightIndices[right],
+                            gsHeapScores[left], gsLightIndices[left]))
+        {
+            leastImportant = right;
+        }
+
+        if (!IsLessImportant(gsHeapScores[leastImportant], gsLightIndices[leastImportant],
+                             gsHeapScores[cursor], gsLightIndices[cursor]))
+        {
+            break;
+        }
+
+        SwapHeapEntries(cursor, leastImportant);
+        cursor = leastImportant;
+    }
+}
+
 void BuildCurrentClusterPlanes(uint clusterIdx)
 {
     uint sliceSize = CullState.ClusterX * CullState.ClusterY;
@@ -113,6 +204,36 @@ void BuildCurrentClusterPlanes(uint clusterIdx)
     }
 }
 
+void BuildCurrentClusterCenter(uint clusterIdx)
+{
+    uint sliceSize = CullState.ClusterX * CullState.ClusterY;
+    uint clusterZ = clusterIdx / sliceSize;
+    uint clusterXY = clusterIdx - clusterZ * sliceSize;
+    uint clusterY = clusterXY / CullState.ClusterX;
+    uint clusterX = clusterXY - clusterY * CullState.ClusterX;
+
+    float2 tileSize = float2(2.0f / CullState.ClusterX, 2.0f / CullState.ClusterY);
+    float2 ndcMin = float2(-1.0f + clusterX * tileSize.x, 1.0f - (clusterY + 1) * tileSize.y);
+    float2 ndcMax = float2(ndcMin.x + tileSize.x, 1.0f - clusterY * tileSize.y);
+    float2 ndcCenter = (ndcMin + ndcMax) * 0.5f;
+    float nearZ = SliceToViewDepth(clusterZ);
+    float farZ = SliceToViewDepth(clusterZ + 1);
+
+    gsClusterCenter = (NDCToViewSpace(ndcCenter, nearZ) + NDCToViewSpace(ndcCenter, farZ)) * 0.5f;
+}
+
+void PublishClusterLightList(uint clusterIdx, uint localCount)
+{
+    uint offset;
+    InterlockedAdd(gGlobalCounter[0], localCount, offset);
+
+    gLightGrid[clusterIdx] = uint2(offset, localCount);
+    for (uint j = 0; j < localCount; ++j)
+    {
+        gLightIndexList[offset + j] = gsLightIndices[j];
+    }
+}
+
 // One dispatch group maps to one cluster.
 // The 256 threads in that group divide the light list with i += 256.
 [numthreads(CLUSTER_LIGHT_CULLING_THREADS, 1, 1)]
@@ -137,8 +258,6 @@ void CSMain(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_GroupThreadID)
     }
     GroupMemoryBarrierWithGroupSync();
 
-    // Split the light loop across the group. With 720 lights, each thread tests
-    // roughly 3 lights instead of one thread testing all 720 lights by itself.
     uint totalLights = NumActivePointLights + NumActiveSpotLights;
     if (localCapacity > 0)
     {
@@ -150,9 +269,6 @@ void CSMain(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_GroupThreadID)
             {
                 uint slot;
                 InterlockedAdd(gsHitCount, 1, slot);
-
-                // Many threads can hit at the same time. InterlockedAdd gives each
-                // hit a unique slot, and the capacity check truncates overflow.
                 if (slot < localCapacity)
                 {
                     gsLightIndices[slot] = i;
@@ -165,15 +281,76 @@ void CSMain(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_GroupThreadID)
     // Only one thread publishes the compacted list to the global buffers.
     if (threadIndex == 0)
     {
-        uint localCount = min(gsHitCount, localCapacity);
-        uint offset;
-        InterlockedAdd(gGlobalCounter[0], localCount, offset);
+        PublishClusterLightList(clusterIdx, min(gsHitCount, localCapacity));
+    }
+}
 
-        gLightGrid[clusterIdx] = uint2(offset, localCount);
+// Deterministic Top-N variant. It is compiled as a separate compute shader so
+// the original atomic shader keeps its own register/shared-memory footprint.
+[numthreads(CLUSTER_LIGHT_CULLING_THREADS, 1, 1)]
+void CSTopNMain(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_GroupThreadID)
+{
+    uint clusterCount = CullState.ClusterX * CullState.ClusterY * CullState.ClusterZ;
+    uint clusterIdx = groupId.x;
+    uint threadIndex = groupThreadId.x;
+    uint localCapacity = min(CullState.MaxLightsPerCluster, 256);
 
-        for (uint j = 0; j < localCount; j++)
+    if (clusterIdx >= clusterCount)
+    {
+        return;
+    }
+
+    if (threadIndex == 0)
+    {
+        gsHeapCount = 0;
+        BuildCurrentClusterPlanes(clusterIdx);
+        BuildCurrentClusterCenter(clusterIdx);
+    }
+    GroupMemoryBarrierWithGroupSync();
+
+    uint totalLights = NumActivePointLights + NumActiveSpotLights;
+    if (localCapacity > 0)
+    {
+        // Intersection and score calculation remain parallel. Candidates are
+        // processed in fixed 256-light batches, then thread 0 merges each batch
+        // into a deterministic fixed-capacity min-heap.
+        for (uint batchStart = 0; batchStart < totalLights; batchStart += CLUSTER_LIGHT_CULLING_THREADS)
         {
-            gLightIndexList[offset + j] = gsLightIndices[j];
+            uint lightIndex = batchStart + threadIndex;
+            gsCandidateIndices[threadIndex] = 0xffffffffu;
+            gsCandidateScores[threadIndex] = 0.0f;
+
+            if (lightIndex < totalLights)
+            {
+                FLightInfo light = gLights[lightIndex];
+                float4 viewPos = mul(float4(light.Position, 1.0f), View);
+                if (SphereOverlapsClusterPlanes(viewPos.xyz, light.AttenuationRadius))
+                {
+                    gsCandidateIndices[threadIndex] = lightIndex;
+                    gsCandidateScores[threadIndex] = ComputeLightImportance(light, viewPos.xyz);
+                }
+            }
+            GroupMemoryBarrierWithGroupSync();
+
+            if (threadIndex == 0)
+            {
+                uint batchCount = min(CLUSTER_LIGHT_CULLING_THREADS, totalLights - batchStart);
+                for (uint candidate = 0; candidate < batchCount; ++candidate)
+                {
+                    uint candidateIndex = gsCandidateIndices[candidate];
+                    if (candidateIndex != 0xffffffffu)
+                    {
+                        InsertTopLight(candidateIndex, gsCandidateScores[candidate], localCapacity);
+                    }
+                }
+            }
+            GroupMemoryBarrierWithGroupSync();
         }
+    }
+    GroupMemoryBarrierWithGroupSync();
+
+    if (threadIndex == 0)
+    {
+        PublishClusterLightList(clusterIdx, gsHeapCount);
     }
 }

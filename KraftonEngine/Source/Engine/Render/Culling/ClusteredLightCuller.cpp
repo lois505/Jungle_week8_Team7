@@ -15,6 +15,7 @@ void FClusteredLightCuller::Initialize(ID3D11Device* InDevice, ID3D11DeviceConte
 
 	ViewSpaceAABBCS = FShaderManager::Get().GetOrCreateCS("Shaders/ClusterConstructCS.hlsl", "CSMain");
 	LightCullingCS  = FShaderManager::Get().GetOrCreateCS("Shaders/LightCullingCS.hlsl", "CSMain");
+	LightCullingTopNCS = FShaderManager::Get().GetOrCreateCS("Shaders/LightCullingCS.hlsl", "CSTopNMain");
 
 	const uint32 ClusterCount = State.ClusterX * State.ClusterY * State.ClusterZ;
 	struct Pair
@@ -27,13 +28,16 @@ void FClusteredLightCuller::Initialize(ID3D11Device* InDevice, ID3D11DeviceConte
 	ID3D11ShaderResourceView* NullSRV = nullptr;
 	InitializeBuffer<uint32>(gGlobalCounter, 1, NullSRV, gGlobalCounterUAV, false, true);
 
-	bIsInitialized = (ViewSpaceAABBCS != nullptr && ViewSpaceAABBCS->IsValid());
+	bIsInitialized = ViewSpaceAABBCS != nullptr && ViewSpaceAABBCS->IsValid()
+		&& LightCullingCS != nullptr && LightCullingCS->IsValid()
+		&& LightCullingTopNCS != nullptr && LightCullingTopNCS->IsValid();
 }
 
 void FClusteredLightCuller::Release()
 {
 	ViewSpaceAABBCS = nullptr;  // FShaderManager 소유
 	LightCullingCS = nullptr;
+	LightCullingTopNCS = nullptr;
 
 	if (gClusterAABBs)      { gClusterAABBs->Release();      gClusterAABBs = nullptr; }
 	if (gLightIndexList)    { gLightIndexList->Release();    gLightIndexList = nullptr; }
@@ -67,9 +71,10 @@ void FClusteredLightCuller::DispatchViewSpaceAABB()
 	Context->CSSetUnorderedAccessViews(ELightCullingUAVSlot::ClusterAABB, 1, &NullUAV, nullptr);
 }
 
-void FClusteredLightCuller::DispatchLightCullingCS(ID3D11ShaderResourceView* LightInfos)
+void FClusteredLightCuller::DispatchLightCullingCS(ID3D11ShaderResourceView* LightInfos, bool bUseTopN)
 {
-	if (!LightCullingCS || !LightCullingCS->IsValid())
+	FComputeShader* SelectedShader = bUseTopN ? LightCullingTopNCS : LightCullingCS;
+	if (!SelectedShader || !SelectedShader->IsValid())
 	{
 		return;
 	}
@@ -77,7 +82,7 @@ void FClusteredLightCuller::DispatchLightCullingCS(ID3D11ShaderResourceView* Lig
 	Context->ClearUnorderedAccessViewUint(gGlobalCounterUAV, ClearValues);
 	ID3D11ShaderResourceView* SRVs[2] = { gClusterAABBsSRV,LightInfos };
 	ID3D11UnorderedAccessView* UAVs[3] = { gLightIndexListUAV,gLightGridUAV,gGlobalCounterUAV };
-	LightCullingCS->Bind(Context);
+	SelectedShader->Bind(Context);
 	Context->CSSetUnorderedAccessViews(ELightCullingUAVSlot::LightIndexList, 3, UAVs, nullptr);
 	Context->CSSetShaderResources(ELightCullingSRVSlot::ClusterAABB, 2, SRVs);
 	const uint32 ClusterCount = State.ClusterX * State.ClusterY * State.ClusterZ;

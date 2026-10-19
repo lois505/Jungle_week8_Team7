@@ -404,7 +404,7 @@ ID3D11ShaderResourceView* FRenderer::RenderShadowDepthPreview(
 	return ShadowDepthPreviewSRVs[SlotIndex];
 }
 
-void FRenderer::DispatchClusterCullingResources()
+void FRenderer::DispatchClusterCullingResources(bool bUseTopN)
 {
 	if (!ClusteredLightCuller.IsInitialized())
 	{
@@ -420,7 +420,7 @@ void FRenderer::DispatchClusterCullingResources()
 	}*/
 	{
 		GPU_SCOPE_STAT_CAT("Cluster Culling Dispatch", "Culling Dispatch");
-		ClusteredLightCuller.DispatchLightCullingCS(Resources.ForwardLights.LightBufferSRV);
+		ClusteredLightCuller.DispatchLightCullingCS(Resources.ForwardLights.LightBufferSRV, bUseTopN);
 	}
 
 	BindClusterCullingResources();

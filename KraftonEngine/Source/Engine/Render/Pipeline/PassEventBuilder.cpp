@@ -188,7 +188,7 @@ void FPassEventBuilder::RegisterLightCullingEvents(ID3D11DeviceContext* Ctx,
 			}
 			else if (Frame.RenderOptions.LightCullingMode == ELightCullingMode::Cluster)
 			{
-				Renderer->DispatchClusterCullingResources();
+				Renderer->DispatchClusterCullingResources(Frame.RenderOptions.UseClusterTopN);
 			}
 
 			if (Frame.NormalRTV)

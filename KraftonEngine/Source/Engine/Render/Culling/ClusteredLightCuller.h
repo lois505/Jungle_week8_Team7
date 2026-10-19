@@ -19,7 +19,7 @@ public:
 	void Initialize(ID3D11Device* InDevice, ID3D11DeviceContext* InContext);
 	void Release();
 	void DispatchViewSpaceAABB();
-	void DispatchLightCullingCS(ID3D11ShaderResourceView* LightInfos);
+	void DispatchLightCullingCS(ID3D11ShaderResourceView* LightInfos, bool bUseTopN);
 	bool IsInitialized() const { return bIsInitialized; }
 
 	template<typename T>
@@ -70,6 +70,7 @@ private:
 	ID3D11DeviceContext* Context = nullptr;
 	FComputeShader* ViewSpaceAABBCS = nullptr;  // FShaderManager 소유
 	FComputeShader* LightCullingCS = nullptr;   // FShaderManager 소유
+	FComputeShader* LightCullingTopNCS = nullptr; // FShaderManager 소유
 
 	ID3D11Buffer* gClusterAABBs = nullptr; //Input, Output
 	ID3D11Buffer* gLightIndexList = nullptr; //Input, Output

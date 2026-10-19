@@ -1084,6 +1084,7 @@ void FLevelViewportLayout::RenderPaneToolbar(int32 SlotIndex)
 				ImGui::RadioButton("Cluster", &CullingMode, static_cast<int32>(ELightCullingMode::Cluster));
 				Opts.LightCullingMode = static_cast<ELightCullingMode>(CullingMode);
 				ImGui::SliderFloat("HeatMapMax", &Opts.HeatMapMax, 1.0f, 100.0f, "%.0f");
+				ImGui::Checkbox("Cluster Top-N Heap", &Opts.UseClusterTopN);
 				ImGui::Checkbox("Enable2.5DCulling", &Opts.Enable25DCulling);
 				ImGui::Checkbox("Visualize2.5DCulling", &Opts.ShowFlags.bVisualize25DCulling);
 

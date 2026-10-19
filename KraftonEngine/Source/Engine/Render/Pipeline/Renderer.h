@@ -62,7 +62,7 @@ public:
 
 	void BindTileCullingResources() { Resources.BindTileCullingBuffers(Device); }
 	void UnbindTileCullingResources() { Resources.UnbindTileCullingBuffers(Device); }
-	void DispatchClusterCullingResources();
+	void DispatchClusterCullingResources(bool bUseTopN);
 	void BindClusterCullingResources();
 	void UnbindClusterCullingResources();
 	
