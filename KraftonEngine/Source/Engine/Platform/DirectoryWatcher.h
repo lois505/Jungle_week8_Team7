@@ -16,20 +16,22 @@
 // ProcessChanges()에서 메인 스레드 콜백 디스패치.
 // ============================================================
 
-using FWatchID = uint32;
-using FSubscriptionID = uint32;
+using FWatchIDu32 = uint32;
+using FSubscriptionIDu32 = uint32;
 using FWatchCallback = std::function<void(const TSet<FString>&)>;
 
-struct FWatchEntry
+struct FWatchDir//감시 폴더 하나
 {
-	FWatchID        ID = 0;
+	FWatchIDu32        ID = 0;
 	std::wstring    DirPath;       // 감시 디렉토리 절대 경로
 	FString         PathPrefix;    // 구독자에게 전달할 접두사 (e.g. "Shaders/")
+	
 	HANDLE          DirHandle = INVALID_HANDLE_VALUE;
-	OVERLAPPED      Overlapped = {};
-	TArray<BYTE>    Buffer;        // FILE_NOTIFY_INFORMATION 수신 버퍼
-	TSet<FString>   PendingChanges; // 스레드→메인 전달용
-	DWORD           LastChangeTickMs = 0; // 마지막 변경 감지 시각 (GetTickCount)
+	OVERLAPPED      Overlapped = {}; //비동기 작업의 진행 상황 적어두는곳 //작업이 끝나면 OVERLapped안의 hEvent 실행
+	TArray<BYTE>    ChangedFileNames;        // FILE_NOTIFY_INFORMATION 수신 버퍼
+	
+	TSet<FString>   FilesWaitingForApply; // Changed됐지만 변경안된 파일
+	DWORD           LastChangeTime = 0; // 
 
 	static constexpr DWORD kBufferSize = 4096;
 	static constexpr DWORD kDebounceMs = 200; // 파일 저장 완료 대기
@@ -37,8 +39,8 @@ struct FWatchEntry
 
 struct FSubscription
 {
-	FSubscriptionID ID = 0;
-	FWatchID        WatchID = 0;   // 0 = 전체 구독
+	FSubscriptionIDu32 ID = 0;
+	FWatchIDu32        WatchID = 0;   // 0 = 전체 구독
 	FWatchCallback  Callback;
 };
 
@@ -50,12 +52,12 @@ public:
 	void Initialize();
 	void Shutdown();
 
-	FWatchID        Watch(const std::wstring& DirPath, const FString& PathPrefix);
-	void            Unwatch(FWatchID ID);
+	FWatchIDu32        Watch(const std::wstring& DirPath, const FString& PathPrefix);
+	void            Unwatch(FWatchIDu32 ID);
 
-	FSubscriptionID Subscribe(FWatchID WatchID, FWatchCallback Callback);
-	FSubscriptionID SubscribeAll(FWatchCallback Callback);
-	void            Unsubscribe(FSubscriptionID ID);
+	FSubscriptionIDu32 Subscribe(FWatchIDu32 WatchID, FWatchCallback Callback);
+	FSubscriptionIDu32 SubscribeAll(FWatchCallback Callback);
+	void            Unsubscribe(FSubscriptionIDu32 ID);
 
 	// 메인 스레드에서 매 프레임 호출. 변경된 파일을 구독자에게 디스패치.
 	void ProcessChanges();
@@ -64,16 +66,16 @@ private:
 	FDirectoryWatcher() = default;
 
 	void WatchThreadFunc();
-	void BeginRead(FWatchEntry& Entry);
+	void RequestChangeNotification(FWatchDir& Entry);
 
 	std::mutex                          Mutex;
-	TArray<std::unique_ptr<FWatchEntry>> Watches;
+	TArray<std::unique_ptr<FWatchDir>> WatchingDirs;
 	TArray<FSubscription>               Subscriptions;
 
 	std::thread                         WatchThread;
 	HANDLE                              StopEvent = nullptr;
 	std::atomic<bool>                   bRunning{false};
 
-	FWatchID        NextWatchID = 1;
-	FSubscriptionID NextSubID = 1;
+	FWatchIDu32        NextWatchID = 1;
+	FSubscriptionIDu32 NextSubID = 1;
 };

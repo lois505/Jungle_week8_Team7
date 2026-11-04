@@ -71,7 +71,7 @@ void FShaderManager::Initialize(ID3D11Device* InDevice)
 	// 셰이더 디렉토리 감시 등록
 	{
 		STARTUP_TRACE_SCOPE("ShaderDirectoryWatcher.WatchAndSubscribe");
-		FWatchID WatchID = FDirectoryWatcher::Get().Watch(FPaths::ShaderDir(), "Shaders/");
+		FWatchIDu32 WatchID = FDirectoryWatcher::Get().Watch(FPaths::ShaderDir(), "Shaders/");
 		if (WatchID != 0)
 		{
 			WatchSub = FDirectoryWatcher::Get().Subscribe(WatchID,

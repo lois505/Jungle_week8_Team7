@@ -175,5 +175,5 @@ private:
 	// include 파일 → CS 캐시 키 역매핑
 	TMap<FString, TArray<FCSKey>> CSIncludeDependents;
 
-	FSubscriptionID WatchSub = 0;
+	FSubscriptionIDu32 WatchSub = 0;
 };
